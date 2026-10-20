@@ -12,6 +12,7 @@ import 'app/library.dart';
 import 'app/licenses.dart';
 import 'app/paging.dart';
 import 'app/scope.dart';
+import 'app/shutdown.dart';
 import 'app/updates.dart';
 import 'design/theme.dart';
 import 'dev/automation.dart';
@@ -74,7 +75,9 @@ Future<void> main(List<String> args) async {
   }
   final player = PlayerController(engine, library, perf);
   final epg = EpgCache(library);
-  final updates = UpdateService();
+  final shutdown = Shutdown(player);
+  await shutdown.install();
+  final updates = UpdateService(quit: shutdown.run);
   if (!offscreen) updates.startBackgroundCheck();
   MediaSession(player);
   var guideVersion = state.guideVersion;
@@ -99,7 +102,7 @@ Future<void> main(List<String> args) async {
 
   final automation = Automation(args, boundary);
   if (automation.active) {
-    WidgetsBinding.instance.addPostFrameCallback((_) => automation.run(state, player));
+    WidgetsBinding.instance.addPostFrameCallback((_) => automation.run(state, player, quit: shutdown.run));
   }
 }
 

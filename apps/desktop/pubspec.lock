@@ -543,11 +543,9 @@ packages:
   media_kit_video:
     dependency: "direct main"
     description:
-      path: media_kit_video
-      ref: c533e446755f51cf53c7e57aea873f2aa5355f81
-      resolved-ref: c533e446755f51cf53c7e57aea873f2aa5355f81
-      url: "https://github.com/media-kit/media-kit.git"
-    source: git
+      path: "../../packages/media_kit_video"
+      relative: true
+    source: path
     version: "2.0.1"
   meta:
     dependency: transitive

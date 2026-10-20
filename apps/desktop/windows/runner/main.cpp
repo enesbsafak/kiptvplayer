@@ -78,6 +78,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     ::DispatchMessage(&msg);
   }
 
+  // Shut the engine (and the player's GPU surfaces and threads) down while
+  // COM is still initialised. Left to the destructor, it ran after
+  // CoUninitialize and crashed in flutter_windows.dll on every exit that
+  // came through PostQuitMessage.
+  window.Destroy();
   ::CoUninitialize();
   if (single_instance) ::CloseHandle(single_instance);
   return EXIT_SUCCESS;

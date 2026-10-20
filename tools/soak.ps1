@@ -2,9 +2,11 @@
 # changing channel every minute, while this script samples its memory.
 # Flat memory after warm-up = no leak. Requires tools/mock-iptv running.
 #
-#   tools\soak.ps1 [-Minutes 240] [-Build Profile|Release] [-Out <dir>]
+#   tools\soak.ps1 [-Minutes 240] [-Every 60] [-Build Profile|Release] [-Out <dir>]
 param(
   [int]$Minutes = 240,
+  # Seconds between channel changes (fewer = harsher).
+  [int]$Every = 60,
   [string]$Build = 'Release',
   [string]$Mock = 'http://127.0.0.1:8089',
   [string]$Out = (Join-Path $env:TEMP 'karadelik-soak')
@@ -18,10 +20,10 @@ $csv = Join-Path $Out 'memory.csv'
 'minute,private_mb,working_set_mb,handles' | Set-Content $csv
 
 $p = Start-Process (Join-Path $exeDir 'karadelik_player.exe') -WorkingDirectory $exeDir -WindowStyle Hidden -PassThru `
-  -ArgumentList '--kp-offscreen', "--kp-data-dir=$data", "--kp-add-mock=$Mock", "--kp-soak=$Minutes"
+  -ArgumentList '--kp-offscreen', "--kp-data-dir=$data", "--kp-add-mock=$Mock", "--kp-soak=$Minutes", "--kp-soak-every=$Every"
 $sw = [Diagnostics.Stopwatch]::StartNew()
 while (-not $p.HasExited) {
-  Start-Sleep -Seconds 30
+  Start-Sleep -Seconds ([math]::Min(30, [math]::Max(5, $Every)))
   try {
     $p.Refresh()
     # Invariant culture: a Turkish locale would write decimal commas into the CSV.
@@ -32,7 +34,8 @@ while (-not $p.HasExited) {
 }
 
 # Growth after the first 10 minutes (decoders, caches and fonts warm up first).
-$rows = Import-Csv $csv | Where-Object { [double]$_.minute -ge 10 }
+$warm = [math]::Min(10, $Minutes / 3)
+$rows = Import-Csv $csv | Where-Object { [double]$_.minute -ge $warm }
 if ($rows.Count -ge 2) {
   $first = [double]$rows[0].private_mb; $last = [double]$rows[-1].private_mb
   $hours = ([double]$rows[-1].minute - [double]$rows[0].minute) / 60

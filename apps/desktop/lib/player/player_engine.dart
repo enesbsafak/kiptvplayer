@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/widgets.dart';
 import 'package:media_kit/media_kit.dart';
@@ -101,11 +103,27 @@ class MediaKitEngine implements PlayerEngine {
         muted: silent,
       ),
     );
+    final size = _textureSize();
     final video = VideoController(
       player,
-      configuration: const VideoControllerConfiguration(hwdec: 'auto-safe'),
+      configuration: VideoControllerConfiguration(hwdec: 'auto-safe', width: size?.$1, height: size?.$2),
     );
     return MediaKitEngine._(player, video, silent: silent);
+  }
+
+  /// A fixed video texture, the size of the screen. media_kit otherwise
+  /// re-creates the texture whenever the stream's resolution changes
+  /// (1080p -> 4K on a zap), and that path leaks a texture per change, leaks
+  /// an mpv node per frame (video-out-params is never freed) and races the
+  /// raster thread into a fail-fast crash. With a fixed size mpv scales the
+  /// picture into the same texture and none of that code runs.
+  /// `KP_DYNAMIC_TEXTURE=1` restores the old behaviour for comparison runs.
+  static (int, int)? _textureSize() {
+    if (Platform.environment['KP_DYNAMIC_TEXTURE'] == '1') return null;
+    final displays = PlatformDispatcher.instance.displays;
+    final screen = displays.isEmpty ? const Size(1920, 1080) : displays.first.size;
+    int even(double v, int lo, int hi) => (v.round().clamp(lo, hi) ~/ 2) * 2;
+    return (even(screen.width, 1280, 3840), even(screen.height, 720, 2160));
   }
 
   Future<void> _applyOptions({required bool silent}) async {

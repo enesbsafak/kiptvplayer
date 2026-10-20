@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
-import 'package:window_manager/window_manager.dart';
 
 import '../app/app_state.dart';
 import '../app/library.dart';
@@ -18,7 +17,8 @@ import '../player/player_controller.dart';
 /// - `--kp-tmdb-key=<key>` (with `--kp-shot`) turns TMDB on for the run
 /// - `--kp-language=tr|en` (with `--kp-shot`) captures in that language
 /// - `--kp-soak=<minutes>` (with `--kp-offscreen` only) plays live TV, zapping
-///   every minute, then exits: a leak check (tools/soak.ps1)
+///   every minute (`--kp-soak-every=<seconds>`), then exits: a leak check
+///   (tools/soak.ps1)
 ///
 /// Screenshots come from Flutter's own layer tree, so nothing is captured
 /// from (or shown on) the user's desktop.
@@ -39,7 +39,8 @@ class Automation {
 
   bool get active => _arg('kp-add-mock') != null || (_offscreen && (_arg('kp-shot') != null || _arg('kp-soak') != null));
 
-  Future<void> run(AppState app, PlayerController player) async {
+  /// [quit] closes the app the way users do (player released first).
+  Future<void> run(AppState app, PlayerController player, {required Future<void> Function() quit}) async {
     final mock = _arg('kp-add-mock');
     if (mock != null && app.sources.isEmpty) {
       final input = NewSourceInput(
@@ -58,8 +59,8 @@ class Automation {
 
     final soak = int.tryParse(_arg('kp-soak') ?? '');
     if (soak != null && _offscreen) {
-      await _soak(app, player, Duration(minutes: soak));
-      await windowManager.destroy();
+      await _soak(app, player, Duration(minutes: soak), every: Duration(seconds: int.tryParse(_arg('kp-soak-every') ?? '') ?? 60));
+      await quit();
       return;
     }
 
@@ -136,13 +137,13 @@ class Automation {
       app.go(Section.settings);
       await shot('settings-m3u', wait: const Duration(milliseconds: 1500));
     }
-    await windowManager.destroy();
+    await quit();
   }
 
   /// Long run for leaks: live TV for [length], a new channel every minute.
   /// Memory is sampled from outside (tools/soak.ps1); zap times and
   /// reconnects land in perf.jsonl as usual.
-  Future<void> _soak(AppState app, PlayerController player, Duration length) async {
+  Future<void> _soak(AppState app, PlayerController player, Duration length, {required Duration every}) async {
     final sid = app.activeSource?.id;
     if (sid == null) return;
     final channels = await app.library.page(sid, Kind.live, limit: 40);
@@ -151,7 +152,7 @@ class Automation {
     app.go(Section.live);
     await player.play(channels.first, Kind.live, queue: channels, view: PlayerView.full);
     while (DateTime.now().isBefore(end)) {
-      await Future<void>.delayed(const Duration(minutes: 1));
+      await Future<void>.delayed(every);
       await player.zap(1);
     }
     await player.stop();
