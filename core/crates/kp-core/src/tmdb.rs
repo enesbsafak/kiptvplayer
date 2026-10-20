@@ -14,13 +14,13 @@ use crate::xtream::{as_array, as_f32, as_i64, as_string};
 
 #[derive(Debug, thiserror::Error)]
 pub enum TmdbError {
-    #[error("TMDB'ye ulaşılamadı: {0}")]
+    #[error("{}: {}", crate::lang::t("TMDB'ye ulaşılamadı", "could not reach TMDB"), .0)]
     Network(String),
-    #[error("TMDB anahtarı geçersiz")]
+    #[error("{}", crate::lang::t("TMDB anahtarı geçersiz", "Invalid TMDB key"))]
     InvalidKey,
-    #[error("TMDB HTTP {0} döndürdü")]
+    #[error("{} {}", crate::lang::t("TMDB şu hatayı döndürdü: HTTP", "TMDB returned HTTP"), .0)]
     Status(u16),
-    #[error("TMDB yanıtı okunamadı")]
+    #[error("{}", crate::lang::t("TMDB yanıtı okunamadı", "Could not read the TMDB response"))]
     BadResponse,
 }
 

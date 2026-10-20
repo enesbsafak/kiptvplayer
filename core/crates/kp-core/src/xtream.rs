@@ -14,13 +14,13 @@ use crate::catalog::ContentKind;
 
 #[derive(Debug, thiserror::Error)]
 pub enum XtreamError {
-    #[error("sunucuya ulaşılamadı: {0}")]
+    #[error("{}: {}", crate::lang::t("sunucuya ulaşılamadı", "could not reach the server"), .0)]
     Network(String),
-    #[error("sunucu HTTP {0} döndürdü")]
+    #[error("{} {}", crate::lang::t("sunucu şu hatayı döndürdü: HTTP", "the server returned HTTP"), .0)]
     Status(u16),
-    #[error("sunucu yanıtı okunamadı")]
+    #[error("{}", crate::lang::t("sunucu yanıtı okunamadı", "could not read the server response"))]
     BadResponse,
-    #[error("kullanıcı adı veya şifre reddedildi")]
+    #[error("{}", crate::lang::t("kullanıcı adı veya şifre reddedildi", "username or password rejected"))]
     AuthRejected,
 }
 

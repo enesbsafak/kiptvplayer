@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../app/library.dart';
+import '../l10n/l10n.dart';
 import '../perf/perf.dart';
 import 'media_track.dart';
 import 'player_engine.dart';
@@ -179,7 +180,7 @@ class PlayerController extends ChangeNotifier {
       }
     } catch (e) {
       if (token == _openToken) {
-        error = e is TimeoutException ? 'Yayından görüntü gelmedi' : '$e';
+        error = e is TimeoutException ? l10n.errNoPicture : errorText(e);
         _scheduleReconnect(error!);
       }
     } finally {
@@ -193,7 +194,7 @@ class PlayerController extends ChangeNotifier {
     if (v && live && !opening) {
       _stallTimer ??= Timer(stallLimit, () {
         _stallTimer = null;
-        _scheduleReconnect('Yayın takıldı');
+        _scheduleReconnect(l10n.reasonStalled);
       });
     } else if (!v) {
       _stallTimer?.cancel();
@@ -204,13 +205,13 @@ class PlayerController extends ChangeNotifier {
 
   void _onError(String e) {
     error = e;
-    if (!opening) _scheduleReconnect('Bağlantı hatası');
+    if (!opening) _scheduleReconnect(l10n.reasonError);
     notifyListeners();
   }
 
   void _onCompleted(bool done) {
     // A live stream has no end: reaching one means the connection dropped.
-    if (done && (now?.isLive ?? false) && !opening) _scheduleReconnect('Yayın kesildi');
+    if (done && (now?.isLive ?? false) && !opening) _scheduleReconnect(l10n.reasonEnded);
   }
 
   /// Reopens the current live stream after 1, 2, 4 … 30 s, without limit,

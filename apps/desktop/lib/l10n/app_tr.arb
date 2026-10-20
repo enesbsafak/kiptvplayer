@@ -1,0 +1,479 @@
+{
+  "@@locale": "tr",
+  "navHome": "Ana Sayfa",
+  "navLive": "Canlı TV",
+  "navGuide": "Yayın Akışı",
+  "navMovies": "Filmler",
+  "navSeries": "Diziler",
+  "navFavorites": "Favoriler",
+  "navLibrary": "Kütüphane",
+  "navSearch": "Ara",
+  "navSettings": "Ayarlar",
+  "sourceAddEllipsis": "Kaynak ekle…",
+  "sourceNone": "Kaynak yok",
+  "sourceAddOne": "Bir kaynak ekleyin",
+  "sourceSyncError": "Eşitleme hatası",
+  "sourceItemCount": "{count} içerik",
+  "@sourceItemCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "thousandsSeparator": ".",
+  "tipSearch": "Ara (Ctrl K)",
+  "tipSettings": "Ayarlar (Ctrl ,)",
+  "tipPlayPause": "Oynat / duraklat",
+  "tipExpand": "Büyüt",
+  "tipClose": "Kapat",
+  "durationHours": "{h} sa {m} dk",
+  "@durationHours": {
+    "placeholders": {
+      "h": {
+        "type": "int"
+      },
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "durationMinutes": "{m} dk",
+  "@durationMinutes": {
+    "placeholders": {
+      "m": {
+        "type": "int"
+      }
+    }
+  },
+  "dayToday": "Bugün",
+  "dayYesterday": "Dün",
+  "sourceNoneHint": "Ayarlar › Kaynaklar bölümünden bir kaynak ekleyin.",
+  "homeContinue": "Devam et",
+  "homeRecentChannels": "Son izlenen kanallar",
+  "homeFavoriteChannels": "Favori kanallar",
+  "homeNewMovies": "Yeni eklenen filmler",
+  "homeNewSeries": "Yeni eklenen diziler",
+  "syncConnecting": "Bağlanılıyor…",
+  "syncDownloading": "{what} indiriliyor…",
+  "@syncDownloading": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "syncSaving": "Kaydediliyor…",
+  "homeLastSync": "Son eşitleme {ago}",
+  "@homeLastSync": {
+    "placeholders": {
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "homeAccountUntil": "Hesap {date} tarihine kadar",
+  "@homeAccountUntil": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "homeConnections": "{n} bağlantı",
+  "@homeConnections": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "actionSync": "Eşitle",
+  "greetNight": "İyi geceler",
+  "greetMorning": "Günaydın",
+  "greetDay": "İyi günler",
+  "greetEvening": "İyi akşamlar",
+  "agoNow": "az önce",
+  "actionAll": "Tümü",
+  "liveShort": "Canlı",
+  "tipLiveHint": "↑ ↓ ile kanal değiştirin, Enter ile tam ekrana geçin.",
+  "tipFavoritesHint": "Sık izlediğiniz kanalları yıldızlayın; ana sayfada görünür.",
+  "tipSearchTitle": "Hızlı arama",
+  "tipSearchHint": "Ctrl K ile kanal, film ve dizilerde arayın.",
+  "goToLive": "Canlı TV'ye git",
+  "agoMinutes": "{n} dk önce",
+  "@agoMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "agoHours": "{n} sa önce",
+  "@agoHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "agoDays": "{n} gün önce",
+  "@agoDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "searchHint": "Kanal, film veya dizi ara",
+  "searchEmptyTitle": "Ne izlemek istersiniz?",
+  "searchEmptyHint": "Yazmaya başlayın; Türkçe karakterler olmadan da bulur.",
+  "searchNoResults": "“{q}” için sonuç yok",
+  "@searchNoResults": {
+    "placeholders": {
+      "q": {
+        "type": "String"
+      }
+    }
+  },
+  "kindChannels": "Kanallar",
+  "favEmptyTitle": "Henüz favori yok",
+  "favEmptyHint": "Kanalları ve içerikleri favoriye ekleyerek burada toplayın.",
+  "actionRemove": "Kaldır",
+  "liveCategories": "Kategoriler",
+  "liveAllChannels": "Tüm kanallar",
+  "liveFilterHint": "Bu listede ara",
+  "liveNoFavorites": "Favori kanal yok",
+  "liveNoChannels": "Kanal bulunamadı",
+  "liveNoFavoritesHint": "Bir kanalı yıldızlayarak buraya ekleyin.",
+  "liveHasArchive": "Geçmiş yayın var",
+  "livePickChannel": "Önizlemek için bir kanal seçin",
+  "livePickChannelHint": "↑ ↓ ile kanal değiştirin, Enter ile tam ekran",
+  "tagLive": "CANLI",
+  "favOn": "Favoride",
+  "favOff": "Favori",
+  "actionFullscreen": "Tam ekran",
+  "liveNoGuide": "Yayın akışı bilgisi yok.",
+  "guideNow": "Şimdi",
+  "guideNext": "Sonra",
+  "livePastBroadcasts": "Geçmiş yayınlar",
+  "liveProgrammeCount": "{n} program",
+  "@liveProgrammeCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "liveNoArchive": "Bu kanal için geçmiş yayın listesi yok.",
+  "liveOlderBroadcasts": "Daha eski yayınlar",
+  "liveMinutesLeft": "{n} dk kaldı",
+  "@liveMinutesLeft": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "guideEarlier": "Önceki",
+  "guideLater": "Sonraki",
+  "guideChannel": "Kanal",
+  "guideNoData": "Yayın akışı yok",
+  "categoryAll": "Tümü",
+  "vodEmptyCategory": "Bu kategoride içerik yok",
+  "actionBack": "Geri",
+  "detailFailed": "Ayrıntılar alınamadı: {error}",
+  "@detailFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "detailCreator": "Yaratıcı",
+  "detailDirector": "Yönetmen",
+  "detailCast": "Oyuncular",
+  "detailSourceTmdb": "Bilgiler: TMDB",
+  "detailSeasons": "{n} sezon",
+  "@detailSeasons": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "actionResume": "Devam et",
+  "actionPlay": "Oynat",
+  "actionFromStart": "Baştan başlat",
+  "actionPlayFirstEpisode": "İlk bölümü oynat",
+  "actionTrailer": "Fragman",
+  "listIn": "Listemde",
+  "listAdd": "Listeme ekle",
+  "detailEpisodes": "Bölümler",
+  "detailSeasonN": "{n}. Sezon",
+  "@detailSeasonN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "detailVotes": "{n} oy",
+  "@detailVotes": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "tipBackEsc": "Geri (Esc)",
+  "tagCatchup": "GEÇMİŞ YAYIN",
+  "tagBackup": "YEDEK YAYIN",
+  "actionBackToLive": "Canlıya dön",
+  "tipPrevChannel": "Önceki kanal (↑)",
+  "tipBack10": "10 sn geri (←)",
+  "tipPlayPauseSpace": "Oynat / duraklat (Space)",
+  "tipNextChannel": "Sonraki kanal (↓)",
+  "tipForward10": "10 sn ileri (→)",
+  "tipTracks": "Ses ve altyazı (A)",
+  "tipChannelList": "Kanal listesi (L)",
+  "tipFullscreen": "Tam ekran (F)",
+  "liveBroadcast": "Canlı yayın",
+  "tipVolume": "Ses (M)",
+  "tracksNone": "Seçenek yok",
+  "tracksAudio": "Ses",
+  "tracksSubtitles": "Altyazı",
+  "tracksOff": "Kapalı",
+  "playerOpenFailed": "Yayın açılamadı",
+  "actionRetry": "Tekrar dene",
+  "reconnectIn": "{n} sn içinde yeniden denenecek",
+  "@reconnectIn": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "reconnectTitle": "{reason} · yeniden bağlanılıyor",
+  "@reconnectTitle": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "reasonDropped": "Bağlantı koptu",
+  "reconnectAttempt": "{n}. deneme · {status}",
+  "@reconnectAttempt": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "reconnectBackup": "Yedek yayın deneniyor: {name}",
+  "@reconnectBackup": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "actionStop": "Durdur",
+  "actionRetryNow": "Şimdi dene",
+  "addNeedServer": "Sunucu adresini girin",
+  "addNeedListUrl": "Liste adresini girin",
+  "addNeedFile": "Bir M3U dosyası seçin",
+  "addNeedUser": "Kullanıcı adını girin",
+  "addNeedPassword": "Şifreyi girin",
+  "syncConnectingProvider": "Sağlayıcıya bağlanılıyor…",
+  "syncPreparing": "Kütüphane hazırlanıyor…",
+  "addPlaylistFiles": "Oynatma listesi",
+  "addXtreamHint": "Sunucu, kullanıcı adı ve şifre",
+  "addM3uUrl": "M3U bağlantısı",
+  "addM3uUrlHint": "Oynatma listesi adresi",
+  "addM3uFile": "M3U dosyası",
+  "addM3uFileHint": "Bilgisayardaki liste",
+  "addName": "Ad",
+  "addNameHint": "İsteğe bağlı, ör. Ev",
+  "addUser": "Kullanıcı adı",
+  "addPassword": "Şifre",
+  "addFile": "Dosya",
+  "addNoFile": "Dosya seçilmedi",
+  "addChoose": "Seç…",
+  "addAdvancedHide": "Gelişmiş ayarları gizle",
+  "addAdvanced": "Gelişmiş ayarlar",
+  "addUserAgentHint": "Sağlayıcı isterse",
+  "addGuideUrl": "Yayın akışı (XMLTV)",
+  "addGuideUrlHint": "Liste bildirmiyorsa: https://…/epg.xml.gz",
+  "addInsecure": "Geçersiz sertifikalara izin ver",
+  "addInsecureHint": "Yalnızca bu kaynak için. Sağlayıcının sertifikası kendinden imzalıysa gerekir.",
+  "addPasswordNote": "Şifreniz bu bilgisayarın anahtar deposunda saklanır.",
+  "actionCancel": "Vazgeç",
+  "addConnect": "Bağlan ve eşitle",
+  "addReady": "{name} hazır",
+  "@addReady": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "statLive": "canlı kanal",
+  "statMovies": "film",
+  "statSeries": "dizi",
+  "addAccountExpires": "Hesap bitiş tarihi: {date}",
+  "@addAccountExpires": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "actionStart": "Başla",
+  "onboardHint": "Başlamak için bir kaynak ekleyin.",
+  "onboardDisclaimer": "Karadelik IPTV Player bir oynatıcıdır; kanal, film veya yayın sağlamaz ve satmaz. Yalnızca erişim hakkınız olan kaynakları ekleyin.",
+  "setSources": "Kaynaklar",
+  "setPreferences": "Tercihler",
+  "setShortcuts": "Kısayollar",
+  "setAbout": "Hakkında",
+  "sourceAdd": "Kaynak ekle",
+  "sourceNoneYet": "Henüz kaynak yok.",
+  "guideDownloading": "Yayın akışı indiriliyor…",
+  "sourceDeleteTitle": "{name} silinsin mi?",
+  "@sourceDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "sourceDeleteBody": "Kaynağın kataloğu, favorileri ve izleme geçmişi bu bilgisayardan silinir. Şifre anahtar deposundan kaldırılır.",
+  "actionDelete": "Sil",
+  "sourceActive": "etkin",
+  "sourceCounts": "{live} kanal · {movies} film · {series} dizi",
+  "@sourceCounts": {
+    "placeholders": {
+      "live": {
+        "type": "int"
+      },
+      "movies": {
+        "type": "int"
+      },
+      "series": {
+        "type": "int"
+      }
+    }
+  },
+  "guideButton": "Yayın akışı",
+  "sourceActivate": "Etkinleştir",
+  "guideNoUrl": "Yayın akışı yok: liste bir XMLTV adresi bildirmiyor.",
+  "guideNotYet": "Yayın akışı henüz indirilmedi.",
+  "guideFailed": "Yayın akışı alınamadı: {error}",
+  "@guideFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "guideStatus": "Yayın akışı: {matched} kanal eşleşti · {programmes} program · {ago}",
+  "@guideStatus": {
+    "placeholders": {
+      "matched": {
+        "type": "String"
+      },
+      "programmes": {
+        "type": "String"
+      },
+      "ago": {
+        "type": "String"
+      }
+    }
+  },
+  "prefLanguage": "Uygulama dili",
+  "prefLanguageSystem": "Sistem",
+  "prefRegion": "Öne çıkan bölge",
+  "prefRegionBody": "Bu bölgenin kategorileri ve kanalları her listede en başta gösterilir. Diğerleri sağlayıcının sırasıyla devam eder; yetişkin içerik her zaman en sondadır. Bölge, kategori adlarından okunur (ör. “TR: Ulusal”, “|DE| Sport”).",
+  "prefOff": "Kapalı",
+  "prefRegionNone": "Etkin kaynakta bölge etiketi bulunamadı; sıralama sağlayıcının kendi sırası olarak kalır.",
+  "tmdbRemoved": "Anahtar kaldırıldı.",
+  "tmdbSaved": "Anahtar doğrulandı ve kaydedildi.",
+  "tmdbTitle": "TMDB içerik bilgileri",
+  "tagOn": "AÇIK",
+  "tagOff": "KAPALI",
+  "tmdbBody": "Film ve dizilerde özet, tür, oyuncu fotoğrafları, fragman, yaş sınırı ve bölüm bilgileri TMDB’den gelir. Anahtar yalnızca bu bilgisayarın anahtar deposunda saklanır; TMDB’ye yalnızca içerik adı ve yılı gönderilir.",
+  "tmdbReplaceHint": "Yeni anahtar ile değiştir",
+  "tmdbKeyHint": "API anahtarı (v3) veya okuma erişim jetonu (v4)",
+  "tmdbVerify": "Doğrula ve kaydet",
+  "tmdbWhere": "Anahtarı nereden alırım?",
+  "tmdbWhereLink": "themoviedb.org › Ayarlar › API",
+  "tmdbLanguage": "Bilgi dili",
+  "keySections": "Ana sayfa, Canlı TV, Yayın akışı, Filmler, Diziler, Favoriler",
+  "keyZap": "Kanal değiştir",
+  "keyDigits": "Kanal numarasıyla geç (Enter beklemeden açar)",
+  "keyMediaKeys": "Medya tuşları",
+  "keyMediaKeysDo": "Oynat / duraklat, sonraki / önceki kanal (film ve dizide ileri / geri sarma)",
+  "keyPage": "Listede 10 kanal atla",
+  "keyEnter": "Tam ekran oynat",
+  "keySeek": "10 saniye geri / ileri (film ve dizi)",
+  "keyFKey": "F, çift tık",
+  "keyFullscreen": "Pencereyi tam ekran yap",
+  "keyTracks": "Ses ve altyazı paneli",
+  "keyChannelList": "Oynatıcıda kanal listesi",
+  "keyMute": "Sesi kapat / aç",
+  "keyEsc": "Paneli kapat, oynatıcıdan çık",
+  "aboutVersion": "Sürüm {version}",
+  "@aboutVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutDisclaimer": "Karadelik IPTV Player bir oynatıcıdır. Kanal, film veya yayın sağlamaz, satmaz ve barındırmaz. Eklediğiniz kaynakların yasal olduğundan ve erişim hakkınız bulunduğundan siz sorumlusunuz.",
+  "aboutPrivacy": "Gizlilik: kaynak şifreleri yalnızca bu bilgisayarın anahtar deposunda tutulur. Uygulama izleme veya reklam SDK’sı içermez.",
+  "aboutTmdb": "Film ve dizi bilgileri, isteğe bağlı olarak, The Movie Database’den (TMDB) alınır.",
+  "aboutLicenses": "Açık kaynak lisansları",
+  "errNoPicture": "Yayından görüntü gelmedi",
+  "reasonStalled": "Yayın takıldı",
+  "reasonError": "Bağlantı hatası",
+  "reasonEnded": "Yayın kesildi",
+  "trackN": "Parça {n}",
+  "@trackN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "trackForced": "Zorunlu",
+  "trackExternal": "Harici",
+  "trackChannels": "{n} kanal",
+  "@trackChannels": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "trackText": "Metin",
+  "mediaCatchup": "Geçmiş yayın",
+  "mediaSeries": "Dizi",
+  "mediaMovie": "Film",
+  "startupFailed": "Kütüphane açılamadı",
+  "startupDataDir": "Veri klasörü: {dir}",
+  "@startupDataDir": {
+    "placeholders": {
+      "dir": {
+        "type": "String"
+      }
+    }
+  },
+  "addServer": "Sunucu adresi",
+  "addServerHint": "http://sunucu:8080",
+  "addListUrl": "Liste adresi"
+}

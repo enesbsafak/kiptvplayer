@@ -5,6 +5,7 @@ import '../app/library.dart';
 import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
+import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import 'vod_screen.dart';
 
@@ -49,9 +50,9 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 12),
           child: Row(
             children: [
-              const Text('Favoriler', style: TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
+              Text(l10n.navFavorites, style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
               const SizedBox(width: 18),
-              for (final (k, label) in const [(Kind.live, 'Kanallar'), (Kind.movie, 'Filmler'), (Kind.series, 'Diziler')]) ...[
+              for (final (k, label) in [(Kind.live, l10n.kindChannels), (Kind.movie, l10n.navMovies), (Kind.series, l10n.navSeries)]) ...[
                 KdPill(
                   label: label,
                   selected: _tab == k,
@@ -67,7 +68,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         ),
         Expanded(
           child: _loaded && _items.isEmpty
-              ? const KdEmpty(icon: LucideIcons.star, title: 'Henüz favori yok', hint: 'Kanalları ve içerikleri favoriye ekleyerek burada toplayın.')
+              ? KdEmpty(icon: LucideIcons.star, title: l10n.favEmptyTitle, hint: l10n.favEmptyHint)
               : _tab == Kind.live
                   ? ListView.separated(
                       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -85,7 +86,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(child: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w500))),
                                 KdButton(
-                                  label: 'Kaldır',
+                                  label: l10n.actionRemove,
                                   kind: KdButtonKind.ghost,
                                   onPressed: () async {
                                     await context.library.setFavorite(c.id, false);

@@ -185,6 +185,18 @@ class FakeLibrary implements LibraryApi {
     regionChosen = true;
   }
 
+  String? uiLanguageChoice;
+  String? coreLanguage;
+
+  @override
+  Future<String?> uiLanguage() async => uiLanguageChoice;
+
+  @override
+  Future<void> setUiLanguage(String? choice, String effective) async {
+    uiLanguageChoice = choice;
+    coreLanguage = effective;
+  }
+
   @override
   Future<TmdbStatus> tmdbStatus() async => TmdbStatus(configured: tmdbKey != null, language: tmdbLanguage);
 
@@ -269,6 +281,8 @@ class FakeEngine implements PlayerEngine {
 /// Wraps [child] in the same scope the app uses, backed by fakes.
 class TestHarness {
   TestHarness(this.library) : engine = FakeEngine() {
+    // Tests read Turkish strings unless they choose otherwise.
+    AppState.systemLocale = () => 'tr_TR';
     state = AppState(library);
     player = PlayerController(engine, library, Perf.init(const []));
     epg = EpgCache(library);

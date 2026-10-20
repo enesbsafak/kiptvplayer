@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
+import '../l10n/l10n.dart';
 import 'player_controller.dart';
 
 /// Shown over the video while a dropped live stream is being reopened:
@@ -67,7 +68,7 @@ class _ReconnectBannerState extends State<ReconnectBanner> {
     final p = widget.player;
     final at = p.reconnectAt;
     final left = at == null ? 0 : (at.difference(DateTime.now()).inMilliseconds / 1000).ceil().clamp(0, 99);
-    final status = p.opening || left == 0 ? 'Bağlanılıyor…' : '$left sn içinde yeniden denenecek';
+    final status = p.opening || left == 0 ? l10n.syncConnecting : l10n.reconnectIn(left);
     return Container(
       width: widget.compact ? 300 : 380,
       padding: EdgeInsets.all(widget.compact ? 12 : 16),
@@ -86,7 +87,7 @@ class _ReconnectBannerState extends State<ReconnectBanner> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '${p.reconnectReason ?? 'Bağlantı koptu'} · yeniden bağlanılıyor',
+                  l10n.reconnectTitle(p.reconnectReason ?? l10n.reasonDropped),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -94,12 +95,12 @@ class _ReconnectBannerState extends State<ReconnectBanner> {
           ),
           const SizedBox(height: 6),
           Text(
-            '${p.reconnectAttempt}. deneme · $status',
+            l10n.reconnectAttempt(p.reconnectAttempt, status),
             style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
           ),
           if (p.backupName case final b?) ...[
             const SizedBox(height: 4),
-            Text('Yedek yayın deneniyor: $b', style: const TextStyle(fontSize: KdType.small, color: KdColors.accent2)),
+            Text(l10n.reconnectBackup(b), style: const TextStyle(fontSize: KdType.small, color: KdColors.accent2)),
           ],
           const SizedBox(height: 10),
           const KdIndeterminate(),
@@ -108,9 +109,9 @@ class _ReconnectBannerState extends State<ReconnectBanner> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                KdButton(label: 'Durdur', onPressed: p.stop),
+                KdButton(label: l10n.actionStop, onPressed: p.stop),
                 const SizedBox(width: 8),
-                KdButton(label: 'Şimdi dene', kind: KdButtonKind.primary, onPressed: p.retryNow),
+                KdButton(label: l10n.actionRetryNow, kind: KdButtonKind.primary, onPressed: p.retryNow),
               ],
             ),
           ],

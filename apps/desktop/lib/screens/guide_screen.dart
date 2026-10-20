@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/library.dart';
@@ -9,6 +10,7 @@ import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
+import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 
 /// EPG grid: sticky channel column, time ruler, programme tiles, now line.
@@ -122,7 +124,7 @@ class _GuideScreenState extends State<GuideScreen> {
   @override
   Widget build(BuildContext context) {
     if (_sourceId == null) {
-      return const KdEmpty(title: 'Kaynak yok', hint: 'Ayarlar › Kaynaklar bölümünden bir kaynak ekleyin.');
+      return KdEmpty(title: l10n.sourceNone, hint: l10n.sourceNoneHint);
     }
     final items = _pager?.items ?? const <Item>[];
     final width = _hours * 60 * _pxPerMin;
@@ -136,15 +138,15 @@ class _GuideScreenState extends State<GuideScreen> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
           child: Row(
             children: [
-              const Text('Yayın Akışı', style: TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
+              Text(l10n.navGuide, style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
               const SizedBox(width: 12),
               Text(_dayLabel(), style: const TextStyle(color: KdColors.muted)),
               const Spacer(),
-              KdButton(label: 'Önceki', icon: LucideIcons.chevronLeft, onPressed: () => _shift(-_step)),
+              KdButton(label: l10n.guideEarlier, icon: LucideIcons.chevronLeft, onPressed: () => _shift(-_step)),
               const SizedBox(width: 6),
-              KdButton(label: 'Şimdi', icon: LucideIcons.clock, onPressed: _toNow),
+              KdButton(label: l10n.guideNow, icon: LucideIcons.clock, onPressed: _toNow),
               const SizedBox(width: 6),
-              KdButton(label: 'Sonraki', icon: LucideIcons.chevronRight, onPressed: () => _shift(_step)),
+              KdButton(label: l10n.guideLater, icon: LucideIcons.chevronRight, onPressed: () => _shift(_step)),
             ],
           ),
         ),
@@ -180,7 +182,7 @@ class _GuideScreenState extends State<GuideScreen> {
                         height: _ruler,
                         alignment: Alignment.centerLeft,
                         padding: const EdgeInsets.only(left: 14),
-                        child: const KdSectionLabel('Kanal'),
+                        child: KdSectionLabel(l10n.guideChannel),
                       ),
                       const Divider(height: 1, color: KdColors.line),
                       Expanded(
@@ -267,10 +269,8 @@ class _GuideScreenState extends State<GuideScreen> {
   }
 
   String _dayLabel() {
-    const days = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
-    const months = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
     final d = DateTime.fromMillisecondsSinceEpoch(_windowStart * 1000);
-    return '${days[d.weekday - 1]}, ${d.day} ${months[d.month - 1]}';
+    return DateFormat('EEEE, d MMMM', languageCode).format(d);
   }
 }
 
@@ -365,7 +365,7 @@ class _Lane extends StatelessWidget {
           if (list.isEmpty) {
             // _Tile is a Positioned: it must sit directly in a Stack.
             return Stack(
-              children: [_Tile(title: 'Yayın akışı yok', time: '', left: 4, width: width - 8, muted: true, onTap: () => onTap(null))],
+              children: [_Tile(title: l10n.guideNoData, time: '', left: 4, width: width - 8, muted: true, onTap: () => onTap(null))],
             );
           }
           final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;

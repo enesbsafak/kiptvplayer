@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:window_manager/window_manager.dart';
@@ -13,6 +14,7 @@ import 'app/paging.dart';
 import 'app/scope.dart';
 import 'design/theme.dart';
 import 'dev/automation.dart';
+import 'l10n/l10n.dart';
 import 'perf/perf.dart';
 import 'player/media_session.dart';
 import 'player/player_controller.dart';
@@ -30,8 +32,11 @@ String? _arg(List<String> args, String name) {
 
 Future<void> main(List<String> args) async {
   final perf = Perf.init(args)..mark('dart_main');
+  // Until the stored choice is read: the system language (startup errors).
+  setLanguage(AppState.systemLocale().toLowerCase().startsWith('tr') ? 'tr' : 'en');
   WidgetsFlutterBinding.ensureInitialized();
   registerLicenses();
+  await initializeDateFormatting();
   MediaKit.ensureInitialized();
   final offscreen = args.contains('--kp-offscreen');
 
@@ -84,7 +89,7 @@ Future<void> main(List<String> args) async {
       player: player,
       library: library,
       epg: epg,
-      child: KaradelikPlayerApp(boundaryKey: boundary, perf: perf),
+      child: KaradelikPlayerApp(boundaryKey: boundary, perf: perf, state: state),
     ),
   );
 
@@ -95,10 +100,11 @@ Future<void> main(List<String> args) async {
 }
 
 class KaradelikPlayerApp extends StatefulWidget {
-  const KaradelikPlayerApp({super.key, required this.boundaryKey, required this.perf});
+  const KaradelikPlayerApp({super.key, required this.boundaryKey, required this.perf, required this.state});
 
   final GlobalKey boundaryKey;
   final Perf perf;
+  final AppState state;
 
   @override
   State<KaradelikPlayerApp> createState() => _KaradelikPlayerAppState();
@@ -116,13 +122,22 @@ class _KaradelikPlayerAppState extends State<KaradelikPlayerApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Karadelik IPTV Player',
-      debugShowCheckedModeBanner: false,
-      theme: buildKdTheme(),
-      home: RepaintBoundary(
-        key: widget.boundaryKey,
-        child: const Scaffold(body: AppShell()),
+    // A new language rebuilds everything: strings are read from l10n while
+    // building, so no screen keeps the old one.
+    return ValueListenableBuilder<String>(
+      valueListenable: widget.state.language,
+      builder: (context, language, _) => MaterialApp(
+        key: ValueKey(language),
+        title: 'Karadelik IPTV Player',
+        debugShowCheckedModeBanner: false,
+        theme: buildKdTheme(),
+        locale: Locale(language),
+        supportedLocales: AppLocalizations.supportedLocales,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        home: RepaintBoundary(
+          key: widget.boundaryKey,
+          child: const Scaffold(body: AppShell()),
+        ),
       ),
     );
   }
@@ -149,11 +164,11 @@ class _StartupError extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Kütüphane açılamadı', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+                Text(l10n.startupFailed, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 10),
                 SelectableText(message, style: const TextStyle(color: Color(0xFFFF5D5D))),
                 const SizedBox(height: 14),
-                SelectableText('Veri klasörü: $dataDir', style: const TextStyle(color: Color(0xFF8D8A9C))),
+                SelectableText(l10n.startupDataDir(dataDir), style: const TextStyle(color: Color(0xFF8D8A9C))),
               ],
             ),
           ),

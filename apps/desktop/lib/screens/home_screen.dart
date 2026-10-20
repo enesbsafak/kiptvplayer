@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/app_state.dart';
@@ -9,6 +10,7 @@ import '../app/paging.dart';
 import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
+import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import 'vod_screen.dart';
 
@@ -71,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final source = context.app.activeSource;
     if (source == null) {
-      return const KdEmpty(title: 'Kaynak yok', hint: 'Ayarlar › Kaynaklar bölümünden bir kaynak ekleyin.');
+      return KdEmpty(title: l10n.sourceNone, hint: l10n.sourceNoneHint);
     }
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
@@ -81,7 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _FirstSteps(onLive: () => context.app.go(Section.live)),
         if (_continue.isNotEmpty)
           _Shelf(
-            title: 'Devam et',
+            title: l10n.homeContinue,
             height: 236,
             children: [
               for (final c in _continue)
@@ -95,26 +97,26 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         if (_recent.isNotEmpty)
           _Shelf(
-            title: 'Son izlenen kanallar',
+            title: l10n.homeRecentChannels,
             height: 92,
             children: [for (final c in _recent) _ChannelTile(item: c, queue: _recent)],
           ),
         if (_favs.isNotEmpty)
           _Shelf(
-            title: 'Favori kanallar',
+            title: l10n.homeFavoriteChannels,
             height: 92,
             children: [for (final c in _favs) _ChannelTile(item: c, queue: _favs)],
           ),
         if (_newMovies.isNotEmpty)
           _Shelf(
-            title: 'Yeni eklenen filmler',
+            title: l10n.homeNewMovies,
             height: 236,
             onMore: () => context.app.go(Section.movies),
             children: [for (final m in _newMovies) PosterCard(width: 128, item: m, onTap: () => widget.onOpen(m, Kind.movie))],
           ),
         if (_newSeries.isNotEmpty)
           _Shelf(
-            title: 'Yeni eklenen diziler',
+            title: l10n.homeNewSeries,
             height: 236,
             onMore: () => context.app.go(Section.series),
             children: [for (final s in _newSeries) PosterCard(width: 128, item: s, onTap: () => widget.onOpen(s, Kind.series))],
@@ -144,14 +146,14 @@ class _SourceStatusState extends State<_SourceStatus> {
   }
 
   void _sync() {
-    setState(() => _stage = 'Bağlanılıyor…');
+    setState(() => _stage = l10n.syncConnecting);
     _sub = context.library.syncSource(widget.source.id).listen((e) {
       if (!mounted) return;
       switch (e) {
         case SyncEvent_Downloading(:final what):
-          setState(() => _stage = '$what indiriliyor…');
+          setState(() => _stage = l10n.syncDownloading(what));
         case SyncEvent_Saving():
-          setState(() => _stage = 'Kaydediliyor…');
+          setState(() => _stage = l10n.syncSaving);
         case SyncEvent_Done(:final source):
           setState(() => _stage = null);
           context.app.sourceChanged(source);
@@ -168,9 +170,9 @@ class _SourceStatusState extends State<_SourceStatus> {
   Widget build(BuildContext context) {
     final s = widget.source;
     final parts = <String>[
-      if (s.syncedAt != null) 'Son eşitleme ${_ago(s.syncedAt!)}',
-      if (s.expiresAt != null) 'Hesap ${_date(s.expiresAt!)} tarihine kadar',
-      if (s.maxConnections != null) '${s.maxConnections} bağlantı',
+      if (s.syncedAt != null) l10n.homeLastSync(_ago(s.syncedAt!)),
+      if (s.expiresAt != null) l10n.homeAccountUntil(_date(s.expiresAt!)),
+      if (s.maxConnections != null) l10n.homeConnections(s.maxConnections!),
     ];
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -196,7 +198,7 @@ class _SourceStatusState extends State<_SourceStatus> {
             ],
           ),
           const Spacer(),
-          KdButton(label: 'Eşitle', icon: LucideIcons.refreshCw, onPressed: _stage == null ? _sync : null),
+          KdButton(label: l10n.actionSync, icon: LucideIcons.refreshCw, onPressed: _stage == null ? _sync : null),
         ],
       ),
     );
@@ -205,24 +207,15 @@ class _SourceStatusState extends State<_SourceStatus> {
 
 String _greeting() {
   final h = DateTime.now().hour;
-  if (h < 6) return 'İyi geceler';
-  if (h < 12) return 'Günaydın';
-  if (h < 18) return 'İyi günler';
-  return 'İyi akşamlar';
+  if (h < 6) return l10n.greetNight;
+  if (h < 12) return l10n.greetMorning;
+  if (h < 18) return l10n.greetDay;
+  return l10n.greetEvening;
 }
 
-String _ago(int unix) {
-  final d = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(unix * 1000));
-  if (d.inMinutes < 1) return 'az önce';
-  if (d.inHours < 1) return '${d.inMinutes} dk önce';
-  if (d.inDays < 1) return '${d.inHours} sa önce';
-  return '${d.inDays} gün önce';
-}
+String _ago(int unix) => kdAgo(unix);
 
-String _date(int unix) {
-  final d = DateTime.fromMillisecondsSinceEpoch(unix * 1000);
-  return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
-}
+String _date(int unix) => DateFormat.yMd(languageCode).format(DateTime.fromMillisecondsSinceEpoch(unix * 1000));
 
 class _Shelf extends StatelessWidget {
   const _Shelf({required this.title, required this.height, required this.children, this.onMore});
@@ -243,7 +236,7 @@ class _Shelf extends StatelessWidget {
             children: [
               Text(title, style: const TextStyle(fontSize: KdType.title, fontWeight: FontWeight.w600)),
               const Spacer(),
-              if (onMore != null) KdButton(label: 'Tümü', kind: KdButtonKind.ghost, onPressed: onMore),
+              if (onMore != null) KdButton(label: l10n.actionAll, kind: KdButtonKind.ghost, onPressed: onMore),
             ],
           ),
           const SizedBox(height: 10),
@@ -307,7 +300,7 @@ class _ChannelTileState extends State<_ChannelTile> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        Text(now?.title ?? 'Canlı', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+                        Text(now?.title ?? l10n.liveShort, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
                         if (now != null) ...[const SizedBox(height: 5), KdProgress(value: programmeProgress(now))],
                       ],
                     );
@@ -356,15 +349,15 @@ class _FirstSteps extends StatelessWidget {
         children: [
           Row(
             children: [
-              tip(LucideIcons.tv, 'Canlı TV', '↑ ↓ ile kanal değiştirin, Enter ile tam ekrana geçin.'),
+              tip(LucideIcons.tv, l10n.navLive, l10n.tipLiveHint),
               const SizedBox(width: 12),
-              tip(LucideIcons.star, 'Favoriler', 'Sık izlediğiniz kanalları yıldızlayın; ana sayfada görünür.'),
+              tip(LucideIcons.star, l10n.navFavorites, l10n.tipFavoritesHint),
               const SizedBox(width: 12),
-              tip(LucideIcons.search, 'Hızlı arama', 'Ctrl K ile kanal, film ve dizilerde arayın.'),
+              tip(LucideIcons.search, l10n.tipSearchTitle, l10n.tipSearchHint),
             ],
           ),
           const SizedBox(height: 14),
-          KdButton(label: 'Canlı TV\'ye git', icon: LucideIcons.tv, kind: KdButtonKind.cta, large: true, onPressed: onLive),
+          KdButton(label: l10n.goToLive, icon: LucideIcons.tv, kind: KdButtonKind.cta, large: true, onPressed: onLive),
         ],
       ),
     );

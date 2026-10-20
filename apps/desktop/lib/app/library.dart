@@ -82,6 +82,12 @@ abstract interface class LibraryApi {
   Future<void> setRegionPreference(String? region);
   Future<List<rust.RegionCount>> sourceRegions(String sourceId);
 
+  /// The app language the user chose; null follows the system.
+  Future<String?> uiLanguage();
+
+  /// Saves [choice] and switches core messages to [effective].
+  Future<void> setUiLanguage(String? choice, String effective);
+
   Future<rust.TmdbStatus> tmdbStatus();
 
   /// Validates [key] with TMDB before saving it; null removes it.
@@ -191,6 +197,11 @@ class RustLibrary implements LibraryApi {
   @override
   Future<List<rust.RegionCount>> sourceRegions(String sourceId) =>
       rust.sourceRegions(sourceId: sourceId);
+  @override
+  Future<String?> uiLanguage() => rust.uiLanguage();
+  @override
+  Future<void> setUiLanguage(String? choice, String effective) =>
+      rust.setUiLanguage(choice: choice, effective: effective);
   @override
   Future<rust.TmdbStatus> tmdbStatus() => rust.tmdbStatus();
   @override

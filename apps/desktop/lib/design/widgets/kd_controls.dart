@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../l10n/l10n.dart';
 import '../tokens.dart';
 import 'kd_widgets.dart' show kdUpper;
 
@@ -530,24 +532,31 @@ class KdKbd extends StatelessWidget {
   }
 }
 
-/// Formats seconds as "1 sa 05 dk" / "42 dk".
+/// Formats seconds as "1 sa 05 dk" / "42 dk" ("1 h 05 min" / "42 min").
 String kdDuration(int secs) {
   final h = secs ~/ 3600;
   final m = (secs % 3600) ~/ 60;
-  if (h > 0) return '$h sa ${m.toString().padLeft(2, '0')} dk';
-  return '$m dk';
+  if (h > 0) return l10n.durationHours(h, m.toString().padLeft(2, '0'));
+  return l10n.durationMinutes(m);
 }
 
 /// "Bugün", "Dün" or "Sal 14 Eki" for a Unix timestamp, in local time.
 String kdDay(int unixSecs) {
-  const days = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'];
-  const months = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
   final t = DateTime.fromMillisecondsSinceEpoch(unixSecs * 1000);
   final today = DateTime.now();
   final diff = DateTime(today.year, today.month, today.day).difference(DateTime(t.year, t.month, t.day)).inDays;
-  if (diff == 0) return 'Bugün';
-  if (diff == 1) return 'Dün';
-  return '${days[t.weekday - 1]} ${t.day} ${months[t.month - 1]}';
+  if (diff == 0) return l10n.dayToday;
+  if (diff == 1) return l10n.dayYesterday;
+  return DateFormat('E d MMM', languageCode).format(t);
+}
+
+/// "az önce", "5 dk önce", "3 sa önce", "2 gün önce" for a Unix timestamp.
+String kdAgo(int unixSecs) {
+  final d = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(unixSecs * 1000));
+  if (d.inMinutes < 1) return l10n.agoNow;
+  if (d.inHours < 1) return l10n.agoMinutes(d.inMinutes);
+  if (d.inDays < 1) return l10n.agoHours(d.inHours);
+  return l10n.agoDays(d.inDays);
 }
 
 /// Formats a Unix timestamp as local HH:MM.

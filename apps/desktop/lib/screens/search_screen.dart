@@ -8,6 +8,7 @@ import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
+import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import 'vod_screen.dart';
 
@@ -85,21 +86,21 @@ class _SearchScreenState extends State<SearchScreen> {
           child: KdInput(
             controller: _q,
             focusNode: _focus,
-            hint: 'Kanal, film veya dizi ara',
+            hint: l10n.searchHint,
             prefix: LucideIcons.search,
             onChanged: _changed,
           ),
         ),
         Expanded(
           child: !_searched
-              ? const KdEmpty(icon: LucideIcons.search, title: 'Ne izlemek istersiniz?', hint: 'Yazmaya başlayın; Türkçe karakterler olmadan da bulur.')
+              ? KdEmpty(icon: LucideIcons.search, title: l10n.searchEmptyTitle, hint: l10n.searchEmptyHint)
               : empty
-                  ? KdEmpty(icon: LucideIcons.search, title: '“${_q.text}” için sonuç yok')
+                  ? KdEmpty(icon: LucideIcons.search, title: l10n.searchNoResults(_q.text))
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
                       children: [
                         if (_live.isNotEmpty) ...[
-                          KdSectionLabel('Kanallar · ${_live.length}'),
+                          KdSectionLabel('${l10n.kindChannels} · ${_live.length}'),
                           const SizedBox(height: 8),
                           Wrap(
                             spacing: 8,
@@ -112,13 +113,13 @@ class _SearchScreenState extends State<SearchScreen> {
                           const SizedBox(height: 22),
                         ],
                         if (_movies.isNotEmpty) ...[
-                          KdSectionLabel('Filmler · ${_movies.length}'),
+                          KdSectionLabel('${l10n.navMovies} · ${_movies.length}'),
                           const SizedBox(height: 10),
                           _PosterWrap(items: _movies, onTap: (m) => widget.onOpen(m, Kind.movie)),
                           const SizedBox(height: 22),
                         ],
                         if (_series.isNotEmpty) ...[
-                          KdSectionLabel('Diziler · ${_series.length}'),
+                          KdSectionLabel('${l10n.navSeries} · ${_series.length}'),
                           const SizedBox(height: 10),
                           _PosterWrap(items: _series, onTap: (s) => widget.onOpen(s, Kind.series)),
                         ],

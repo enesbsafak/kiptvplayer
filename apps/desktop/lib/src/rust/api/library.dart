@@ -197,6 +197,18 @@ Future<List<TmdbEpisodeInfo>> tmdbSeason({
   season: season,
 );
 
+/// The app language the user chose ("tr", "en"); None follows the system.
+Future<String?> uiLanguage() =>
+    RustLib.instance.api.crateApiLibraryUiLanguage();
+
+/// Saves the choice and switches core messages (errors, sync stages) to
+/// [effective].
+Future<void> setUiLanguage({String? choice, required String effective}) =>
+    RustLib.instance.api.crateApiLibrarySetUiLanguage(
+      choice: choice,
+      effective: effective,
+    );
+
 class Category {
   final PlatformInt64 uid;
   final String name;

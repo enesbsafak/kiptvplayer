@@ -311,7 +311,7 @@ pub fn sync_source(source_id: String, sink: StreamSink<SyncEvent>) -> Result<()>
     let _ = match result {
         Ok(_) => match core.sources()?.into_iter().find(|s| s.id == source_id) {
             Some(s) => sink.add(SyncEvent::Done { source: source_info(core, s)? }),
-            None => sink.add(SyncEvent::Failed { message: "Kaynak bulunamadı".into() }),
+            None => sink.add(SyncEvent::Failed { message: kp_core::lang::t("Kaynak bulunamadı", "Source not found").into() }),
         },
         Err(e) => sink.add(SyncEvent::Failed { message: e.to_string() }),
     };
@@ -602,4 +602,17 @@ pub fn tmdb_season(item_id: i64, season: i32) -> Result<Vec<TmdbEpisodeInfo>> {
             air_date: e.air_date,
         })
         .collect())
+}
+
+// ---- language -------------------------------------------------------------
+
+/// The app language the user chose ("tr", "en"); None follows the system.
+pub fn ui_language() -> Result<Option<String>> {
+    Ok(core()?.ui_language()?)
+}
+
+/// Saves the choice and switches core messages (errors, sync stages) to
+/// [effective].
+pub fn set_ui_language(choice: Option<String>, effective: String) -> Result<()> {
+    Ok(core()?.set_ui_language(choice.as_deref(), &effective)?)
 }

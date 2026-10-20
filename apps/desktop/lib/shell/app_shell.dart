@@ -9,6 +9,7 @@ import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_icon_button.dart';
 import '../design/widgets/kd_titlebar.dart';
+import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import '../screens/add_source.dart';
 import '../screens/favorites_screen.dart';
@@ -84,9 +85,9 @@ class _AppShellState extends State<AppShell> with WindowListener {
                     KdTitlebar(
                       actions: [
                         if (app.sources.isNotEmpty)
-                          KdIconButton(icon: LucideIcons.search, tooltip: 'Ara (Ctrl K)', onPressed: () => app.go(Section.search)),
+                          KdIconButton(icon: LucideIcons.search, tooltip: l10n.tipSearch, onPressed: () => app.go(Section.search)),
                         if (app.sources.isNotEmpty)
-                          KdIconButton(icon: LucideIcons.settings, tooltip: 'Ayarlar (Ctrl ,)', onPressed: () => app.go(Section.settings)),
+                          KdIconButton(icon: LucideIcons.settings, tooltip: l10n.tipSettings, onPressed: () => app.go(Section.settings)),
                       ],
                     ),
                   Expanded(
@@ -191,9 +192,9 @@ class _MiniPlayerState extends State<_MiniPlayer> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        KdIconButton(icon: player.playing ? LucideIcons.pause : LucideIcons.play, tooltip: 'Oynat / duraklat', onPressed: player.togglePause),
-                        KdIconButton(icon: LucideIcons.maximize, tooltip: 'Büyüt', onPressed: () => player.setView(PlayerView.full)),
-                        KdIconButton(icon: LucideIcons.x, tooltip: 'Kapat', onPressed: player.stop),
+                        KdIconButton(icon: player.playing ? LucideIcons.pause : LucideIcons.play, tooltip: l10n.tipPlayPause, onPressed: player.togglePause),
+                        KdIconButton(icon: LucideIcons.maximize, tooltip: l10n.tipExpand, onPressed: () => player.setView(PlayerView.full)),
+                        KdIconButton(icon: LucideIcons.x, tooltip: l10n.tipClose, onPressed: player.stop),
                       ],
                     ),
                   ],

@@ -16,6 +16,7 @@ import '../player/player_controller.dart';
 /// - `--kp-shot=<dir>` (with `--kp-offscreen` only) visits each section,
 ///   saves `<section>.png`, then exits
 /// - `--kp-tmdb-key=<key>` (with `--kp-shot`) turns TMDB on for the run
+/// - `--kp-language=tr|en` (with `--kp-shot`) captures in that language
 ///
 /// Screenshots come from Flutter's own layer tree, so nothing is captured
 /// from (or shown on) the user's desktop.
@@ -57,6 +58,8 @@ class Automation {
     if (dir == null || !_offscreen) return;
     // Offscreen runs keep secrets in memory, so a test key never reaches
     // (or replaces a key in) the user's keyring.
+    final language = _arg('kp-language');
+    if (language != null) await app.setLanguage(language);
     final tmdbKey = _arg('kp-tmdb-key');
     if (tmdbKey != null) await app.library.setTmdbKey(tmdbKey);
     await Directory(dir).create(recursive: true);

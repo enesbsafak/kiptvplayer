@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../l10n/l10n.dart';
 import '../tokens.dart';
 
 /// `.tag`: accent-outlined pill, 10.5 px. [ok] turns it green.
@@ -56,8 +57,9 @@ class KdStatusDot extends StatelessWidget {
   }
 }
 
-/// Uppercase for Turkish text: i → İ (Dart's toUpperCase gives I).
-String kdUpper(String s) => s.replaceAll('i', 'İ').toUpperCase();
+/// Uppercase in the UI language: Turkish needs i → İ (Dart's
+/// toUpperCase gives I), English must not get it.
+String kdUpper(String s) => languageCode == 'tr' ? s.replaceAll('i', 'İ').toUpperCase() : s.toUpperCase();
 
 /// Uppercase muted section label (11 px, tracking .8).
 class KdSectionLabel extends StatelessWidget {

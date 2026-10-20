@@ -8,6 +8,7 @@ import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
+import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import '../player/reconnect_banner.dart';
 
@@ -172,7 +173,7 @@ class _LiveScreenState extends State<LiveScreen> {
   @override
   Widget build(BuildContext context) {
     if (_sourceId == null) {
-      return const KdEmpty(title: 'Kaynak yok', hint: 'Ayarlar › Kaynaklar bölümünden bir kaynak ekleyin.');
+      return KdEmpty(title: l10n.sourceNone, hint: l10n.sourceNoneHint);
     }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -198,13 +199,13 @@ class _LiveScreenState extends State<LiveScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(padding: EdgeInsets.fromLTRB(14, 14, 14, 8), child: KdSectionLabel('Kategoriler')),
+        Padding(padding: const EdgeInsets.fromLTRB(14, 14, 14, 8), child: KdSectionLabel(l10n.liveCategories)),
         Expanded(
           child: ListView(
             padding: const EdgeInsets.only(bottom: 12),
             children: [
-              row(_all, 'Tüm kanallar', total, icon: LucideIcons.tv),
-              row(_favorites, 'Favoriler', _favoriteItems.length, icon: LucideIcons.star),
+              row(_all, l10n.liveAllChannels, total, icon: LucideIcons.tv),
+              row(_favorites, l10n.navFavorites, _favoriteItems.length, icon: LucideIcons.star),
               const Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Divider(height: 1, color: KdColors.line)),
               for (final c in _categories) row(c.uid, c.name, c.count),
             ],
@@ -228,7 +229,7 @@ class _LiveScreenState extends State<LiveScreen> {
             padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
             child: KdInput(
               controller: _filter,
-              hint: 'Bu listede ara',
+              hint: l10n.liveFilterHint,
               prefix: LucideIcons.search,
               onChanged: (_) => setState(() => _selected = -1),
             ),
@@ -239,8 +240,8 @@ class _LiveScreenState extends State<LiveScreen> {
             child: items.isEmpty && !(pager?.loading ?? false)
                 ? KdEmpty(
                     icon: _category == _favorites ? LucideIcons.star : LucideIcons.tv,
-                    title: _category == _favorites ? 'Favori kanal yok' : 'Kanal bulunamadı',
-                    hint: _category == _favorites ? 'Bir kanalı yıldızlayarak buraya ekleyin.' : null,
+                    title: _category == _favorites ? l10n.liveNoFavorites : l10n.liveNoChannels,
+                    hint: _category == _favorites ? l10n.liveNoFavoritesHint : null,
                   )
                 : NotificationListener<ScrollNotification>(
                     onNotification: (n) {
@@ -422,9 +423,9 @@ class _ChannelRowState extends State<_ChannelRow> {
                 ),
               ),
               if (item.hasCatchup)
-                const Tooltip(
-                  message: 'Geçmiş yayın var',
-                  child: Icon(LucideIcons.history, size: 13, color: KdColors.muted),
+                Tooltip(
+                  message: l10n.liveHasArchive,
+                  child: const Icon(LucideIcons.history, size: 13, color: KdColors.muted),
                 ),
             ],
           ),
@@ -473,15 +474,15 @@ class _PreviewPane extends StatelessWidget {
                                 const Align(alignment: Alignment.bottomCenter, child: KdIndeterminate()),
                             ],
                           )
-                        : const Center(
+                        : Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(LucideIcons.tvMinimal, size: 30, color: KdColors.muted),
-                                SizedBox(height: 8),
-                                Text('Önizlemek için bir kanal seçin', style: TextStyle(color: KdColors.muted)),
-                                SizedBox(height: 4),
-                                Text('↑ ↓ ile kanal değiştirin, Enter ile tam ekran', style: TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+                                const Icon(LucideIcons.tvMinimal, size: 30, color: KdColors.muted),
+                                const SizedBox(height: 8),
+                                Text(l10n.livePickChannel, style: const TextStyle(color: KdColors.muted)),
+                                const SizedBox(height: 4),
+                                Text(l10n.livePickChannelHint, style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
                               ],
                             ),
                           ),
@@ -542,7 +543,7 @@ class _ChannelInfoState extends State<_ChannelInfo> {
                   const SizedBox(height: 3),
                   Row(
                     children: [
-                      const KdTag('CANLI'),
+                      KdTag(l10n.tagLive),
                       if (player.videoHeight case final h? when h > 0) ...[
                         const SizedBox(width: 6),
                         KdTag(_res(h), ok: true),
@@ -553,7 +554,7 @@ class _ChannelInfoState extends State<_ChannelInfo> {
               ),
             ),
             KdButton(
-              label: _fav == true ? 'Favoride' : 'Favori',
+              label: _fav == true ? l10n.favOn : l10n.favOff,
               icon: _fav == true ? LucideIcons.check : LucideIcons.star,
               onPressed: _fav == null
                   ? null
@@ -565,7 +566,7 @@ class _ChannelInfoState extends State<_ChannelInfo> {
             ),
             const SizedBox(width: 8),
             KdButton(
-              label: 'Tam ekran',
+              label: l10n.actionFullscreen,
               icon: LucideIcons.maximize,
               kind: KdButtonKind.cta,
               onPressed: () => player.setView(PlayerView.full),
@@ -574,10 +575,10 @@ class _ChannelInfoState extends State<_ChannelInfo> {
         ),
         const SizedBox(height: 14),
         if (now == null && next == null)
-          const Text('Yayın akışı bilgisi yok.', style: TextStyle(color: KdColors.muted, fontSize: KdType.small))
+          Text(l10n.liveNoGuide, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small))
         else ...[
-          if (now != null) _ProgrammeCard(p: now, label: 'ŞİMDİ', live: true),
-          if (next != null) ...[const SizedBox(height: 8), _ProgrammeCard(p: next, label: 'SONRA')],
+          if (now != null) _ProgrammeCard(p: now, label: l10n.guideNow, live: true),
+          if (next != null) ...[const SizedBox(height: 8), _ProgrammeCard(p: next, label: l10n.guideNext)],
         ],
         if (item.hasCatchup) ...[
           const SizedBox(height: 22),
@@ -633,17 +634,17 @@ class _ArchiveListState extends State<_ArchiveList> {
           children: [
             const Icon(LucideIcons.history, size: 13, color: KdColors.accent2),
             const SizedBox(width: 6),
-            const KdSectionLabel('Geçmiş yayınlar'),
+            KdSectionLabel(l10n.livePastBroadcasts),
             const Spacer(),
             if (past.isNotEmpty)
-              Text('${past.length} program', style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+              Text(l10n.liveProgrammeCount(past.length), style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
           ],
         ),
         const SizedBox(height: 8),
         if (!loaded)
           const KdIndeterminate()
         else if (past.isEmpty)
-          const Text('Bu kanal için geçmiş yayın listesi yok.', style: TextStyle(color: KdColors.muted, fontSize: KdType.small))
+          Text(l10n.liveNoArchive, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small))
         else ...[
           ...rows,
           if (past.length > _shown) ...[
@@ -651,7 +652,7 @@ class _ArchiveListState extends State<_ArchiveList> {
             Align(
               alignment: Alignment.centerLeft,
               child: KdButton(
-                label: 'Daha eski yayınlar',
+                label: l10n.liveOlderBroadcasts,
                 icon: LucideIcons.chevronDown,
                 kind: KdButtonKind.ghost,
                 onPressed: () => setState(() => _shown += _page * 2),
@@ -752,7 +753,7 @@ class _ProgrammeCard extends StatelessWidget {
                 style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()]),
               ),
               const Spacer(),
-              if (live) Text('${minutesLeft(p)} dk kaldı', style: const TextStyle(fontSize: KdType.chip, color: KdColors.accent2)),
+              if (live) Text(l10n.liveMinutesLeft(minutesLeft(p)), style: const TextStyle(fontSize: KdType.chip, color: KdColors.accent2)),
             ],
           ),
           const SizedBox(height: 6),

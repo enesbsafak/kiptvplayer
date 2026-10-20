@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../l10n/l10n.dart';
+
 enum TrackKind { audio, subtitle }
 
 /// One audio or subtitle track as mpv reports it in `track-list`, with the
@@ -99,14 +101,14 @@ List<TrackLabel> trackLabels(List<MediaTrack> tracks) {
     final titleIsLanguage = title != null &&
         language != null &&
         (_norm(title) == _norm(language) || _norm(title) == _norm(t.lang ?? '') || languageName(title) == language);
-    final name = language ?? title ?? 'Parça ${i + 1}';
+    final name = language ?? title ?? l10n.trackN(i + 1);
     final detail = <String>[
       if (title != null && language != null && !titleIsLanguage) title,
-      if (t.forced) 'Zorunlu',
+      if (t.forced) l10n.trackForced,
       if (t.hearingImpaired) 'SDH',
       if (t.kind == TrackKind.audio && t.channels != null) _channels(t.channels!),
       ?_codecName(t.codec),
-      if (t.external) 'Harici',
+      if (t.external) l10n.trackExternal,
     ];
     raw.add((name, detail));
   }
@@ -134,7 +136,7 @@ String _channels(int n) => switch (n) {
   2 => 'Stereo',
   6 => '5.1',
   8 => '7.1',
-  _ => '$n kanal',
+  _ => l10n.trackChannels(n),
 };
 
 String? _codecName(String? codec) => switch (codec) {
@@ -152,7 +154,7 @@ String? _codecName(String? codec) => switch (codec) {
   'subrip' => 'SRT',
   'ass' || 'ssa' => 'ASS',
   'webvtt' => 'WebVTT',
-  'mov_text' => 'Metin',
+  'mov_text' => l10n.trackText,
   'hdmv_pgs_subtitle' => 'PGS',
   'dvd_subtitle' => 'VobSub',
   'dvb_subtitle' => 'DVB',
@@ -161,46 +163,87 @@ String? _codecName(String? codec) => switch (codec) {
   _ => codec.toUpperCase(),
 };
 
-/// Turkish name for an ISO 639-1/-2 code ("tur", "tr", "TUR") or an English
-/// language name ("Turkish"); null when unknown.
+/// The language's name in the UI language, for an ISO 639-1/-2 code
+/// ("tur", "tr", "TUR") or an English or Turkish language name ("Turkish");
+/// null when unknown.
 String? languageName(String? code) {
   if (code == null) return null;
-  return _languages[_norm(code)];
+  final key = _norm(code);
+  final names = _languages[_aliases[key] ?? key];
+  if (names == null) return null;
+  return languageCode == 'tr' ? names.$1 : names.$2;
 }
 
+/// ISO 639-2/B codes, 639-1 codes and names to one 639-2 key.
+const _aliases = {
+  'tr': 'tur', 'turkish': 'tur', 'türkçe': 'tur',
+  'en': 'eng', 'english': 'eng', 'ingilizce': 'eng',
+  'deu': 'ger', 'de': 'ger', 'german': 'ger',
+  'fra': 'fre', 'fr': 'fre', 'french': 'fre',
+  'es': 'spa', 'spanish': 'spa',
+  'it': 'ita', 'italian': 'ita',
+  'pt': 'por', 'portuguese': 'por',
+  'ru': 'rus', 'russian': 'rus',
+  'ar': 'ara', 'arabic': 'ara',
+  'nld': 'dut', 'nl': 'dut', 'dutch': 'dut',
+  'ja': 'jpn', 'japanese': 'jpn',
+  'ko': 'kor', 'korean': 'kor',
+  'zho': 'chi', 'zh': 'chi', 'chinese': 'chi',
+  'ell': 'gre', 'el': 'gre', 'greek': 'gre',
+  'pl': 'pol', 'polish': 'pol',
+  'sv': 'swe', 'swedish': 'swe',
+  'nob': 'nor', 'no': 'nor', 'norwegian': 'nor',
+  'da': 'dan', 'danish': 'dan',
+  'fi': 'fin', 'finnish': 'fin',
+  'hu': 'hun', 'hungarian': 'hun',
+  'ces': 'cze', 'cs': 'cze', 'czech': 'cze',
+  'ron': 'rum', 'ro': 'rum', 'romanian': 'rum',
+  'bg': 'bul', 'bulgarian': 'bul',
+  'uk': 'ukr', 'ukrainian': 'ukr',
+  'he': 'heb', 'hebrew': 'heb',
+  'fas': 'per', 'fa': 'per', 'persian': 'per',
+  'hi': 'hin', 'hindi': 'hin',
+  'az': 'aze', 'azerbaijani': 'aze',
+  'ku': 'kur', 'kurdish': 'kur',
+  'sqi': 'alb', 'sq': 'alb', 'albanian': 'alb',
+  'sr': 'srp', 'serbian': 'srp',
+  'hr': 'hrv', 'croatian': 'hrv',
+  'bs': 'bos', 'bosnian': 'bos',
+};
+
 const _languages = {
-  'tur': 'Türkçe', 'tr': 'Türkçe', 'turkish': 'Türkçe', 'türkçe': 'Türkçe',
-  'eng': 'İngilizce', 'en': 'İngilizce', 'english': 'İngilizce',
-  'ger': 'Almanca', 'deu': 'Almanca', 'de': 'Almanca', 'german': 'Almanca',
-  'fre': 'Fransızca', 'fra': 'Fransızca', 'fr': 'Fransızca', 'french': 'Fransızca',
-  'spa': 'İspanyolca', 'es': 'İspanyolca', 'spanish': 'İspanyolca',
-  'ita': 'İtalyanca', 'it': 'İtalyanca', 'italian': 'İtalyanca',
-  'por': 'Portekizce', 'pt': 'Portekizce', 'portuguese': 'Portekizce',
-  'rus': 'Rusça', 'ru': 'Rusça', 'russian': 'Rusça',
-  'ara': 'Arapça', 'ar': 'Arapça', 'arabic': 'Arapça',
-  'dut': 'Felemenkçe', 'nld': 'Felemenkçe', 'nl': 'Felemenkçe', 'dutch': 'Felemenkçe',
-  'jpn': 'Japonca', 'ja': 'Japonca', 'japanese': 'Japonca',
-  'kor': 'Korece', 'ko': 'Korece', 'korean': 'Korece',
-  'chi': 'Çince', 'zho': 'Çince', 'zh': 'Çince', 'chinese': 'Çince',
-  'gre': 'Yunanca', 'ell': 'Yunanca', 'el': 'Yunanca', 'greek': 'Yunanca',
-  'pol': 'Lehçe', 'pl': 'Lehçe', 'polish': 'Lehçe',
-  'swe': 'İsveççe', 'sv': 'İsveççe', 'swedish': 'İsveççe',
-  'nor': 'Norveççe', 'nob': 'Norveççe', 'no': 'Norveççe', 'norwegian': 'Norveççe',
-  'dan': 'Danca', 'da': 'Danca', 'danish': 'Danca',
-  'fin': 'Fince', 'fi': 'Fince', 'finnish': 'Fince',
-  'hun': 'Macarca', 'hu': 'Macarca', 'hungarian': 'Macarca',
-  'cze': 'Çekçe', 'ces': 'Çekçe', 'cs': 'Çekçe', 'czech': 'Çekçe',
-  'rum': 'Rumence', 'ron': 'Rumence', 'ro': 'Rumence', 'romanian': 'Rumence',
-  'bul': 'Bulgarca', 'bg': 'Bulgarca', 'bulgarian': 'Bulgarca',
-  'ukr': 'Ukraynaca', 'uk': 'Ukraynaca', 'ukrainian': 'Ukraynaca',
-  'heb': 'İbranice', 'he': 'İbranice', 'hebrew': 'İbranice',
-  'per': 'Farsça', 'fas': 'Farsça', 'fa': 'Farsça', 'persian': 'Farsça',
-  'hin': 'Hintçe', 'hi': 'Hintçe', 'hindi': 'Hintçe',
-  'aze': 'Azerice', 'az': 'Azerice', 'azerbaijani': 'Azerice',
-  'kur': 'Kürtçe', 'ku': 'Kürtçe', 'kurdish': 'Kürtçe',
-  'alb': 'Arnavutça', 'sqi': 'Arnavutça', 'sq': 'Arnavutça', 'albanian': 'Arnavutça',
-  'srp': 'Sırpça', 'sr': 'Sırpça', 'serbian': 'Sırpça',
-  'hrv': 'Hırvatça', 'hr': 'Hırvatça', 'croatian': 'Hırvatça',
-  'bos': 'Boşnakça', 'bs': 'Boşnakça', 'bosnian': 'Boşnakça',
-  'und': 'Bilinmeyen dil',
+  'tur': ('Türkçe', 'Turkish'),
+  'eng': ('İngilizce', 'English'),
+  'ger': ('Almanca', 'German'),
+  'fre': ('Fransızca', 'French'),
+  'spa': ('İspanyolca', 'Spanish'),
+  'ita': ('İtalyanca', 'Italian'),
+  'por': ('Portekizce', 'Portuguese'),
+  'rus': ('Rusça', 'Russian'),
+  'ara': ('Arapça', 'Arabic'),
+  'dut': ('Felemenkçe', 'Dutch'),
+  'jpn': ('Japonca', 'Japanese'),
+  'kor': ('Korece', 'Korean'),
+  'chi': ('Çince', 'Chinese'),
+  'gre': ('Yunanca', 'Greek'),
+  'pol': ('Lehçe', 'Polish'),
+  'swe': ('İsveççe', 'Swedish'),
+  'nor': ('Norveççe', 'Norwegian'),
+  'dan': ('Danca', 'Danish'),
+  'fin': ('Fince', 'Finnish'),
+  'hun': ('Macarca', 'Hungarian'),
+  'cze': ('Çekçe', 'Czech'),
+  'rum': ('Rumence', 'Romanian'),
+  'bul': ('Bulgarca', 'Bulgarian'),
+  'ukr': ('Ukraynaca', 'Ukrainian'),
+  'heb': ('İbranice', 'Hebrew'),
+  'per': ('Farsça', 'Persian'),
+  'hin': ('Hintçe', 'Hindi'),
+  'aze': ('Azerice', 'Azerbaijani'),
+  'kur': ('Kürtçe', 'Kurdish'),
+  'alb': ('Arnavutça', 'Albanian'),
+  'srp': ('Sırpça', 'Serbian'),
+  'hrv': ('Hırvatça', 'Croatian'),
+  'bos': ('Boşnakça', 'Bosnian'),
+  'und': ('Bilinmeyen dil', 'Unknown language'),
 };

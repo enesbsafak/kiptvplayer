@@ -13,6 +13,7 @@ use serde_json::Value;
 
 use crate::catalog::{Catalog, ContentKind, XtreamLists};
 use crate::guide::{Guide, GuideError};
+use crate::lang::t;
 use crate::secret::{password_key, SecretStore};
 use crate::tmdb::{Media, Tmdb, TmdbDetail, TmdbEpisode, TmdbError};
 use crate::store::{CategoryRow, ChannelRow, EpgRow, ItemRow, ProgressRow, SourceRow, Store, StoreError};
@@ -22,7 +23,7 @@ use crate::xtream::{as_array, as_i64, as_string, XtreamClient, XtreamError};
 pub enum CoreError {
     #[error("{0}")]
     Xtream(#[from] XtreamError),
-    #[error("veritabanı hatası: {0}")]
+    #[error("{}: {}", crate::lang::t("veritabanı hatası", "database error"), .0)]
     Store(#[from] StoreError),
     #[error("{0}")]
     Tmdb(#[from] TmdbError),
@@ -188,7 +189,7 @@ impl Core {
     pub fn add_source(&self, new: NewSource, on_stage: &dyn Fn(SyncStage)) -> Result<(SourceRow, SyncSummary)> {
         let name = new.name.trim();
         if new.url.trim().is_empty() {
-            return Err(msg("Adres boş olamaz"));
+            return Err(msg(t("Adres boş olamaz", "The address cannot be empty")));
         }
         let id = format!("s{:x}", xxhash_rust::xxh3::xxh3_64(format!("{}|{}|{}", new.url, new.username.as_deref().unwrap_or(""), now()).as_bytes()));
         let row = SourceRow {
@@ -215,11 +216,11 @@ impl Core {
 
         if new.kind == SourceKind::Xtream {
             let password = new.password.clone().unwrap_or_default();
-            let user = row.username.clone().ok_or_else(|| msg("Kullanıcı adı gerekli"))?;
+            let user = row.username.clone().ok_or_else(|| msg(t("Kullanıcı adı gerekli", "A username is required")))?;
             on_stage(SyncStage::Connecting);
             let client = XtreamClient::new(&row.url, &user, &password, row.user_agent.as_deref(), row.insecure_tls)?;
             client.account()?;
-            self.secrets.set(&password_key(&id), &password).map_err(|e| msg(format!("Şifre kaydedilemedi: {e}")))?;
+            self.secrets.set(&password_key(&id), &password).map_err(|e| msg(format!("{}: {e}", t("Şifre kaydedilemedi", "Could not save the password"))))?;
         }
 
         self.store().upsert_source(&row)?;
@@ -256,9 +257,9 @@ impl Core {
     /// Downloads the source's XMLTV guide (`url-tvg` or the URL the user
     /// gave) and swaps it in. The library is never locked meanwhile.
     pub fn refresh_guide(&self, source_id: &str) -> Result<GuideStatus> {
-        let source = self.store().source(source_id)?.ok_or_else(|| msg("Kaynak bulunamadı"))?;
+        let source = self.store().source(source_id)?.ok_or_else(|| msg(t("Kaynak bulunamadı", "Source not found")))?;
         let Some(url) = source.epg_url.clone().filter(|u| !u.trim().is_empty()) else {
-            return Err(msg("Bu kaynak için yayın akışı adresi yok"));
+            return Err(msg(t("Bu kaynak için yayın akışı adresi yok", "This source has no TV guide address")));
         };
         let t = now();
         let result = (|| -> Result<crate::guide::BuildStats> {
@@ -302,7 +303,7 @@ impl Core {
     /// Downloads the source's catalog and swaps it in atomically. Readers
     /// keep seeing the old catalog until the new one is fully written.
     pub fn sync(&self, source_id: &str, on_stage: &dyn Fn(SyncStage)) -> Result<SyncSummary> {
-        let source = self.store().source(source_id)?.ok_or_else(|| msg("Kaynak bulunamadı"))?;
+        let source = self.store().source(source_id)?.ok_or_else(|| msg(t("Kaynak bulunamadı", "Source not found")))?;
         let result = self.download_catalog(&source, on_stage);
         match result {
             Ok((catalog, account)) => {
@@ -323,7 +324,7 @@ impl Core {
                 // its status but never fails the source: channels still play.
                 let has_guide = self.store().source(source_id)?.is_some_and(|s| s.kind != "xtream" && s.epg_url.is_some());
                 if has_guide {
-                    on_stage(SyncStage::Downloading { what: "Yayın akışı".into() });
+                    on_stage(SyncStage::Downloading { what: t("Yayın akışı", "TV guide").into() });
                     let _ = self.refresh_guide(source_id);
                 }
                 Ok(summary)
@@ -342,20 +343,20 @@ impl Core {
             let account = client.account()?;
             let mut lists = Vec::new();
             for (kind, label) in [
-                (ContentKind::Live, "Canlı kanallar"),
-                (ContentKind::Movie, "Filmler"),
-                (ContentKind::Series, "Diziler"),
+                (ContentKind::Live, t("Canlı kanallar", "live channels")),
+                (ContentKind::Movie, t("Filmler", "movies")),
+                (ContentKind::Series, t("Diziler", "series")),
             ] {
                 on_stage(SyncStage::Downloading { what: label.into() });
                 lists.push(XtreamLists { kind, categories: client.categories(kind)?, items: client.items(kind)? });
             }
             Ok((Catalog::from_xtream(lists), Some(account)))
         } else {
-            on_stage(SyncStage::Downloading { what: "Oynatma listesi".into() });
+            on_stage(SyncStage::Downloading { what: t("Oynatma listesi", "Playlist").into() });
             let text = fetch_playlist(source)?;
             let catalog = Catalog::from_m3u(crate::m3u::parse(&text));
             if catalog.channels.is_empty() {
-                return Err(msg("Listede oynatılabilir kanal bulunamadı"));
+                return Err(msg(t("Listede oynatılabilir kanal bulunamadı", "The playlist has no playable channels")));
             }
             Ok((catalog, None))
         }
@@ -365,7 +366,7 @@ impl Core {
         let password = self
             .secrets
             .get(&password_key(&source.id))
-            .ok_or_else(|| msg("Bu kaynağın şifresi bulunamadı; kaynağı yeniden ekleyin"))?;
+            .ok_or_else(|| msg(t("Bu kaynağın şifresi bulunamadı; kaynağı yeniden ekleyin", "This source's password is missing; add the source again")))?;
         Ok(XtreamClient::new(
             &source.url,
             source.username.as_deref().unwrap_or(""),
@@ -415,7 +416,7 @@ impl Core {
     }
 
     pub fn item(&self, id: i64) -> Result<ItemRow> {
-        self.store().item(id)?.ok_or_else(|| msg("İçerik bulunamadı"))
+        self.store().item(id)?.ok_or_else(|| msg(t("İçerik bulunamadı", "Item not found")))
     }
 
     pub fn item_by_uid(&self, source_id: &str, uid: i64) -> Result<Option<ItemRow>> {
@@ -473,18 +474,18 @@ impl Core {
     /// Resolves what mpv should open. Marks the item as recently watched.
     pub fn playback(&self, item_id: i64, episode: Option<(i64, String)>) -> Result<PlaybackInfo> {
         let item = self.item(item_id)?;
-        let source = self.store().source(&item.source_id)?.ok_or_else(|| msg("Kaynak bulunamadı"))?;
+        let source = self.store().source(&item.source_id)?.ok_or_else(|| msg(t("Kaynak bulunamadı", "Source not found")))?;
         let resume_key = episode.as_ref().map(|e| e.0).unwrap_or(item.uid);
         let resume_ms = self.store().progress(&item.source_id, resume_key)?.map(|p| p.position_ms).filter(|p| *p > 5_000);
 
         let url = if let Some(rest) = item.url.strip_prefix("xtream:") {
             let client = self.xtream(&source)?;
-            let id = item.ext_id.ok_or_else(|| msg("Geçersiz içerik"))?;
+            let id = item.ext_id.ok_or_else(|| msg(t("Geçersiz içerik", "Invalid item")))?;
             match (rest.split(':').next(), &episode) {
                 (_, Some((episode_id, container))) => client.episode_url(*episode_id, container),
                 (Some("live"), None) => client.live_url(id, "ts"),
                 (Some("movie"), None) => client.movie_url(id, item.container.as_deref().unwrap_or("mp4")),
-                _ => return Err(msg("Diziler için bölüm seçin")),
+                _ => return Err(msg(t("Diziler için bölüm seçin", "Choose an episode of the series"))),
             }
         } else {
             item.url.clone()
@@ -525,9 +526,9 @@ impl Core {
         if !item.url.starts_with("xtream:") || item.kind == ContentKind::Live {
             return Ok(detail);
         }
-        let source = self.store().source(&item.source_id)?.ok_or_else(|| msg("Kaynak bulunamadı"))?;
+        let source = self.store().source(&item.source_id)?.ok_or_else(|| msg(t("Kaynak bulunamadı", "Source not found")))?;
         let client = self.xtream(&source)?;
-        let ext = item.ext_id.ok_or_else(|| msg("Geçersiz içerik"))?;
+        let ext = item.ext_id.ok_or_else(|| msg(t("Geçersiz içerik", "Invalid item")))?;
         let v = if item.kind == ContentKind::Series { client.series_info(ext)? } else { client.vod_info(ext)? };
         let info = v.get("info").cloned().unwrap_or(Value::Null);
         detail.plot = as_string(info.get("plot")).or_else(|| as_string(info.get("description")));
@@ -573,8 +574,23 @@ impl Core {
         Ok(TmdbStatus { configured: self.secrets.get(TMDB_KEY).is_some(), language: self.tmdb_language()? })
     }
 
+    /// The TMDB language the user picked, else the app's language.
     fn tmdb_language(&self) -> Result<String> {
-        Ok(self.store().setting("tmdb_language")?.filter(|l| !l.is_empty()).unwrap_or_else(|| "tr-TR".into()))
+        let default = if crate::lang::is_english() { "en-US" } else { "tr-TR" };
+        Ok(self.store().setting("tmdb_language")?.filter(|l| !l.is_empty()).unwrap_or_else(|| default.into()))
+    }
+
+    /// The app language the user chose; None follows the system.
+    pub fn ui_language(&self) -> Result<Option<String>> {
+        Ok(self.store().setting("ui_language")?.filter(|l| !l.is_empty()))
+    }
+
+    /// Stores the user's choice (None = system) and switches the core's
+    /// messages to [effective], the language the app ended up using.
+    pub fn set_ui_language(&self, choice: Option<&str>, effective: &str) -> Result<()> {
+        self.store().set_setting("ui_language", choice.unwrap_or(""))?;
+        crate::lang::set_language(effective);
+        Ok(())
     }
 
     /// Saves (after checking it with TMDB) or, with None, forgets the key.
@@ -584,7 +600,7 @@ impl Core {
             None => self.secrets.delete(TMDB_KEY),
             Some(k) => {
                 Tmdb::new(k, &self.tmdb_language()?, tmdb_base().as_deref())?.validate()?;
-                self.secrets.set(TMDB_KEY, k).map_err(|e| msg(format!("Anahtar kaydedilemedi: {e}")))?;
+                self.secrets.set(TMDB_KEY, k).map_err(|e| msg(format!("{}: {e}", t("Anahtar kaydedilemedi", "Could not save the key"))))?;
             }
         }
         Ok(())
@@ -690,7 +706,7 @@ impl Core {
         // at, never for every row of a list.
         let fetched = self.store().epg_archive_fetched(&item.source_id, item.uid)?;
         if xtream && !fetched.is_some_and(|f| t - f < EPG_TTL_SECS) {
-            let source = self.store().source(&item.source_id)?.ok_or_else(|| msg("Kaynak bulunamadı"))?;
+            let source = self.store().source(&item.source_id)?.ok_or_else(|| msg(crate::lang::t("Kaynak bulunamadı", "Source not found")))?;
             if let Ok(table) = self.xtream(&source).and_then(|c| Ok(c.epg_table(item.ext_id.unwrap_or(0))?)) {
                 self.store().replace_epg_short(&item.source_id, item.uid, &epg_rows(table), t, true)?;
             }
@@ -715,14 +731,14 @@ impl Core {
     /// Plays [start]..[stop] of a catch-up channel from the provider's archive.
     pub fn catchup(&self, item_id: i64, start: i64, stop: i64) -> Result<PlaybackInfo> {
         let item = self.item(item_id)?;
-        let source = self.store().source(&item.source_id)?.ok_or_else(|| msg("Kaynak bulunamadı"))?;
+        let source = self.store().source(&item.source_id)?.ok_or_else(|| msg(t("Kaynak bulunamadı", "Source not found")))?;
         let url = if item.url.starts_with("xtream:live:") {
             let client = self.xtream(&source)?;
             client.timeshift_url(item.ext_id.unwrap_or(0), start, stop, source.timezone.as_deref())
         } else {
             let kind = item.catchup.as_deref().unwrap_or("default");
             crate::catchup::catchup_url(kind, &item.url, item.catchup_source.as_deref(), start, stop, now())
-                .ok_or_else(|| msg("Bu kanal geçmiş yayın desteklemiyor"))?
+                .ok_or_else(|| msg(t("Bu kanal geçmiş yayın desteklemiyor", "This channel has no catch-up")))?
         };
         Ok(PlaybackInfo {
             url,
@@ -747,7 +763,7 @@ impl Core {
         if fresh || !item.url.starts_with("xtream:live:") {
             return Ok(cached.into_iter().map(programme).collect());
         }
-        let source = self.store().source(&item.source_id)?.ok_or_else(|| msg("Kaynak bulunamadı"))?;
+        let source = self.store().source(&item.source_id)?.ok_or_else(|| msg(crate::lang::t("Kaynak bulunamadı", "Source not found")))?;
         let entries = match self.xtream(&source).and_then(|c| Ok(c.short_epg(item.ext_id.unwrap_or(0), 6)?)) {
             Ok(e) => e,
             // EPG is decoration: a failing provider keeps the cached copy.
@@ -762,7 +778,7 @@ impl Core {
 /// A guide download as a decompressed byte stream: a local file or a URL.
 fn open_guide(url: &str, source: &SourceRow) -> Result<Box<dyn std::io::BufRead>> {
     let url = url.trim();
-    let io = |e: std::io::Error| msg(format!("Yayın akışı okunamadı: {e}"));
+    let io = |e: std::io::Error| msg(format!("{}: {e}", t("Yayın akışı okunamadı", "Could not read the TV guide")));
     if !(url.starts_with("http://") || url.starts_with("https://")) {
         return crate::xmltv::decompressing(std::fs::File::open(url).map_err(io)?).map_err(io);
     }
@@ -774,9 +790,9 @@ fn open_guide(url: &str, source: &SourceRow) -> Result<Box<dyn std::io::BufRead>
         .danger_accept_invalid_certs(source.insecure_tls)
         .build()
         .map_err(|e| msg(e.to_string()))?;
-    let resp = http.get(url).send().map_err(|e| msg(format!("Yayın akışı indirilemedi: {}", strip_query(&e.to_string()))))?;
+    let resp = http.get(url).send().map_err(|e| msg(format!("{}: {}", t("Yayın akışı indirilemedi", "Could not download the TV guide"), strip_query(&e.to_string()))))?;
     if !resp.status().is_success() {
-        return Err(msg(format!("Yayın akışı indirilemedi: HTTP {}", resp.status().as_u16())));
+        return Err(msg(format!("{}: HTTP {}", t("Yayın akışı indirilemedi", "Could not download the TV guide"), resp.status().as_u16())));
     }
     crate::xmltv::decompressing(resp).map_err(io)
 }
@@ -844,7 +860,7 @@ fn fetch_playlist(source: &SourceRow) -> Result<String> {
     const MAX: u64 = 300 * 1024 * 1024;
     let url = source.url.trim();
     if !(url.starts_with("http://") || url.starts_with("https://")) {
-        let bytes = std::fs::read(url).map_err(|e| msg(format!("Dosya okunamadı: {e}")))?;
+        let bytes = std::fs::read(url).map_err(|e| msg(format!("{}: {e}", t("Dosya okunamadı", "Could not read the file"))))?;
         return Ok(String::from_utf8_lossy(&bytes).into_owned());
     }
     let http = reqwest::blocking::Client::builder()
@@ -854,14 +870,14 @@ fn fetch_playlist(source: &SourceRow) -> Result<String> {
         .danger_accept_invalid_certs(source.insecure_tls)
         .build()
         .map_err(|e| msg(e.to_string()))?;
-    let resp = http.get(url).send().map_err(|e| msg(format!("Liste indirilemedi: {}", strip_query(&e.to_string()))))?;
+    let resp = http.get(url).send().map_err(|e| msg(format!("{}: {}", t("Liste indirilemedi", "Could not download the playlist"), strip_query(&e.to_string()))))?;
     if !resp.status().is_success() {
-        return Err(msg(format!("Liste indirilemedi: HTTP {}", resp.status().as_u16())));
+        return Err(msg(format!("{}: HTTP {}", t("Liste indirilemedi", "Could not download the playlist"), resp.status().as_u16())));
     }
     if resp.content_length().unwrap_or(0) > MAX {
-        return Err(msg("Liste çok büyük (en fazla 300 MB)"));
+        return Err(msg(t("Liste çok büyük (en fazla 300 MB)", "The playlist is too large (300 MB at most)")));
     }
-    let bytes = resp.bytes().map_err(|e| msg(format!("Liste indirilemedi: {}", strip_query(&e.to_string()))))?;
+    let bytes = resp.bytes().map_err(|e| msg(format!("{}: {}", t("Liste indirilemedi", "Could not download the playlist"), strip_query(&e.to_string()))))?;
     Ok(String::from_utf8_lossy(&bytes).into_owned())
 }
 

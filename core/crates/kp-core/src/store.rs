@@ -17,7 +17,7 @@ use crate::text::fold;
 pub enum StoreError {
     #[error(transparent)]
     Sqlite(#[from] rusqlite::Error),
-    #[error("database schema version {0} is newer than this build supports")]
+    #[error("{} ({})", crate::lang::t("kütüphane bu sürümden daha yeni bir sürümle oluşturulmuş; uygulamayı güncelleyin", "the library was made by a newer version; update the app"), .0)]
     SchemaTooNew(i64),
 }
 

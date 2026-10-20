@@ -7,6 +7,7 @@ import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
+import '../l10n/l10n.dart';
 
 class NavEntry {
   const NavEntry(this.section, this.icon, this.label, [this.shortcut]);
@@ -16,13 +17,13 @@ class NavEntry {
   final String? shortcut;
 }
 
-const mainNav = [
-  NavEntry(Section.home, LucideIcons.house, 'Ana Sayfa', 'Ctrl 1'),
-  NavEntry(Section.live, LucideIcons.tv, 'Canlı TV', 'Ctrl 2'),
-  NavEntry(Section.guide, LucideIcons.calendarRange, 'Yayın Akışı', 'Ctrl 3'),
-  NavEntry(Section.movies, LucideIcons.clapperboard, 'Filmler', 'Ctrl 4'),
-  NavEntry(Section.series, LucideIcons.layers, 'Diziler', 'Ctrl 5'),
-  NavEntry(Section.favorites, LucideIcons.star, 'Favoriler', 'Ctrl 6'),
+List<NavEntry> get mainNav => [
+  NavEntry(Section.home, LucideIcons.house, l10n.navHome, 'Ctrl 1'),
+  NavEntry(Section.live, LucideIcons.tv, l10n.navLive, 'Ctrl 2'),
+  NavEntry(Section.guide, LucideIcons.calendarRange, l10n.navGuide, 'Ctrl 3'),
+  NavEntry(Section.movies, LucideIcons.clapperboard, l10n.navMovies, 'Ctrl 4'),
+  NavEntry(Section.series, LucideIcons.layers, l10n.navSeries, 'Ctrl 5'),
+  NavEntry(Section.favorites, LucideIcons.star, l10n.navFavorites, 'Ctrl 6'),
 ];
 
 /// Left navigation: source switcher, sections, settings. 216 px wide.
@@ -41,20 +42,20 @@ class Sidebar extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Padding(padding: EdgeInsets.fromLTRB(10, 10, 10, 6), child: _SourceSwitcher()),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 10, 16, 6),
-            child: KdSectionLabel('Kütüphane'),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+            child: KdSectionLabel(l10n.navLibrary),
           ),
           for (final e in mainNav)
             _NavItem(entry: e, active: app.section == e.section, onTap: () => app.go(e.section)),
           const Spacer(),
           _NavItem(
-            entry: const NavEntry(Section.search, LucideIcons.search, 'Ara', 'Ctrl K'),
+            entry: NavEntry(Section.search, LucideIcons.search, l10n.navSearch, 'Ctrl K'),
             active: app.section == Section.search,
             onTap: () => app.go(Section.search),
           ),
           _NavItem(
-            entry: const NavEntry(Section.settings, LucideIcons.settings, 'Ayarlar', 'Ctrl ,'),
+            entry: NavEntry(Section.settings, LucideIcons.settings, l10n.navSettings, 'Ctrl ,'),
             active: app.section == Section.settings,
             onTap: () => app.go(Section.settings),
           ),
@@ -155,7 +156,7 @@ class _SourceSwitcher extends StatelessWidget {
         MenuItemButton(
           onPressed: () => app.go(Section.settings),
           leadingIcon: const Icon(LucideIcons.plus, size: 14, color: KdColors.muted),
-          child: const Text('Kaynak ekle…'),
+          child: Text(l10n.sourceAddEllipsis),
         ),
       ],
       builder: (context, controller, _) => _SourceCard(
@@ -206,17 +207,17 @@ class _SourceCardState extends State<_SourceCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      s?.name ?? 'Kaynak yok',
+                      s?.name ?? l10n.sourceNone,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     Text(
                       s == null
-                          ? 'Bir kaynak ekleyin'
+                          ? l10n.sourceAddOne
                           : s.lastError != null
-                              ? 'Eşitleme hatası'
-                              : '${_thousands(total)} içerik',
+                              ? l10n.sourceSyncError
+                              : l10n.sourceItemCount(_thousands(total)),
                       style: TextStyle(
                         fontSize: KdType.chip,
                         color: s?.lastError != null ? KdColors.err : KdColors.muted,
@@ -238,7 +239,7 @@ String _thousands(int n) {
   final s = n.toString();
   final b = StringBuffer();
   for (var i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) b.write('.');
+    if (i > 0 && (s.length - i) % 3 == 0) b.write(l10n.thousandsSeparator);
     b.write(s[i]);
   }
   return b.toString();

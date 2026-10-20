@@ -35,9 +35,9 @@ pub struct Stats {
 
 #[derive(Debug, thiserror::Error)]
 pub enum XmltvError {
-    #[error("yayın akışı okunamadı: {0}")]
+    #[error("{}: {}", crate::lang::t("yayın akışı okunamadı", "could not read the TV guide"), .0)]
     Read(String),
-    #[error("yayın akışı XMLTV biçiminde değil")]
+    #[error("{}", crate::lang::t("yayın akışı XMLTV biçiminde değil", "the TV guide is not XMLTV"))]
     NotXmltv,
 }
 

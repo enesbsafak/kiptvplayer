@@ -2,12 +2,14 @@ import 'dart:async';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/library.dart';
 import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
+import '../l10n/l10n.dart';
 
 enum _Type { xtream, m3uUrl, m3uFile }
 
@@ -52,13 +54,13 @@ class _AddSourceFormState extends State<AddSourceForm> {
   String? _validate() {
     if (_url.text.trim().isEmpty) {
       return switch (_type) {
-        _Type.xtream => 'Sunucu adresini girin',
-        _Type.m3uUrl => 'Liste adresini girin',
-        _Type.m3uFile => 'Bir M3U dosyası seçin',
+        _Type.xtream => l10n.addNeedServer,
+        _Type.m3uUrl => l10n.addNeedListUrl,
+        _Type.m3uFile => l10n.addNeedFile,
       };
     }
-    if (_type == _Type.xtream && _user.text.trim().isEmpty) return 'Kullanıcı adını girin';
-    if (_type == _Type.xtream && _pass.text.isEmpty) return 'Şifreyi girin';
+    if (_type == _Type.xtream && _user.text.trim().isEmpty) return l10n.addNeedUser;
+    if (_type == _Type.xtream && _pass.text.isEmpty) return l10n.addNeedPassword;
     return null;
   }
 
@@ -80,18 +82,18 @@ class _AddSourceFormState extends State<AddSourceForm> {
     );
     setState(() {
       _error = null;
-      _stage = 'Bağlanılıyor…';
+      _stage = l10n.syncConnecting;
     });
     _sub = context.library.addSource(input).listen((e) {
       if (!mounted) return;
       setState(() {
         switch (e) {
           case SyncEvent_Connecting():
-            _stage = 'Sağlayıcıya bağlanılıyor…';
+            _stage = l10n.syncConnectingProvider;
           case SyncEvent_Downloading(:final what):
-            _stage = '$what indiriliyor…';
+            _stage = l10n.syncDownloading(what);
           case SyncEvent_Saving():
-            _stage = 'Kütüphane hazırlanıyor…';
+            _stage = l10n.syncPreparing;
           case SyncEvent_Done(:final source):
             _stage = null;
             _done = source;
@@ -105,8 +107,8 @@ class _AddSourceFormState extends State<AddSourceForm> {
 
   Future<void> _pickFile() async {
     final file = await openFile(
-      acceptedTypeGroups: const [
-        XTypeGroup(label: 'Oynatma listesi', extensions: ['m3u', 'm3u8', 'txt']),
+      acceptedTypeGroups: [
+        XTypeGroup(label: l10n.addPlaylistFiles, extensions: const ['m3u', 'm3u8', 'txt']),
       ],
     );
     if (file != null) setState(() => _url.text = file.path);
@@ -126,44 +128,44 @@ class _AddSourceFormState extends State<AddSourceForm> {
             _TypeCard(
               icon: LucideIcons.server,
               title: 'Xtream Codes',
-              hint: 'Sunucu, kullanıcı adı ve şifre',
+              hint: l10n.addXtreamHint,
               selected: _type == _Type.xtream,
               onTap: () => setState(() => _type = _Type.xtream),
             ),
             const SizedBox(width: 10),
             _TypeCard(
               icon: LucideIcons.link,
-              title: 'M3U bağlantısı',
-              hint: 'Oynatma listesi adresi',
+              title: l10n.addM3uUrl,
+              hint: l10n.addM3uUrlHint,
               selected: _type == _Type.m3uUrl,
               onTap: () => setState(() => _type = _Type.m3uUrl),
             ),
             const SizedBox(width: 10),
             _TypeCard(
               icon: LucideIcons.fileText,
-              title: 'M3U dosyası',
-              hint: 'Bilgisayardaki liste',
+              title: l10n.addM3uFile,
+              hint: l10n.addM3uFileHint,
               selected: _type == _Type.m3uFile,
               onTap: () => setState(() => _type = _Type.m3uFile),
             ),
           ],
         ),
         const SizedBox(height: 18),
-        _Row(label: 'Ad', child: KdInput(controller: _name, hint: 'İsteğe bağlı, ör. Ev')),
+        _Row(label: l10n.addName, child: KdInput(controller: _name, hint: l10n.addNameHint)),
         if (_type == _Type.xtream) ...[
-          _Row(label: 'Sunucu adresi', child: KdInput(controller: _url, hint: 'http://sunucu:8080', mono: true)),
-          _Row(label: 'Kullanıcı adı', child: KdInput(controller: _user)),
-          _Row(label: 'Şifre', child: KdInput(controller: _pass, obscure: true, onSubmitted: (_) => _submit())),
+          _Row(label: l10n.addServer, child: KdInput(controller: _url, hint: l10n.addServerHint, mono: true)),
+          _Row(label: l10n.addUser, child: KdInput(controller: _user)),
+          _Row(label: l10n.addPassword, child: KdInput(controller: _pass, obscure: true, onSubmitted: (_) => _submit())),
         ] else if (_type == _Type.m3uUrl)
-          _Row(label: 'Liste adresi', child: KdInput(controller: _url, hint: 'https://…/playlist.m3u', mono: true, onSubmitted: (_) => _submit()))
+          _Row(label: l10n.addListUrl, child: KdInput(controller: _url, hint: 'https://…/playlist.m3u', mono: true, onSubmitted: (_) => _submit()))
         else
           _Row(
-            label: 'Dosya',
+            label: l10n.addFile,
             child: Row(
               children: [
-                Expanded(child: KdInput(controller: _url, hint: 'Dosya seçilmedi', mono: true)),
+                Expanded(child: KdInput(controller: _url, hint: l10n.addNoFile, mono: true)),
                 const SizedBox(width: 8),
-                KdButton(label: 'Seç…', icon: LucideIcons.fileText, onPressed: _busy ? null : _pickFile),
+                KdButton(label: l10n.addChoose, icon: LucideIcons.fileText, onPressed: _busy ? null : _pickFile),
               ],
             ),
           ),
@@ -174,26 +176,26 @@ class _AddSourceFormState extends State<AddSourceForm> {
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: Text(
-                _advanced ? 'Gelişmiş ayarları gizle' : 'Gelişmiş ayarlar',
+                _advanced ? l10n.addAdvancedHide : l10n.addAdvanced,
                 style: const TextStyle(fontSize: KdType.small, color: KdColors.accent2),
               ),
             ),
           ),
         ),
         if (_advanced) ...[
-          _Row(label: 'User-Agent', child: KdInput(controller: _agent, hint: 'Sağlayıcı isterse', mono: true)),
+          _Row(label: 'User-Agent', child: KdInput(controller: _agent, hint: l10n.addUserAgentHint, mono: true)),
           if (_type != _Type.xtream)
             _Row(
-              label: 'Yayın akışı (XMLTV)',
-              child: KdInput(controller: _epg, hint: 'Liste bildirmiyorsa: https://…/epg.xml.gz', mono: true),
+              label: l10n.addGuideUrl,
+              child: KdInput(controller: _epg, hint: l10n.addGuideUrlHint, mono: true),
             ),
           _Row(
             label: '',
             child: KdCheck(
               value: _insecure,
               onChanged: (v) => setState(() => _insecure = v),
-              label: 'Geçersiz sertifikalara izin ver',
-              hint: 'Yalnızca bu kaynak için. Sağlayıcının sertifikası kendinden imzalıysa gerekir.',
+              label: l10n.addInsecure,
+              hint: l10n.addInsecureHint,
             ),
           ),
         ],
@@ -222,17 +224,17 @@ class _AddSourceFormState extends State<AddSourceForm> {
                             ),
                           ],
                         )
-                      : const Text(
-                          'Şifreniz bu bilgisayarın anahtar deposunda saklanır.',
-                          style: TextStyle(fontSize: KdType.small, color: KdColors.muted),
+                      : Text(
+                          l10n.addPasswordNote,
+                          style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
                         ),
             ),
             if (widget.onCancel != null) ...[
-              KdButton(label: 'Vazgeç', onPressed: _busy ? null : widget.onCancel),
+              KdButton(label: l10n.actionCancel, onPressed: _busy ? null : widget.onCancel),
               const SizedBox(width: 8),
             ],
             KdButton(
-              label: 'Bağlan ve eşitle',
+              label: l10n.addConnect,
               kind: KdButtonKind.cta,
               large: true,
               onPressed: _busy ? null : _submit,
@@ -354,7 +356,7 @@ class _Summary extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '${source.name} hazır',
+                l10n.addReady(source.name),
                 style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600),
               ),
             ),
@@ -363,34 +365,31 @@ class _Summary extends StatelessWidget {
         const SizedBox(height: 14),
         Row(
           children: [
-            stat('${source.liveCount}', 'canlı kanal'),
+            stat('${source.liveCount}', l10n.statLive),
             const SizedBox(width: 10),
-            stat('${source.movieCount}', 'film'),
+            stat('${source.movieCount}', l10n.statMovies),
             const SizedBox(width: 10),
-            stat('${source.seriesCount}', 'dizi'),
+            stat('${source.seriesCount}', l10n.statSeries),
           ],
         ),
         if (expires != null) ...[
           const SizedBox(height: 10),
           Text(
-            'Hesap bitiş tarihi: ${_date(expires)}',
+            l10n.addAccountExpires(_date(expires)),
             style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
           ),
         ],
         const SizedBox(height: 18),
         Align(
           alignment: Alignment.centerRight,
-          child: KdButton(label: 'Başla', kind: KdButtonKind.cta, large: true, autofocus: true, onPressed: onContinue),
+          child: KdButton(label: l10n.actionStart, kind: KdButtonKind.cta, large: true, autofocus: true, onPressed: onContinue),
         ),
       ],
     );
   }
 }
 
-String _date(int unix) {
-  final d = DateTime.fromMillisecondsSinceEpoch(unix * 1000);
-  return '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
-}
+String _date(int unix) => DateFormat.yMd(languageCode).format(DateTime.fromMillisecondsSinceEpoch(unix * 1000));
 
 /// First-run page: KaradelikDev setup head + the form.
 class OnboardingScreen extends StatelessWidget {
@@ -416,13 +415,13 @@ class OnboardingScreen extends StatelessWidget {
                     child: Image.asset('assets/brand/logo.png', width: 44, height: 44),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Karadelik IPTV Player', style: TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
-                        SizedBox(height: 2),
-                        Text('Başlamak için bir kaynak ekleyin.', style: TextStyle(color: KdColors.muted)),
+                        const Text('Karadelik IPTV Player', style: TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 2),
+                        Text(l10n.onboardHint, style: const TextStyle(color: KdColors.muted)),
                       ],
                     ),
                   ),
@@ -446,10 +445,9 @@ class OnboardingScreen extends StatelessWidget {
                   border: Border.all(color: KdColors.accentAlpha(0.3)),
                   borderRadius: BorderRadius.circular(KdRadius.card),
                 ),
-                child: const Text(
-                  'Karadelik IPTV Player bir oynatıcıdır; kanal, film veya yayın sağlamaz ve satmaz. '
-                  'Yalnızca erişim hakkınız olan kaynakları ekleyin.',
-                  style: TextStyle(fontSize: KdType.small, color: KdColors.text),
+                child: Text(
+                  l10n.onboardDisclaimer,
+                  style: const TextStyle(fontSize: KdType.small, color: KdColors.text),
                 ),
               ),
             ],

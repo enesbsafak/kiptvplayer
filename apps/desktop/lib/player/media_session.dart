@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 
 import '../app/library.dart';
+import '../l10n/l10n.dart';
 import 'player_controller.dart';
 
 /// Windows media controls: the media flyout, keyboard media keys and the
@@ -23,10 +24,10 @@ class MediaSession {
       'title': n?.title ?? '',
       'subtitle': switch (n) {
         null => '',
-        final n when n.isCatchup => 'Geçmiş yayın',
-        final n when n.isLive => 'Canlı yayın',
-        final n when n.kind == Kind.series => 'Dizi',
-        _ => 'Film',
+        final n when n.isCatchup => l10n.mediaCatchup,
+        final n when n.isLive => l10n.liveBroadcast,
+        final n when n.kind == Kind.series => l10n.mediaSeries,
+        _ => l10n.mediaMovie,
       },
       'art': n?.item.logo ?? '',
     };

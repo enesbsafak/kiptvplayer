@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 
+import '../l10n/l10n.dart' as l10n;
 import 'library.dart';
 
 enum Section { home, live, guide, movies, series, search, favorites, settings }
@@ -36,7 +37,31 @@ class AppState extends ChangeNotifier {
   /// Region whose categories and channels come first (e.g. "TR").
   String? region;
 
+  /// The language the user picked ("tr", "en"); null follows the system.
+  String? languageChoice;
+
+  /// The language in use; the app root rebuilds when it changes.
+  final language = ValueNotifier<String>('tr');
+
+  /// Test hook: the OS locale (e.g. "tr_TR", "en_US").
+  static String Function() systemLocale = () => Platform.localeName;
+
+  Future<void> setLanguage(String? choice) async {
+    languageChoice = choice;
+    await _applyLanguage();
+    notifyListeners();
+  }
+
+  Future<void> _applyLanguage() async {
+    final effective = languageChoice ?? (systemLocale().toLowerCase().startsWith('tr') ? 'tr' : 'en');
+    l10n.setLanguage(effective);
+    await library.setUiLanguage(languageChoice, effective);
+    language.value = effective;
+  }
+
   Future<void> load() async {
+    languageChoice = await library.uiLanguage();
+    await _applyLanguage();
     final pref = await library.regionPreference();
     if (pref.chosen) {
       region = pref.region;
@@ -129,8 +154,8 @@ class AppState extends ChangeNotifier {
 }
 
 String? _localeRegion() {
-  // Platform.localeName looks like "tr_TR", "tr-TR" or "en_US.UTF-8".
-  final parts = Platform.localeName.split(RegExp(r'[_\-.]'));
+  // The OS locale looks like "tr_TR", "tr-TR" or "en_US.UTF-8".
+  final parts = AppState.systemLocale().split(RegExp(r'[_\-.]'));
   if (parts.length < 2) return null;
   final country = parts[1].toUpperCase();
   return country.length == 2 ? (country == 'GB' ? 'UK' : country) : null;

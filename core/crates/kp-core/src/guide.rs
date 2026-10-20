@@ -23,9 +23,9 @@ const KEEP_AHEAD_SECS: i64 = 14 * 86_400;
 pub enum GuideError {
     #[error(transparent)]
     Xmltv(#[from] XmltvError),
-    #[error("yayın akışı kaydedilemedi: {0}")]
+    #[error("{}: {}", crate::lang::t("yayın akışı kaydedilemedi", "could not store the TV guide"), .0)]
     Db(#[from] rusqlite::Error),
-    #[error("yayın akışı dosyası: {0}")]
+    #[error("{}: {}", crate::lang::t("yayın akışı dosyası", "TV guide file"), .0)]
     Io(#[from] std::io::Error),
 }
 

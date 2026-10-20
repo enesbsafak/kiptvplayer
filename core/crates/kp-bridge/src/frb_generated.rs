@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 641451993;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 713267951;
 
 // Section: executor
 
@@ -1009,6 +1009,43 @@ fn wire__crate__api__library__set_tmdb_language_impl(
         },
     )
 }
+fn wire__crate__api__library__set_ui_language_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_ui_language",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_choice = <Option<String>>::sse_decode(&mut deserializer);
+            let api_effective = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok =
+                            crate::api::library::set_ui_language(api_choice, api_effective)?;
+                        std::result::Result::Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__library__source_regions_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -1181,6 +1218,40 @@ fn wire__crate__api__library__tmdb_status_impl(
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
                         let output_ok = crate::api::library::tmdb_status()?;
+                        std::result::Result::Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__library__ui_language_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "ui_language",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::library::ui_language()?;
                         std::result::Result::Ok(output_ok)
                     })(),
                 )
@@ -1939,11 +2010,13 @@ fn pde_ffi_dispatcher_primary_impl(
         }
         25 => wire__crate__api__library__set_tmdb_key_impl(port, ptr, rust_vec_len, data_len),
         26 => wire__crate__api__library__set_tmdb_language_impl(port, ptr, rust_vec_len, data_len),
-        27 => wire__crate__api__library__source_regions_impl(port, ptr, rust_vec_len, data_len),
-        28 => wire__crate__api__library__sync_source_impl(port, ptr, rust_vec_len, data_len),
-        29 => wire__crate__api__library__tmdb_detail_impl(port, ptr, rust_vec_len, data_len),
-        30 => wire__crate__api__library__tmdb_season_impl(port, ptr, rust_vec_len, data_len),
-        31 => wire__crate__api__library__tmdb_status_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__library__set_ui_language_impl(port, ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__library__source_regions_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__library__sync_source_impl(port, ptr, rust_vec_len, data_len),
+        30 => wire__crate__api__library__tmdb_detail_impl(port, ptr, rust_vec_len, data_len),
+        31 => wire__crate__api__library__tmdb_season_impl(port, ptr, rust_vec_len, data_len),
+        32 => wire__crate__api__library__tmdb_status_impl(port, ptr, rust_vec_len, data_len),
+        33 => wire__crate__api__library__ui_language_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

@@ -2,6 +2,7 @@
 
 import 'package:flutter/widgets.dart' show EditableText;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:karadelik_player/app/library.dart';
 import 'package:karadelik_player/screens/settings_screen.dart';
 import 'package:karadelik_player/screens/vod_screen.dart';
@@ -73,7 +74,7 @@ void main() {
     expect(find.text('13+'), findsOneWidget);
     expect(find.text('Fragman'), findsOneWidget);
     expect(find.text('Lana Wachowski, Lilly Wachowski'), findsOneWidget);
-    expect(find.textContaining('25,4 B oy'), findsOneWidget);
+    expect(find.textContaining('${NumberFormat.compact(locale: 'tr').format(25400)} oy'), findsOneWidget);
   });
 
   testWidgets('without a key the provider’s detail is shown as before', (tester) async {

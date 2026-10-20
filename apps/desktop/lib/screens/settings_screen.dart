@@ -1,14 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app/library.dart';
 import '../app/scope.dart';
+import '../app/version.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
+import '../l10n/l10n.dart';
 import 'add_source.dart';
 
 enum _Tab { sources, preferences, shortcuts, about }
@@ -35,7 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              for (final (t, label) in const [(_Tab.sources, 'Kaynaklar'), (_Tab.preferences, 'Tercihler'), (_Tab.shortcuts, 'Kısayollar'), (_Tab.about, 'Hakkında')])
+              for (final (t, label) in [(_Tab.sources, l10n.setSources), (_Tab.preferences, l10n.setPreferences), (_Tab.shortcuts, l10n.setShortcuts), (_Tab.about, l10n.setAbout)])
                 _TabButton(label: label, active: _tab == t, onTap: () => setState(() => _tab = t)),
             ],
           ),
@@ -96,10 +99,10 @@ class _SourcesTabState extends State<_SourcesTab> {
         children: [
           Row(
             children: [
-              const Text('Kaynaklar', style: TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+              Text(l10n.setSources, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
               const Spacer(),
               if (!_adding)
-                KdButton(label: 'Kaynak ekle', icon: LucideIcons.plus, kind: KdButtonKind.primary, onPressed: () => setState(() => _adding = true)),
+                KdButton(label: l10n.sourceAdd, icon: LucideIcons.plus, kind: KdButtonKind.primary, onPressed: () => setState(() => _adding = true)),
             ],
           ),
           const SizedBox(height: 12),
@@ -121,7 +124,7 @@ class _SourcesTabState extends State<_SourcesTab> {
             ),
           for (final s in app.sources) _SourceRow(source: s, active: s.id == app.activeSource?.id),
           if (app.sources.isEmpty && !_adding)
-            const Padding(padding: EdgeInsets.all(20), child: Text('Henüz kaynak yok.', style: TextStyle(color: KdColors.muted))),
+            Padding(padding: const EdgeInsets.all(20), child: Text(l10n.sourceNoneYet, style: const TextStyle(color: KdColors.muted))),
         ],
       ),
     );
@@ -143,7 +146,7 @@ class _SourceRowState extends State<_SourceRow> {
   StreamSubscription<SyncEvent>? _sub;
 
   Future<void> _refreshGuide() async {
-    setState(() => _stage = 'Yayın akışı indiriliyor…');
+    setState(() => _stage = l10n.guideDownloading);
     await context.library.refreshGuide(widget.source.id).catchError((_) => widget.source);
     if (!mounted) return;
     setState(() => _stage = null);
@@ -157,14 +160,14 @@ class _SourceRowState extends State<_SourceRow> {
   }
 
   void _sync() {
-    setState(() => _stage = 'Bağlanılıyor…');
+    setState(() => _stage = l10n.syncConnecting);
     _sub = context.library.syncSource(widget.source.id).listen((e) {
       if (!mounted) return;
       switch (e) {
         case SyncEvent_Downloading(:final what):
-          setState(() => _stage = '$what indiriliyor…');
+          setState(() => _stage = l10n.syncDownloading(what));
         case SyncEvent_Saving():
-          setState(() => _stage = 'Kaydediliyor…');
+          setState(() => _stage = l10n.syncSaving);
         case SyncEvent_Done(:final source):
           setState(() => _stage = null);
           context.app.sourceChanged(source);
@@ -183,14 +186,14 @@ class _SourceRowState extends State<_SourceRow> {
       builder: (context) => AlertDialog(
         backgroundColor: KdColors.bg2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
-        title: Text('${widget.source.name} silinsin mi?', style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
-        content: const Text(
-          'Kaynağın kataloğu, favorileri ve izleme geçmişi bu bilgisayardan silinir. Şifre anahtar deposundan kaldırılır.',
-          style: TextStyle(color: KdColors.muted),
+        title: Text(l10n.sourceDeleteTitle(widget.source.name), style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+        content: Text(
+          l10n.sourceDeleteBody,
+          style: const TextStyle(color: KdColors.muted),
         ),
         actions: [
-          KdButton(label: 'Vazgeç', onPressed: () => Navigator.pop(context, false)),
-          KdButton(label: 'Sil', kind: KdButtonKind.danger, onPressed: () => Navigator.pop(context, true)),
+          KdButton(label: l10n.actionCancel, onPressed: () => Navigator.pop(context, false)),
+          KdButton(label: l10n.actionDelete, kind: KdButtonKind.danger, onPressed: () => Navigator.pop(context, true)),
         ],
       ),
     );
@@ -221,7 +224,7 @@ class _SourceRowState extends State<_SourceRow> {
                     Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(width: 8),
                     KdTag(s.isXtream ? 'Xtream' : 'M3U'),
-                    if (widget.active) ...[const SizedBox(width: 6), const KdTag('etkin', ok: true)],
+                    if (widget.active) ...[const SizedBox(width: 6), KdTag(l10n.sourceActive, ok: true)],
                   ],
                 ),
                 const SizedBox(height: 3),
@@ -229,7 +232,7 @@ class _SourceRowState extends State<_SourceRow> {
                   [
                     if (s.username != null) s.username!,
                     _host(s.url),
-                    '${s.liveCount} kanal · ${s.movieCount} film · ${s.seriesCount} dizi',
+                    l10n.sourceCounts(s.liveCount.toInt(), s.movieCount.toInt(), s.seriesCount.toInt()),
                   ].join('  ·  '),
                   style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
                 ),
@@ -251,14 +254,14 @@ class _SourceRowState extends State<_SourceRow> {
             ),
           ),
           if (!s.isXtream && s.epgUrl != null) ...[
-            KdButton(label: 'Yayın akışı', icon: LucideIcons.calendarSync, onPressed: _stage == null ? _refreshGuide : null),
+            KdButton(label: l10n.guideButton, icon: LucideIcons.calendarSync, onPressed: _stage == null ? _refreshGuide : null),
             const SizedBox(width: 6),
           ],
-          if (!widget.active) KdButton(label: 'Etkinleştir', onPressed: () => context.app.selectSource(s.id)),
+          if (!widget.active) KdButton(label: l10n.sourceActivate, onPressed: () => context.app.selectSource(s.id)),
           const SizedBox(width: 6),
-          KdButton(label: 'Eşitle', icon: LucideIcons.refreshCw, onPressed: _stage == null ? _sync : null),
+          KdButton(label: l10n.actionSync, icon: LucideIcons.refreshCw, onPressed: _stage == null ? _sync : null),
           const SizedBox(width: 6),
-          KdButton(label: 'Sil', icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _stage == null ? _remove : null),
+          KdButton(label: l10n.actionDelete, icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _stage == null ? _remove : null),
         ],
       ),
     );
@@ -275,11 +278,11 @@ class _GuideLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final g = source.guide;
     final (text, color) = switch ((source.epgUrl, g)) {
-      (null, _) => ('Yayın akışı yok: liste bir XMLTV adresi bildirmiyor.', KdColors.muted),
-      (_, null) => ('Yayın akışı henüz indirilmedi.', KdColors.muted),
-      (_, final g?) when !g.ok => ('Yayın akışı alınamadı: ${g.error ?? ''}', KdColors.err),
+      (null, _) => (l10n.guideNoUrl, KdColors.muted),
+      (_, null) => (l10n.guideNotYet, KdColors.muted),
+      (_, final g?) when !g.ok => (l10n.guideFailed(g.error ?? ''), KdColors.err),
       (_, final g?) => (
-          'Yayın akışı: ${g.matched}/${g.channels} kanal eşleşti · ${_count(g.programmes.toInt())} program · ${_ago(g.at)}',
+          l10n.guideStatus('${g.matched}/${g.channels}', _count(g.programmes.toInt()), kdAgo(g.at)),
           g.matched == BigInt.zero ? KdColors.warn : KdColors.muted,
         ),
     };
@@ -287,63 +290,60 @@ class _GuideLine extends StatelessWidget {
   }
 }
 
-String _count(int n) => n >= 1000 ? '${(n / 1000).toStringAsFixed(n >= 10000 ? 0 : 1).replaceAll('.', ',')} bin' : '$n';
+String _count(int n) => NumberFormat.compact(locale: languageCode).format(n);
 
-String _ago(int unixSecs) {
-  final d = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(unixSecs * 1000));
-  if (d.inMinutes < 1) return 'az önce';
-  if (d.inHours < 1) return '${d.inMinutes} dk önce';
-  if (d.inDays < 1) return '${d.inHours} sa önce';
-  return '${d.inDays} gün önce';
-}
 
 String _host(String url) {
   final u = Uri.tryParse(url);
   return (u != null && u.host.isNotEmpty) ? u.host : url;
 }
 
-/// Display names for region codes providers use.
+/// Display names (Turkish, English) for region codes providers use.
 const _regionNames = {
-  'TR': 'Türkiye',
-  'DE': 'Almanya',
-  'AT': 'Avusturya',
-  'CH': 'İsviçre',
-  'UK': 'Birleşik Krallık',
-  'US': 'ABD',
-  'CA': 'Kanada',
-  'FR': 'Fransa',
-  'ES': 'İspanya',
-  'PT': 'Portekiz',
-  'IT': 'İtalya',
-  'NL': 'Hollanda',
-  'BE': 'Belçika',
-  'PL': 'Polonya',
-  'RO': 'Romanya',
-  'BG': 'Bulgaristan',
-  'GR': 'Yunanistan',
-  'AL': 'Arnavutluk',
-  'RS': 'Sırbistan',
-  'HR': 'Hırvatistan',
-  'BA': 'Bosna-Hersek',
-  'MK': 'Kuzey Makedonya',
-  'HU': 'Macaristan',
-  'SE': 'İsveç',
-  'NO': 'Norveç',
-  'DK': 'Danimarka',
-  'FI': 'Finlandiya',
-  'RU': 'Rusya',
-  'UA': 'Ukrayna',
-  'AZ': 'Azerbaycan',
-  'AR': 'Arapça',
-  'IR': 'İran',
-  'IN': 'Hindistan',
-  'PK': 'Pakistan',
-  'KU': 'Kürtçe',
-  'EXYU': 'Eski Yugoslavya',
-  'LAT': 'Latin Amerika',
+  'TR': ('Türkiye', 'Türkiye'),
+  'DE': ('Almanya', 'Germany'),
+  'AT': ('Avusturya', 'Austria'),
+  'CH': ('İsviçre', 'Switzerland'),
+  'UK': ('Birleşik Krallık', 'United Kingdom'),
+  'US': ('ABD', 'USA'),
+  'CA': ('Kanada', 'Canada'),
+  'FR': ('Fransa', 'France'),
+  'ES': ('İspanya', 'Spain'),
+  'PT': ('Portekiz', 'Portugal'),
+  'IT': ('İtalya', 'Italy'),
+  'NL': ('Hollanda', 'Netherlands'),
+  'BE': ('Belçika', 'Belgium'),
+  'PL': ('Polonya', 'Poland'),
+  'RO': ('Romanya', 'Romania'),
+  'BG': ('Bulgaristan', 'Bulgaria'),
+  'GR': ('Yunanistan', 'Greece'),
+  'AL': ('Arnavutluk', 'Albania'),
+  'RS': ('Sırbistan', 'Serbia'),
+  'HR': ('Hırvatistan', 'Croatia'),
+  'BA': ('Bosna-Hersek', 'Bosnia and Herzegovina'),
+  'MK': ('Kuzey Makedonya', 'North Macedonia'),
+  'HU': ('Macaristan', 'Hungary'),
+  'SE': ('İsveç', 'Sweden'),
+  'NO': ('Norveç', 'Norway'),
+  'DK': ('Danimarka', 'Denmark'),
+  'FI': ('Finlandiya', 'Finland'),
+  'RU': ('Rusya', 'Russia'),
+  'UA': ('Ukrayna', 'Ukraine'),
+  'AZ': ('Azerbaycan', 'Azerbaijan'),
+  'AR': ('Arapça', 'Arabic'),
+  'IR': ('İran', 'Iran'),
+  'IN': ('Hindistan', 'India'),
+  'PK': ('Pakistan', 'Pakistan'),
+  'KU': ('Kürtçe', 'Kurdish'),
+  'EXYU': ('Eski Yugoslavya', 'Ex-Yugoslavia'),
+  'LAT': ('Latin Amerika', 'Latin America'),
 };
 
-String regionName(String code) => _regionNames[code] ?? code;
+String regionName(String code) {
+  final n = _regionNames[code];
+  if (n == null) return code;
+  return languageCode == 'tr' ? n.$1 : n.$2;
+}
 
 class _PreferencesTab extends StatefulWidget {
   const _PreferencesTab();
@@ -386,19 +386,31 @@ class _PreferencesTabState extends State<_PreferencesTab> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const Text('Öne çıkan bölge', style: TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+        Text(l10n.prefLanguage, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 6,
+          children: [
+            KdPill(label: l10n.prefLanguageSystem, selected: context.app.languageChoice == null, onTap: () => context.app.setLanguage(null)),
+            KdPill(label: 'Türkçe', selected: context.app.languageChoice == 'tr', onTap: () => context.app.setLanguage('tr')),
+            KdPill(label: 'English', selected: context.app.languageChoice == 'en', onTap: () => context.app.setLanguage('en')),
+          ],
+        ),
+        const SizedBox(height: 28),
+        const Divider(height: 1, color: KdColors.line),
+        const SizedBox(height: 22),
+        Text(l10n.prefRegion, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
-        const Text(
-          'Bu bölgenin kategorileri ve kanalları her listede en başta gösterilir. Diğerleri sağlayıcının sırasıyla devam eder; '
-          'yetişkin içerik her zaman en sondadır. Bölge, kategori adlarından okunur (ör. “TR: Ulusal”, “|DE| Sport”).',
-          style: TextStyle(color: KdColors.muted, height: 1.5),
+        Text(
+          l10n.prefRegionBody,
+          style: const TextStyle(color: KdColors.muted, height: 1.5),
         ),
         const SizedBox(height: 14),
         Wrap(
           spacing: 6,
           runSpacing: 6,
           children: [
-            KdPill(label: 'Kapalı', selected: current == null, onTap: () => _pick(null)),
+            KdPill(label: l10n.prefOff, selected: current == null, onTap: () => _pick(null)),
             for (final code in codes)
               KdPill(
                 label: regionName(code),
@@ -411,9 +423,9 @@ class _PreferencesTabState extends State<_PreferencesTab> {
         if (_saving) ...[const SizedBox(height: 12), const SizedBox(width: 200, child: KdIndeterminate())],
         if (_regions.isEmpty) ...[
           const SizedBox(height: 12),
-          const Text(
-            'Etkin kaynakta bölge etiketi bulunamadı; sıralama sağlayıcının kendi sırası olarak kalır.',
-            style: TextStyle(fontSize: KdType.small, color: KdColors.muted),
+          Text(
+            l10n.prefRegionNone,
+            style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
           ),
         ],
         const SizedBox(height: 28),
@@ -467,7 +479,7 @@ class _TmdbSettingsState extends State<TmdbSettings> {
     try {
       await context.library.setTmdbKey(key);
       _key.clear();
-      _done = key == null ? 'Anahtar kaldırıldı.' : 'Anahtar doğrulandı ve kaydedildi.';
+      _done = key == null ? l10n.tmdbRemoved : l10n.tmdbSaved;
     } catch (e) {
       _error = errorText(e);
     }
@@ -489,16 +501,15 @@ class _TmdbSettingsState extends State<TmdbSettings> {
       children: [
         Row(
           children: [
-            const Text('TMDB içerik bilgileri', style: TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+            Text(l10n.tmdbTitle, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
             const SizedBox(width: 10),
-            if (s != null) KdTag(on ? 'AÇIK' : 'KAPALI', ok: on),
+            if (s != null) KdTag(on ? l10n.tagOn : l10n.tagOff, ok: on),
           ],
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Film ve dizilerde özet, tür, oyuncu fotoğrafları, fragman, yaş sınırı ve bölüm bilgileri TMDB’den gelir. '
-          'Anahtar yalnızca bu bilgisayarın anahtar deposunda saklanır; TMDB’ye yalnızca içerik adı ve yılı gönderilir.',
-          style: TextStyle(color: KdColors.muted, height: 1.5),
+        Text(
+          l10n.tmdbBody,
+          style: const TextStyle(color: KdColors.muted, height: 1.5),
         ),
         const SizedBox(height: 14),
         Row(
@@ -507,7 +518,7 @@ class _TmdbSettingsState extends State<TmdbSettings> {
               width: 420,
               child: KdInput(
                 controller: _key,
-                hint: on ? 'Yeni anahtar ile değiştir' : 'API anahtarı (v3) veya okuma erişim jetonu (v4)',
+                hint: on ? l10n.tmdbReplaceHint : l10n.tmdbKeyHint,
                 obscure: true,
                 mono: true,
                 prefix: LucideIcons.keyRound,
@@ -516,14 +527,14 @@ class _TmdbSettingsState extends State<TmdbSettings> {
             ),
             const SizedBox(width: 8),
             KdButton(
-              label: 'Doğrula ve kaydet',
+              label: l10n.tmdbVerify,
               icon: LucideIcons.check,
               kind: KdButtonKind.primary,
               onPressed: _busy ? null : () => _key.text.trim().isEmpty ? null : _save(_key.text.trim()),
             ),
             if (on) ...[
               const SizedBox(width: 8),
-              KdButton(label: 'Kaldır', icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _busy ? null : () => _save(null)),
+              KdButton(label: l10n.actionRemove, icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _busy ? null : () => _save(null)),
             ],
           ],
         ),
@@ -533,10 +544,10 @@ class _TmdbSettingsState extends State<TmdbSettings> {
         const SizedBox(height: 10),
         Row(
           children: [
-            const Text('Anahtarı nereden alırım?', style: TextStyle(color: KdColors.muted, fontSize: KdType.small)),
+            Text(l10n.tmdbWhere, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small)),
             const SizedBox(width: 6),
             KdButton(
-              label: 'themoviedb.org › Ayarlar › API',
+              label: l10n.tmdbWhereLink,
               icon: LucideIcons.externalLink,
               kind: KdButtonKind.ghost,
               onPressed: () => launchUrl(Uri.parse('https://www.themoviedb.org/settings/api')),
@@ -544,7 +555,7 @@ class _TmdbSettingsState extends State<TmdbSettings> {
           ],
         ),
         const SizedBox(height: 14),
-        const Text('Bilgi dili', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text(l10n.tmdbLanguage, style: const TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 8),
         Wrap(
           spacing: 6,
@@ -561,30 +572,29 @@ class _TmdbSettingsState extends State<TmdbSettings> {
 class _ShortcutsTab extends StatelessWidget {
   const _ShortcutsTab();
 
-  static const _rows = [
-    ('Ctrl K', 'Ara'),
-    ('Ctrl 1 … 6', 'Ana sayfa, Canlı TV, Yayın akışı, Filmler, Diziler, Favoriler'),
-    ('Ctrl ,', 'Ayarlar'),
-    ('↑ / ↓', 'Kanal değiştir'),
-    ('0 … 9', 'Kanal numarasıyla geç (Enter beklemeden açar)'),
-    ('Medya tuşları', 'Oynat / duraklat, sonraki / önceki kanal (film ve dizide ileri / geri sarma)'),
-    ('PgUp / PgDn', 'Listede 10 kanal atla'),
-    ('Enter', 'Tam ekran oynat'),
-    ('Space', 'Oynat / duraklat'),
-    ('← / →', '10 saniye geri / ileri (film ve dizi)'),
-    ('F, çift tık', 'Pencereyi tam ekran yap'),
-    ('A, S', 'Ses ve altyazı paneli'),
-    ('L', 'Oynatıcıda kanal listesi'),
-    ('M', 'Sesi kapat / aç'),
-    ('Esc', 'Paneli kapat, oynatıcıdan çık'),
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final rows = [
+      ('Ctrl K', l10n.navSearch),
+      ('Ctrl 1 … 6', l10n.keySections),
+      ('Ctrl ,', l10n.navSettings),
+      ('↑ / ↓', l10n.keyZap),
+      ('0 … 9', l10n.keyDigits),
+      (l10n.keyMediaKeys, l10n.keyMediaKeysDo),
+      ('PgUp / PgDn', l10n.keyPage),
+      ('Enter', l10n.keyEnter),
+      ('Space', l10n.tipPlayPause),
+      ('← / →', l10n.keySeek),
+      (l10n.keyFKey, l10n.keyFullscreen),
+      ('A, S', l10n.keyTracks),
+      ('L', l10n.keyChannelList),
+      ('M', l10n.keyMute),
+      ('Esc', l10n.keyEsc),
+    ];
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        for (final (k, d) in _rows)
+        for (final (k, d) in rows)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
             child: Row(
@@ -611,49 +621,41 @@ class _AboutTab extends StatelessWidget {
           children: [
             Image.asset('assets/brand/logo.png', width: 44, height: 44),
             const SizedBox(width: 14),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Karadelik IPTV Player', style: TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
-                Text('Sürüm 0.1.0 · ön sürüm', style: TextStyle(color: KdColors.muted)),
+                const Text('Karadelik IPTV Player', style: TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
+                Text(l10n.aboutVersion(appVersion), style: const TextStyle(color: KdColors.muted)),
               ],
             ),
           ],
         ),
         const SizedBox(height: 18),
-        const Text(
-          'Karadelik IPTV Player bir oynatıcıdır. Kanal, film veya yayın sağlamaz, satmaz ve barındırmaz. '
-          'Eklediğiniz kaynakların yasal olduğundan ve erişim hakkınız bulunduğundan siz sorumlusunuz.',
-          style: TextStyle(height: 1.5),
+        Text(l10n.aboutDisclaimer, style: const TextStyle(height: 1.5)),
+        const SizedBox(height: 14),
+        Text(l10n.aboutPrivacy, style: const TextStyle(height: 1.5, color: KdColors.muted)),
+        const SizedBox(height: 14),
+        // Required wording of TMDB's API terms (English in every language).
+        Text(
+          'This product uses the TMDB API but is not endorsed or certified by TMDB. ${l10n.aboutTmdb}',
+          style: const TextStyle(height: 1.5, color: KdColors.muted, fontSize: KdType.small),
         ),
-        const SizedBox(height: 14),
-        const Text(
-          'Gizlilik: kaynak şifreleri yalnızca bu bilgisayarın anahtar deposunda tutulur. Uygulama izleme veya reklam SDK’sı içermez.',
-          style: TextStyle(height: 1.5, color: KdColors.muted),
-        ),
-        const SizedBox(height: 14),
-        const SizedBox(height: 14),
+        const SizedBox(height: 18),
         Align(
           alignment: Alignment.centerLeft,
           child: KdButton(
-            label: 'Açık kaynak lisansları',
+            label: l10n.aboutLicenses,
             icon: LucideIcons.scrollText,
             onPressed: () => showLicensePage(
               context: context,
               applicationName: 'Karadelik IPTV Player',
-              applicationVersion: '0.1.0',
+              applicationVersion: appVersion,
               applicationIcon: Padding(
                 padding: const EdgeInsets.all(8),
                 child: Image.asset('assets/brand/logo.png', width: 40, height: 40),
               ),
             ),
           ),
-        ),
-        // Required wording of TMDB's API terms.
-        const Text(
-          'This product uses the TMDB API but is not endorsed or certified by TMDB. '
-          'Film ve dizi bilgileri, isteğe bağlı olarak, The Movie Database’den (TMDB) alınır.',
-          style: TextStyle(height: 1.5, color: KdColors.muted, fontSize: KdType.small),
         ),
       ],
     );

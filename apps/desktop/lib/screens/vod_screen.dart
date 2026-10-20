@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -8,6 +9,7 @@ import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
+import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 
 /// Movies or series: category rail + poster grid, detail on click.
@@ -91,7 +93,7 @@ class _VodScreenState extends State<VodScreen> {
   @override
   Widget build(BuildContext context) {
     if (_sourceId == null) {
-      return const KdEmpty(title: 'Kaynak yok', hint: 'Ayarlar › Kaynaklar bölümünden bir kaynak ekleyin.');
+      return KdEmpty(title: l10n.sourceNone, hint: l10n.sourceNoneHint);
     }
     final detail = _detail;
     if (detail != null) {
@@ -107,7 +109,7 @@ class _VodScreenState extends State<VodScreen> {
           child: Row(
             children: [
               Text(
-                widget.kind == Kind.movie ? 'Filmler' : 'Diziler',
+                widget.kind == Kind.movie ? l10n.navMovies : l10n.navSeries,
                 style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 10),
@@ -121,7 +123,7 @@ class _VodScreenState extends State<VodScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 20),
             children: [
-              KdPill(label: 'Tümü', selected: _category == null, onTap: () => _select(null)),
+              KdPill(label: l10n.categoryAll, selected: _category == null, onTap: () => _select(null)),
               for (final c in _categories) ...[
                 const SizedBox(width: 6),
                 KdPill(label: c.name, trailing: '${c.count}', selected: _category == c.uid, onTap: () => _select(c.uid)),
@@ -136,7 +138,7 @@ class _VodScreenState extends State<VodScreen> {
           child: pager == null || (pager.items.isEmpty && !pager.loading)
               ? KdEmpty(
                   icon: widget.kind == Kind.movie ? LucideIcons.clapperboard : LucideIcons.layers,
-                  title: 'Bu kategoride içerik yok',
+                  title: l10n.vodEmptyCategory,
                 )
               : NotificationListener<ScrollNotification>(
                   onNotification: (n) {
@@ -353,7 +355,7 @@ class _DetailViewState extends State<DetailView> {
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: KdButton(label: 'Geri', icon: LucideIcons.arrowLeft, kind: KdButtonKind.ghost, onPressed: widget.onBack),
+              child: KdButton(label: l10n.actionBack, icon: LucideIcons.arrowLeft, kind: KdButtonKind.ghost, onPressed: widget.onBack),
             ),
             const SizedBox(height: 40),
             Row(
@@ -366,7 +368,7 @@ class _DetailViewState extends State<DetailView> {
             ),
             const SizedBox(height: 22),
             if (_error != null)
-              Text('Ayrıntılar alınamadı: ${errorText(_error!)}', style: const TextStyle(color: KdColors.err))
+              Text(l10n.detailFailed(errorText(_error!)), style: const TextStyle(color: KdColors.err))
             else if (d == null)
               const SizedBox(width: 240, child: KdIndeterminate())
             else ...[
@@ -377,18 +379,18 @@ class _DetailViewState extends State<DetailView> {
                 ),
                 const SizedBox(height: 14),
               ],
-              if (makers != null) _fact(widget.kind == Kind.series ? 'Yaratıcı' : 'Yönetmen', makers),
+              if (makers != null) _fact(widget.kind == Kind.series ? l10n.detailCreator : l10n.detailDirector, makers),
               if (t != null && t.cast.isNotEmpty) ...[
                 const SizedBox(height: 18),
-                const KdSectionLabel('Oyuncular'),
+                KdSectionLabel(l10n.detailCast),
                 const SizedBox(height: 10),
                 _CastRow(cast: t.cast),
               ] else if (d.cast != null)
-                _fact('Oyuncular', d.cast!),
+                _fact(l10n.detailCast, d.cast!),
               if (widget.kind == Kind.series) ...[const SizedBox(height: 22), _episodes(d)],
               if (t != null) ...[
                 const SizedBox(height: 24),
-                const Text('Bilgiler: TMDB', style: TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+                Text(l10n.detailSourceTmdb, style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
               ],
             ],
           ],
@@ -408,7 +410,7 @@ class _DetailViewState extends State<DetailView> {
       if (year != null) '$year',
       ?genres,
       if (runtime case final s? when s > 0 && widget.kind == Kind.movie) kdDuration(s),
-      if (widget.kind == Kind.series && d != null) '${d.episodes.map((e) => e.season).toSet().length} sezon',
+      if (widget.kind == Kind.series && d != null) l10n.detailSeasons(d.episodes.map((e) => e.season).toSet().length),
     ];
     final progress = d?.progressMs;
     final original = t?.originalTitle;
@@ -446,17 +448,17 @@ class _DetailViewState extends State<DetailView> {
           children: [
             if (widget.kind == Kind.movie)
               KdButton(
-                label: progress != null && progress > 0 ? 'Devam et' : 'Oynat',
+                label: progress != null && progress > 0 ? l10n.actionResume : l10n.actionPlay,
                 icon: LucideIcons.play,
                 kind: KdButtonKind.cta,
                 large: true,
                 onPressed: d == null ? null : () => _play(),
               ),
             if (widget.kind == Kind.movie && progress != null && progress > 0)
-              KdButton(label: 'Baştan başlat', large: true, onPressed: () => _play(fromStart: true)),
+              KdButton(label: l10n.actionFromStart, large: true, onPressed: () => _play(fromStart: true)),
             if (widget.kind == Kind.series && d != null && d.episodes.isNotEmpty)
               KdButton(
-                label: _resumeEpisode(d) == null ? 'İlk bölümü oynat' : 'Devam et',
+                label: _resumeEpisode(d) == null ? l10n.actionPlayFirstEpisode : l10n.actionResume,
                 icon: LucideIcons.play,
                 kind: KdButtonKind.cta,
                 large: true,
@@ -464,13 +466,13 @@ class _DetailViewState extends State<DetailView> {
               ),
             if (_trailer case final key?)
               KdButton(
-                label: 'Fragman',
+                label: l10n.actionTrailer,
                 icon: LucideIcons.clapperboard,
                 large: true,
                 onPressed: () => launchUrl(_youtube(key)),
               ),
             KdButton(
-              label: _fav == true ? 'Listemde' : 'Listeme ekle',
+              label: _fav == true ? l10n.listIn : l10n.listAdd,
               icon: _fav == true ? LucideIcons.check : LucideIcons.plus,
               large: true,
               onPressed: _fav == null
@@ -513,11 +515,11 @@ class _DetailViewState extends State<DetailView> {
       children: [
         Row(
           children: [
-            const KdSectionLabel('Bölümler'),
+            KdSectionLabel(l10n.detailEpisodes),
             const SizedBox(width: 14),
             for (final s in seasons) ...[
               KdPill(
-                label: '$s. Sezon',
+                label: l10n.detailSeasonN(s),
                 selected: s == _season,
                 onTap: () {
                   setState(() => _season = s);
@@ -539,7 +541,7 @@ class _DetailViewState extends State<DetailView> {
 Uri _youtube(String key) =>
     key.startsWith('http') ? Uri.parse(key) : Uri.parse('https://www.youtube.com/watch?v=${Uri.encodeComponent(key)}');
 
-String _votes(int v) => v >= 1000 ? '${(v / 1000).toStringAsFixed(1).replaceAll('.', ',')} B oy' : '$v oy';
+String _votes(int v) => l10n.detailVotes(NumberFormat.compact(locale: languageCode).format(v));
 
 /// Cast with photos, scrolling sideways.
 class _CastRow extends StatelessWidget {

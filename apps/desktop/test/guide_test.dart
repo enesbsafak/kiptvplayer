@@ -1,6 +1,7 @@
 // XMLTV guides of M3U sources: status line, refresh, background updates.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:karadelik_player/app/library.dart';
 import 'package:karadelik_player/screens/settings_screen.dart';
 
@@ -33,7 +34,9 @@ void main() {
     await h.state.load();
     await tester.pumpWidget(app(h, const SettingsScreen()));
     await tester.pumpAndSettle();
-    expect(find.text('Yayın akışı: 118/120 kanal eşleşti · 19 bin program · 3 sa önce'), findsOneWidget);
+    // intl's compact form ("19,2 B", with a no-break space).
+    final count = NumberFormat.compact(locale: 'tr').format(19200);
+    expect(find.text('Yayın akışı: 118/120 kanal eşleşti · $count program · 3 sa önce'), findsOneWidget);
 
     await tester.tap(find.text('Yayın akışı'));
     await tester.pumpAndSettle();

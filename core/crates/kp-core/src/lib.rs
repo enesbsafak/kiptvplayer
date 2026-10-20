@@ -8,6 +8,7 @@ pub mod catalog;
 pub mod catchup;
 pub mod core;
 pub mod guide;
+pub mod lang;
 pub mod m3u;
 pub mod region;
 pub mod secret;

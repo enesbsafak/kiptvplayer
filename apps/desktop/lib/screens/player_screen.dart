@@ -10,6 +10,7 @@ import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
+import '../l10n/l10n.dart';
 import '../player/media_track.dart';
 import '../player/player_controller.dart';
 import '../player/reconnect_banner.dart';
@@ -219,7 +220,7 @@ class _TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _OsdButton(icon: LucideIcons.arrowLeft, tooltip: 'Geri (Esc)', onTap: onBack),
+          _OsdButton(icon: LucideIcons.arrowLeft, tooltip: l10n.tipBackEsc, onTap: onBack),
           const SizedBox(width: 12),
           // Title and tags take the free space, so trailing actions sit at the edge.
           Expanded(
@@ -236,9 +237,9 @@ class _TopBar extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 10),
-                      if (n.isLive) const KdTag('CANLI'),
-                      if (n.isCatchup) const KdTag('GEÇMİŞ YAYIN'),
-                      if (player.backupName != null) ...[const SizedBox(width: 6), const KdTag('YEDEK YAYIN')],
+                      if (n.isLive) KdTag(l10n.tagLive),
+                      if (n.isCatchup) KdTag(l10n.tagCatchup),
+                      if (player.backupName != null) ...[const SizedBox(width: 6), KdTag(l10n.tagBackup)],
                       if (player.videoHeight case final h? when h > 0) ...[
                         const SizedBox(width: 6),
                         KdTag(h >= 2000 ? '4K' : h >= 1000 ? 'FHD' : h >= 700 ? 'HD' : 'SD', ok: true),
@@ -248,7 +249,7 @@ class _TopBar extends StatelessWidget {
           ),
           if (n != null && n.isCatchup) ...[
             const SizedBox(width: 12),
-            KdButton(label: 'Canlıya dön', icon: LucideIcons.radio, kind: KdButtonKind.cta, onPressed: player.backToLive),
+            KdButton(label: l10n.actionBackToLive, icon: LucideIcons.radio, kind: KdButtonKind.cta, onPressed: player.backToLive),
           ],
         ],
       ),
@@ -313,20 +314,20 @@ class _BottomBar extends StatelessWidget {
               Expanded(child: _NowInfo(player: player)),
               _OsdButton(
                 icon: live ? LucideIcons.chevronsUpDown : LucideIcons.rewind,
-                tooltip: live ? 'Önceki kanal (↑)' : '10 sn geri (←)',
+                tooltip: live ? l10n.tipPrevChannel : l10n.tipBack10,
                 onTap: () => live ? player.zap(-1) : player.seekBy(const Duration(seconds: -10)),
               ),
               const SizedBox(width: 6),
               _OsdButton(
                 icon: player.playing ? LucideIcons.pause : LucideIcons.play,
-                tooltip: 'Oynat / duraklat (Space)',
+                tooltip: l10n.tipPlayPauseSpace,
                 big: true,
                 onTap: player.togglePause,
               ),
               const SizedBox(width: 6),
               _OsdButton(
                 icon: live ? LucideIcons.skipForward : LucideIcons.fastForward,
-                tooltip: live ? 'Sonraki kanal (↓)' : '10 sn ileri (→)',
+                tooltip: live ? l10n.tipNextChannel : l10n.tipForward10,
                 onTap: () => live ? player.zap(1) : player.seekBy(const Duration(seconds: 10)),
               ),
               Expanded(
@@ -335,13 +336,13 @@ class _BottomBar extends StatelessWidget {
                   children: [
                     _Volume(player: player),
                     const SizedBox(width: 6),
-                    _OsdButton(icon: LucideIcons.subtitles, tooltip: 'Ses ve altyazı (A)', onTap: onTracks),
+                    _OsdButton(icon: LucideIcons.subtitles, tooltip: l10n.tipTracks, onTap: onTracks),
                     if (live) ...[
                       const SizedBox(width: 6),
-                      _OsdButton(icon: LucideIcons.listVideo, tooltip: 'Kanal listesi (L)', onTap: onChannels),
+                      _OsdButton(icon: LucideIcons.listVideo, tooltip: l10n.tipChannelList, onTap: onChannels),
                     ],
                     const SizedBox(width: 6),
-                    _OsdButton(icon: LucideIcons.maximize, tooltip: 'Tam ekran (F)', onTap: player.toggleWindowFullscreen),
+                    _OsdButton(icon: LucideIcons.maximize, tooltip: l10n.tipFullscreen, onTap: player.toggleWindowFullscreen),
                   ],
                 ),
               ),
@@ -380,7 +381,7 @@ class _NowInfo extends StatelessWidget {
                   Text(
                     switch (n.programme) {
                       final pr? => '${pr.title} · ${kdDay(pr.start)} ${kdClock(pr.start)}',
-                      _ => p?.title ?? n.episode?.title ?? (n.isLive ? 'Canlı yayın' : ''),
+                      _ => p?.title ?? n.episode?.title ?? (n.isLive ? l10n.liveBroadcast : ''),
                     },
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -472,7 +473,7 @@ class _Volume extends StatelessWidget {
       children: [
         _OsdButton(
           icon: muted ? LucideIcons.volumeX : LucideIcons.volume2,
-          tooltip: 'Ses (M)',
+          tooltip: l10n.tipVolume,
           onTap: () => player.setVolume(muted ? 100 : 0),
         ),
         SizedBox(
@@ -556,7 +557,7 @@ class _TracksPanel extends StatelessWidget {
         children: [
           KdSectionLabel(title),
           const SizedBox(height: 8),
-          if (rows.isEmpty) const Text('Seçenek yok', style: TextStyle(color: KdColors.muted, fontSize: KdType.small)),
+          if (rows.isEmpty) Text(l10n.tracksNone, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small)),
           ...rows,
         ],
       ),
@@ -573,15 +574,15 @@ class _TracksPanel extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            column('Ses', [
+            column(l10n.tracksAudio, [
               for (final (i, t) in audios.indexed)
                 _TrackRow(label: audioLabels[i], selected: t.selected, onTap: () => player.setAudio(t)),
             ]),
             const SizedBox(width: 18),
-            column('Altyazı', [
+            column(l10n.tracksSubtitles, [
               if (subs.isNotEmpty)
                 _TrackRow(
-                  label: const TrackLabel('Kapalı', ''),
+                  label: TrackLabel(l10n.tracksOff, ''),
                   selected: !subs.any((t) => t.selected),
                   onTap: () => player.setSubtitle(null),
                 ),
@@ -675,7 +676,7 @@ class _ChannelSheetState extends State<_ChannelSheet> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(padding: EdgeInsets.fromLTRB(16, 18, 16, 10), child: KdSectionLabel('Kanallar')),
+          Padding(padding: const EdgeInsets.fromLTRB(16, 18, 16, 10), child: KdSectionLabel(l10n.kindChannels)),
           Expanded(
             child: ListView.builder(
               controller: _scroll,
@@ -745,17 +746,17 @@ class _ErrorCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(LucideIcons.circleAlert, size: 16, color: KdColors.err),
-              SizedBox(width: 8),
-              Text('Yayın açılamadı', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Icon(LucideIcons.circleAlert, size: 16, color: KdColors.err),
+              const SizedBox(width: 8),
+              Text(l10n.playerOpenFailed, style: const TextStyle(fontWeight: FontWeight.w600)),
             ],
           ),
           const SizedBox(height: 8),
           Text(message, style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
           const SizedBox(height: 12),
-          Align(alignment: Alignment.centerRight, child: KdButton(label: 'Tekrar dene', kind: KdButtonKind.primary, onPressed: onRetry)),
+          Align(alignment: Alignment.centerRight, child: KdButton(label: l10n.actionRetry, kind: KdButtonKind.primary, onPressed: onRetry)),
         ],
       ),
     );

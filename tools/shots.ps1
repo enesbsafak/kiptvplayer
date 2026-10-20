@@ -7,7 +7,9 @@ param(
   [string]$Out = (Join-Path $env:TEMP 'karadelik-shots'),
   [string]$Mock = 'http://127.0.0.1:8089',
   # Release or Profile; Profile is handy while a Release build is open.
-  [string]$Build = 'Release'
+  [string]$Build = 'Release',
+  # tr or en: the UI language of the captures.
+  [string]$Language = 'tr'
 )
 $ErrorActionPreference = 'Stop'
 Add-Type @'
@@ -25,7 +27,7 @@ $env:KP_TMDB_BASE = $Mock
 
 $before = [KpForeground]::GetForegroundWindow()
 $p = Start-Process (Join-Path $exeDir 'karadelik_player.exe') -WorkingDirectory $exeDir -WindowStyle Hidden -PassThru `
-  -ArgumentList '--kp-offscreen', "--kp-data-dir=$data", "--kp-add-mock=$Mock", "--kp-shot=$Out", '--kp-tmdb-key=kp-mock-tmdb-key'
+  -ArgumentList '--kp-offscreen', "--kp-data-dir=$data", "--kp-add-mock=$Mock", "--kp-shot=$Out", '--kp-tmdb-key=kp-mock-tmdb-key', "--kp-language=$Language"
 $stoleFocus = $false
 $sw = [Diagnostics.Stopwatch]::StartNew()
 while (-not $p.HasExited -and $sw.Elapsed.TotalSeconds -lt 180) {
