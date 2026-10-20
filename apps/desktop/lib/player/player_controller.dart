@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:media_kit/media_kit.dart' show AudioTrack, SubtitleTrack, Track, Tracks;
 import 'package:window_manager/window_manager.dart';
 
 import '../app/library.dart';
 import '../perf/perf.dart';
+import 'media_track.dart';
 import 'player_engine.dart';
 
 /// What is playing, and the list ↑/↓ zaps through.
@@ -45,7 +45,6 @@ class PlayerController extends ChangeNotifier {
       engine.position.listen((v) => position.value = v),
       engine.duration.listen((v) => _set(() => duration = v)),
       engine.tracks.listen((v) => _set(() => tracks = v)),
-      engine.track.listen((v) => _set(() => track = v)),
       engine.videoHeight.listen((v) => _set(() => videoHeight = v)),
       engine.errors.listen(_onError),
     ];
@@ -63,8 +62,7 @@ class PlayerController extends ChangeNotifier {
   bool playing = false;
   Duration duration = Duration.zero;
   final position = ValueNotifier(Duration.zero);
-  Tracks tracks = const Tracks();
-  Track track = const Track();
+  List<MediaTrack> tracks = const [];
   int? videoHeight;
   String? error;
   int? lastZapMs;
@@ -305,8 +303,10 @@ class PlayerController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setAudio(AudioTrack t) => engine.setAudioTrack(t);
-  Future<void> setSubtitle(SubtitleTrack t) => engine.setSubtitleTrack(t);
+  Future<void> setAudio(MediaTrack t) => engine.selectTrack(TrackKind.audio, t.id);
+
+  /// Null turns subtitles off.
+  Future<void> setSubtitle(MediaTrack? t) => engine.selectTrack(TrackKind.subtitle, t?.id);
 
   @override
   void dispose() {

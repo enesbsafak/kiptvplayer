@@ -8,6 +8,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../app/app_state.dart';
 import '../app/library.dart';
+import '../player/media_track.dart';
 import '../player/player_controller.dart';
 
 /// Development driver:
@@ -88,6 +89,18 @@ class Automation {
       if (movies.isNotEmpty) {
         app.openDetail(movies.first, Kind.movie);
         await shot('movie-detail', wait: const Duration(milliseconds: 2500));
+        // Track picker input as the player sees it, labels included.
+        await player.play(movies.first, Kind.movie, view: PlayerView.full, fromStart: true);
+        await Future<void>.delayed(const Duration(milliseconds: 1500));
+        final lines = <String>[];
+        for (final kind in TrackKind.values) {
+          final list = player.tracks.where((t) => t.kind == kind).toList();
+          for (final (i, l) in trackLabels(list).indexed) {
+            lines.add('${kind.name} | ${list[i].selected ? '*' : ' '} | ${l.name} | ${l.detail}');
+          }
+        }
+        await File('$dir${Platform.pathSeparator}tracks.txt').writeAsString(lines.join(String.fromCharCode(10)));
+        await player.stop();
       }
       final series = await app.library.page(sid, Kind.series, limit: 5);
       if (series.isNotEmpty) {

@@ -325,7 +325,9 @@ async fn vod_stream(State(s): State<AppState>, Path((user, pass, _file)): Path<(
     if let Err(r) = check_creds(&user, &pass) {
         return r;
     }
-    serve(&s, "ts1080.ts", req).await
+    // Several audio/subtitle tracks, like provider VOD, when generated.
+    let file = if s.media.join("vod-multi.mkv").exists() { "vod-multi.mkv" } else { "ts1080.ts" };
+    serve(&s, file, req).await
 }
 
 /// Catch-up: the start arrives in the panel's local time (Europe/Istanbul,

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:media_kit/media_kit.dart' show SubtitleTrack;
 
 import '../app/library.dart';
 import '../app/paging.dart';
@@ -11,6 +10,7 @@ import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
+import '../player/media_track.dart';
 import '../player/player_controller.dart';
 import '../player/reconnect_banner.dart';
 
@@ -529,25 +529,21 @@ class _OsdButtonState extends State<_OsdButton> {
   }
 }
 
-/// Audio and subtitle tracks side by side, like HBO Max's picker.
+/// Audio and subtitle tracks side by side, like HBO Max's picker. Same-
+/// language tracks carry what tells them apart (forced, SDH, format).
 class _TracksPanel extends StatelessWidget {
   const _TracksPanel({required this.player});
 
   final PlayerController player;
 
-  String _label(String id, String? title, String? lang) {
-    if (id == 'no') return 'Kapalı';
-    if (id == 'auto') return 'Otomatik';
-    final parts = [if (title != null && title.isNotEmpty) title, if (lang != null && lang.isNotEmpty) lang.toUpperCase()];
-    return parts.isEmpty ? 'İz $id' : parts.join(' · ');
-  }
-
   @override
   Widget build(BuildContext context) {
-    final audios = player.tracks.audio.where((t) => t.id != 'auto').toList();
-    final subs = player.tracks.subtitle.where((t) => t.id != 'auto').toList();
+    final audios = player.tracks.where((t) => t.kind == TrackKind.audio).toList();
+    final subs = player.tracks.where((t) => t.kind == TrackKind.subtitle).toList();
+    final audioLabels = trackLabels(audios);
+    final subLabels = trackLabels(subs);
     Widget column(String title, List<Widget> rows) => SizedBox(
-      width: 210,
+      width: 240,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -572,22 +568,19 @@ class _TracksPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             column('Ses', [
-              for (final t in audios)
-                _TrackRow(
-                  label: _label(t.id, t.title, t.language),
-                  selected: player.track.audio.id == t.id,
-                  onTap: () => player.setAudio(t),
-                ),
+              for (final (i, t) in audios.indexed)
+                _TrackRow(label: audioLabels[i], selected: t.selected, onTap: () => player.setAudio(t)),
             ]),
             const SizedBox(width: 18),
             column('Altyazı', [
-              _TrackRow(label: 'Kapalı', selected: player.track.subtitle.id == 'no', onTap: () => player.setSubtitle(SubtitleTrack.no())),
-              for (final t in subs.where((t) => t.id != 'no'))
+              if (subs.isNotEmpty)
                 _TrackRow(
-                  label: _label(t.id, t.title, t.language),
-                  selected: player.track.subtitle.id == t.id,
-                  onTap: () => player.setSubtitle(t),
+                  label: const TrackLabel('Kapalı', ''),
+                  selected: !subs.any((t) => t.selected),
+                  onTap: () => player.setSubtitle(null),
                 ),
+              for (final (i, t) in subs.indexed)
+                _TrackRow(label: subLabels[i], selected: t.selected, onTap: () => player.setSubtitle(t)),
             ]),
           ],
         ),
@@ -599,7 +592,7 @@ class _TracksPanel extends StatelessWidget {
 class _TrackRow extends StatelessWidget {
   const _TrackRow({required this.label, required this.selected, required this.onTap});
 
-  final String label;
+  final TrackLabel label;
   final bool selected;
   final VoidCallback onTap;
 
@@ -614,7 +607,20 @@ class _TrackRow extends StatelessWidget {
           children: [
             SizedBox(width: 18, child: selected ? const Icon(LucideIcons.check, size: 14, color: KdColors.accent) : null),
             Expanded(
-              child: Text(label, style: TextStyle(color: selected ? KdColors.accent2 : KdColors.text, fontWeight: selected ? FontWeight.w600 : FontWeight.w400)),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: label.name,
+                      style: TextStyle(color: selected ? KdColors.accent2 : KdColors.text, fontWeight: selected ? FontWeight.w600 : FontWeight.w400),
+                    ),
+                    if (label.detail.isNotEmpty)
+                      TextSpan(text: '  ${label.detail}', style: const TextStyle(color: KdColors.muted, fontSize: KdType.small)),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

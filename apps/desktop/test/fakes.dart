@@ -6,9 +6,9 @@ import 'package:karadelik_player/app/library.dart';
 import 'package:karadelik_player/app/paging.dart';
 import 'package:karadelik_player/app/scope.dart';
 import 'package:karadelik_player/perf/perf.dart';
+import 'package:karadelik_player/player/media_track.dart';
 import 'package:karadelik_player/player/player_controller.dart';
 import 'package:karadelik_player/player/player_engine.dart';
-import 'package:media_kit/media_kit.dart';
 
 /// In-memory library: what the Rust core would return, without Rust.
 class FakeLibrary implements LibraryApi {
@@ -165,10 +165,10 @@ class FakeEngine implements PlayerEngine {
   Stream<Duration> get position => const Stream.empty();
   @override
   Stream<Duration> get duration => const Stream.empty();
+  final tracksCtl = StreamController<List<MediaTrack>>.broadcast();
+  final selections = <(TrackKind, String?)>[];
   @override
-  Stream<Tracks> get tracks => const Stream.empty();
-  @override
-  Stream<Track> get track => const Stream.empty();
+  Stream<List<MediaTrack>> get tracks => tracksCtl.stream;
   @override
   Stream<String> get errors => errorsCtl.stream;
   @override
@@ -193,9 +193,7 @@ class FakeEngine implements PlayerEngine {
   @override
   Future<void> setVolume(double percent) async {}
   @override
-  Future<void> setAudioTrack(AudioTrack track) async {}
-  @override
-  Future<void> setSubtitleTrack(SubtitleTrack track) async {}
+  Future<void> selectTrack(TrackKind kind, String? id) async => selections.add((kind, id));
   @override
   Future<void> dispose() async {}
 }

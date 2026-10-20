@@ -4,6 +4,8 @@ import 'package:flutter/widgets.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+import 'media_track.dart';
+
 /// Playback behind one narrow interface, so media_kit can be swapped for a
 /// direct libmpv render-API binding without touching screens.
 abstract interface class PlayerEngine {
@@ -15,8 +17,9 @@ abstract interface class PlayerEngine {
   Stream<bool> get completed;
   Stream<Duration> get position;
   Stream<Duration> get duration;
-  Stream<Tracks> get tracks;
-  Stream<Track> get track;
+  /// Audio and subtitle tracks of the current stream, re-sent whenever the
+  /// list or the selection changes.
+  Stream<List<MediaTrack>> get tracks;
   Stream<String> get errors;
   Stream<int?> get videoHeight;
 
@@ -31,8 +34,8 @@ abstract interface class PlayerEngine {
   Future<void> togglePause();
   Future<void> seek(Duration to);
   Future<void> setVolume(double percent);
-  Future<void> setAudioTrack(AudioTrack track);
-  Future<void> setSubtitleTrack(SubtitleTrack track);
+  /// Selects track [id] of [kind]; null turns subtitles off.
+  Future<void> selectTrack(TrackKind kind, String? id);
   Future<void> dispose();
 }
 
@@ -58,6 +61,17 @@ const _liveOptions = <String, String>{
 class MediaKitEngine implements PlayerEngine {
   MediaKitEngine._(this._player, this.video, {required bool silent}) {
     ready = _applyOptions(silent: silent);
+    // media_kit's track model drops forced/SDH/selected; read mpv's own
+    // list whenever media_kit says something changed.
+    _player.stream.tracks.listen((_) => _refreshTracks());
+    _player.stream.track.listen((_) => _refreshTracks());
+  }
+
+  final _tracks = StreamController<List<MediaTrack>>.broadcast();
+
+  Future<void> _refreshTracks() async {
+    final json = await _native.getProperty('track-list').catchError((_) => '');
+    if (!_tracks.isClosed) _tracks.add(MediaTrack.parseTrackList(json));
   }
 
   final Player _player;
@@ -116,9 +130,7 @@ class MediaKitEngine implements PlayerEngine {
   @override
   Stream<Duration> get duration => _player.stream.duration;
   @override
-  Stream<Tracks> get tracks => _player.stream.tracks;
-  @override
-  Stream<Track> get track => _player.stream.track;
+  Stream<List<MediaTrack>> get tracks => _tracks.stream;
   @override
   Stream<String> get errors => _player.stream.error;
   @override
@@ -175,10 +187,14 @@ class MediaKitEngine implements PlayerEngine {
   @override
   Future<void> setVolume(double percent) => _player.setVolume(percent);
   @override
-  Future<void> setAudioTrack(AudioTrack track) => _player.setAudioTrack(track);
+  Future<void> selectTrack(TrackKind kind, String? id) async {
+    await _native.setProperty(kind == TrackKind.audio ? 'aid' : 'sid', id ?? 'no');
+    await _refreshTracks();
+  }
+
   @override
-  Future<void> setSubtitleTrack(SubtitleTrack track) =>
-      _player.setSubtitleTrack(track);
-  @override
-  Future<void> dispose() => _player.dispose();
+  Future<void> dispose() async {
+    await _tracks.close();
+    await _player.dispose();
+  }
 }

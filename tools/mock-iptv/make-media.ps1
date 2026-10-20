@@ -41,4 +41,26 @@ ffmpeg @common @(Source '1920x1080' 50 330) -vf $clock -c:v libx264 -preset very
 ffmpeg @common @(Source '3840x2160' 50 392) -vf $clock -c:v libx265 -preset ultrafast -g 100 -x265-params log-level=error @aac `
   -f mpegts "$media\ts2160hevc.ts"; Check ts2160hevc
 
+# Films: several audio and subtitle tracks in the same languages, like real
+# provider VOD, for the track picker (Turkish forced + full, English SDH).
+$subs = Join-Path $env:TEMP 'kp-subs'
+New-Item -ItemType Directory -Force $subs | Out-Null
+function Srt([string]$name, [string]$text) {
+  $lines = for ($i = 0; $i -lt 20; $i++) {
+    $a = [TimeSpan]::FromSeconds($i * 6); $b = [TimeSpan]::FromSeconds($i * 6 + 4)
+    "$($i + 1)`n{0:hh\:mm\:ss},000 --> {1:hh\:mm\:ss},000`n$text $($i + 1)`n" -f $a, $b
+  }
+  [IO.File]::WriteAllText((Join-Path $subs $name), ($lines -join "`n"), [Text.UTF8Encoding]::new($false))
+}
+Srt 'tr-forced.srt' 'Zorunlu altyazı'
+Srt 'tr.srt' 'Türkçe altyazı'
+Srt 'en-sdh.srt' '[music] English subtitle'
+ffmpeg @common -f lavfi -i "testsrc2=size=1920x1080:rate=25" -f lavfi -i (Tone 294) -f lavfi -i (Tone 440) `
+  -i "$subs\tr-forced.srt" -i "$subs\tr.srt" -i "$subs\en-sdh.srt" -t $seconds `
+  -map 0:v -map 1:a -map 2:a -map 3 -map 4 -map 5 -vf $clock -c:v libx264 -preset veryfast @aac -c:s srt `
+  -metadata:s:a:0 language=tur -metadata:s:a:1 language=eng `
+  -metadata:s:s:0 language=tur -disposition:s:0 forced -metadata:s:s:1 language=tur `
+  -metadata:s:s:2 language=eng -disposition:s:2 hearing_impaired `
+  "$media\vod-multi.mkv"; Check vod-multi
+
 Get-ChildItem $media -Recurse -File | Measure-Object Length -Sum | ForEach-Object { "media: {0} files, {1:N1} MB" -f $_.Count, ($_.Sum / 1MB) }
