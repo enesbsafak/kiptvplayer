@@ -54,3 +54,4 @@ flutter:
   uses-material-design: false
   assets:
     - assets/brand/
+    - assets/licenses/

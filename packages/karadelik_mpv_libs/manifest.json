@@ -2,12 +2,13 @@
   "_comment": "Native playback artifacts. packages/karadelik_mpv_libs downloads these at build time and refuses any file whose SHA-256 differs.",
   "windows-x64": {
     "libmpv": {
-      "file": "mpv-dev-x86_64-20261020-git-6a262d11f6.7z",
-      "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261020/mpv-dev-x86_64-20261020-git-6a262d11f6.7z",
-      "sha256": "d16ea67bcc46d4ee9170f05b322d7184768f216f458bef089c3397a6beaff83e",
-      "mpv_commit": "6a262d11f6",
-      "license": "GPL-3.0-or-later",
-      "distribution": "SPIKE ONLY. shinchiro nightlies are GPL builds and get pruned. Replace with our own mirrored LGPL build (-Dgpl=false) before any public release."
+      "file": "mpv-dev-lgpl-x86_64-20261020-git-e471496c56.7z",
+      "url": "https://github.com/zhongfly/mpv-winbuild/releases/download/2026-10-20-e471496c56/mpv-dev-lgpl-x86_64-20261020-git-e471496c56.7z",
+      "sha256": "c8945a865fb318255b628fffc08030205f549159dbf8427f0d362127185e547e",
+      "mpv_commit": "e471496c56",
+      "license": "LGPL-2.1-or-later (mpv -Dgpl=false; FFmpeg without --enable-gpl)",
+      "source": "Build scripts: https://github.com/zhongfly/mpv-winbuild (mpv-dev-lgpl). mpv and FFmpeg sources at the commits above; see THIRD_PARTY.md.",
+      "distribution": "zhongfly keeps 30 days of builds: mirror this exact file to our own GitHub release and point url there before a public release (the hash stays the same)."
     },
     "angle": {
       "file": "ANGLE.7z",

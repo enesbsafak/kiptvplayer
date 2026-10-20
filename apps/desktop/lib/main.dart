@@ -8,6 +8,7 @@ import 'package:window_manager/window_manager.dart';
 
 import 'app/app_state.dart';
 import 'app/library.dart';
+import 'app/licenses.dart';
 import 'app/paging.dart';
 import 'app/scope.dart';
 import 'design/theme.dart';
@@ -29,6 +30,7 @@ String? _arg(List<String> args, String name) {
 Future<void> main(List<String> args) async {
   final perf = Perf.init(args)..mark('dart_main');
   WidgetsFlutterBinding.ensureInitialized();
+  registerLicenses();
   MediaKit.ensureInitialized();
   final offscreen = args.contains('--kp-offscreen');
 

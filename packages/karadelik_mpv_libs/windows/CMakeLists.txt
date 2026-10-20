@@ -18,6 +18,8 @@ if(NOT FLUTTER_TARGET_PLATFORM STREQUAL "windows-x64")
 endif()
 
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/../manifest.json" KP_MANIFEST)
+# A manifest change (new libmpv) must re-run configure.
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/../manifest.json")
 
 if(DEFINED ENV{LOCALAPPDATA})
   set(KP_NATIVE_CACHE "$ENV{LOCALAPPDATA}/KaradelikPlayer/native-cache")

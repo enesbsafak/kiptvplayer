@@ -630,6 +630,23 @@ class _AboutTab extends StatelessWidget {
           style: TextStyle(height: 1.5, color: KdColors.muted),
         ),
         const SizedBox(height: 14),
+        const SizedBox(height: 14),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: KdButton(
+            label: 'Açık kaynak lisansları',
+            icon: LucideIcons.scrollText,
+            onPressed: () => showLicensePage(
+              context: context,
+              applicationName: 'Karadelik IPTV Player',
+              applicationVersion: '0.1.0',
+              applicationIcon: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Image.asset('assets/brand/logo.png', width: 40, height: 40),
+              ),
+            ),
+          ),
+        ),
         // Required wording of TMDB's API terms.
         const Text(
           'This product uses the TMDB API but is not endorsed or certified by TMDB. '
