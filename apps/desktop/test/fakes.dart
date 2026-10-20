@@ -37,7 +37,7 @@ class FakeLibrary implements LibraryApi {
 
   static SourceInfo source({String id = 's1', String name = 'Demo', String? error, bool m3u = false, GuideInfo? guide}) => SourceInfo(
     id: id,
-    isXtream: !m3u,
+    kind: m3u ? SourceType.m3U : SourceType.xtream,
     epgUrl: m3u ? 'http://127.0.0.1:8089/xmltv.xml.gz' : null,
     guide: guide,
     name: name,
@@ -86,7 +86,7 @@ class FakeLibrary implements LibraryApi {
     final s = _sources[i];
     final updated = SourceInfo(
       id: s.id,
-      isXtream: s.isXtream,
+      kind: s.kind,
       name: s.name,
       url: s.url,
       username: s.username,

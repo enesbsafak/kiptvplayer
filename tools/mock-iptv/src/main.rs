@@ -83,6 +83,9 @@ async fn main() {
         .route("/spike/channels.json", get(spike_channels))
         .route("/playlist.m3u", get(playlist))
         .route("/xmltv.xml", get(xmltv))
+        // Stalker / Ministra portal: MAC 00:1A:79:00:00:01.
+        .route("/stalker_portal/server/load.php", get(stalker))
+        .route("/stalker/play/{file}", get(stalker_play))
         .route("/xmltv.xml.gz", get(xmltv_gz))
         // TMDB stand-in: the real API's shapes for the titles above.
         .route("/3/authentication", get(tmdb_auth))
@@ -610,4 +613,78 @@ async fn xmltv_gz(Query(q): Query<HashMap<String, String>>) -> impl IntoResponse
     let _ = gz.write_all(xmltv_body(n).as_bytes());
     // Served as a file, not Content-Encoding: the client must spot the gzip.
     ([(header::CONTENT_TYPE, "application/gzip")], gz.finish().unwrap_or_default())
+}
+
+// ---- Stalker portal -----------------------------------------------------
+
+pub const STALKER_MAC: &str = "00:1A:79:00:00:01";
+const STALKER_TOKEN: &str = "kp-mock-portal-token";
+const STALKER_GENRES: &[&str] = &["TR: Ulusal", "TR: Haber", "TR: Spor", "Belgesel", "XXX"];
+
+/// One handler for load.php, like the real middleware: `type` + `action`.
+async fn stalker(State(s): State<AppState>, Query(q): Query<HashMap<String, String>>, headers: axum::http::HeaderMap) -> Response {
+    let cookie = headers.get(header::COOKIE).and_then(|v| v.to_str().ok()).unwrap_or("");
+    let mac_ok = cookie.contains(&format!("mac={}", STALKER_MAC.replace(':', "%3A"))) || cookie.contains(&format!("mac={STALKER_MAC}"));
+    let authed = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .is_some_and(|v| v == format!("Bearer {STALKER_TOKEN}"));
+    let action = (q.get("type").map(String::as_str).unwrap_or(""), q.get("action").map(String::as_str).unwrap_or(""));
+    if action != ("stb", "handshake") && !authed {
+        return (StatusCode::OK, "Authorization failed.").into_response();
+    }
+    let js = match action {
+        ("stb", "handshake") => json!({"token": STALKER_TOKEN}),
+        // An unknown MAC gets a profile without an id, like Ministra's block page.
+        ("stb", "get_profile") if mac_ok => json!({"id": 4711, "name": "MAG250", "status": 0}),
+        ("stb", "get_profile") => json!({"status": 1, "msg": "MAC not registered"}),
+        ("account_info", "get_main_info") => json!({"mac": STALKER_MAC, "phone": "2027-04-19 00:00:00"}),
+        ("itv", "get_genres") => {
+            let mut list = vec![json!({"id": "*", "title": "All"})];
+            list.extend(STALKER_GENRES.iter().enumerate().map(|(i, g)| json!({"id": (i + 1).to_string(), "title": g})));
+            Value::Array(list)
+        }
+        ("itv", "get_all_channels") => json!({
+            "total_items": 40,
+            "data": (0..40).map(|i| json!({
+                "id": (9000 + i).to_string(),
+                "name": format!("Portal {} HD", i + 1),
+                "number": (i + 1).to_string(),
+                "cmd": format!("ffmpeg http://localhost/ch/{}_", 9000 + i),
+                "logo": format!("{}/media/logos/{}.png", s.base, i % 12),
+                "tv_genre_id": ((i % STALKER_GENRES.len()) + 1).to_string(),
+                "censored": if i % STALKER_GENRES.len() == 4 { "1" } else { "0" }
+            })).collect::<Vec<_>>()
+        }),
+        ("itv", "create_link") => {
+            let id = q.get("cmd").and_then(|c| c.rsplit('/').next()).map(|c| c.trim_end_matches('_').to_string()).unwrap_or_default();
+            json!({"cmd": format!("ffmpeg {}/stalker/play/{id}.ts?play_token=mock{}", s.base, now())})
+        }
+        ("itv", "get_short_epg") => {
+            let id: usize = q.get("ch_id").and_then(|v| v.parse().ok()).unwrap_or(9000);
+            let t = now();
+            Value::Array(
+                schedule(id, t, t + 86_400)
+                    .into_iter()
+                    .take(10)
+                    .map(|p| json!({
+                        "name": p.show,
+                        "descr": format!("{} programının açıklaması.", p.show),
+                        "start_timestamp": p.start,
+                        "stop_timestamp": p.stop
+                    }))
+                    .collect(),
+            )
+        }
+        _ => json!([]),
+    };
+    Json(json!({ "js": js })).into_response()
+}
+
+async fn stalker_play(State(s): State<AppState>, Path(_file): Path<String>, Query(q): Query<HashMap<String, String>>, req: Request) -> Response {
+    // Links are only good with the token create_link put in them.
+    if !q.get("play_token").is_some_and(|t| t.starts_with("mock")) {
+        return StatusCode::FORBIDDEN.into_response();
+    }
+    serve(&s, "ts1080.ts", req).await
 }

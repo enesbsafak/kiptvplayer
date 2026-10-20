@@ -166,6 +166,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   SourceInfo dco_decode_source_info(dynamic raw);
 
   @protected
+  SourceType dco_decode_source_type(dynamic raw);
+
+  @protected
   SyncEvent dco_decode_sync_event(dynamic raw);
 
   @protected
@@ -345,6 +348,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SourceInfo sse_decode_source_info(SseDeserializer deserializer);
+
+  @protected
+  SourceType sse_decode_source_type(SseDeserializer deserializer);
 
   @protected
   SyncEvent sse_decode_sync_event(SseDeserializer deserializer);
@@ -576,6 +582,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_source_info(SourceInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_source_type(SourceType self, SseSerializer serializer);
 
   @protected
   void sse_encode_sync_event(SyncEvent self, SseSerializer serializer);

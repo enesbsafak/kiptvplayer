@@ -12,6 +12,7 @@ pub mod lang;
 pub mod m3u;
 pub mod region;
 pub mod secret;
+pub mod stalker;
 pub mod store;
 pub mod text;
 pub mod tmdb;

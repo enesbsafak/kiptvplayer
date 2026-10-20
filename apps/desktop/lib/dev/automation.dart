@@ -41,7 +41,7 @@ class Automation {
     final mock = _arg('kp-add-mock');
     if (mock != null && app.sources.isEmpty) {
       final input = NewSourceInput(
-        isXtream: true,
+        kind: SourceType.xtream,
         name: 'Demo sağlayıcı',
         url: mock,
         username: 'demo',
@@ -118,7 +118,7 @@ class Automation {
     }
     // An M3U source with an XMLTV guide: its EPG grid and status line.
     if (mock != null) {
-      final m3u = NewSourceInput(isXtream: false, name: 'M3U listesi', url: '$mock/playlist.m3u?n=60', insecureTls: false);
+      final m3u = NewSourceInput(kind: SourceType.m3U, name: 'M3U listesi', url: '$mock/playlist.m3u?n=60', insecureTls: false);
       await for (final e in app.library.addSource(m3u)) {
         if (e is SyncEvent_Done) await app.sourceChanged(e.source);
       }

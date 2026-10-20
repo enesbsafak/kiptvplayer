@@ -948,6 +948,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "flate2",
+ "iana-time-zone",
  "keyring",
  "percent-encoding",
  "quick-xml",

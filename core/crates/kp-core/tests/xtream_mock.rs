@@ -176,3 +176,38 @@ fn m3u_with_xmltv_guide_and_catchup() {
     assert!(!core.epg(by_name("Kanal 1")).unwrap().is_empty());
     core.delete_source(&source.id).unwrap();
 }
+
+#[test]
+#[ignore = "needs tools/mock-iptv running"]
+fn stalker_portal_end_to_end() {
+    let core = Core::open_in_memory(Box::new(MemorySecrets::default())).unwrap();
+    let portal = |mac: &str| NewSource {
+        kind: SourceKind::Stalker,
+        name: "Portal".into(),
+        url: format!("{}/stalker_portal/c/", mock_url()),
+        username: None,
+        password: Some(mac.into()),
+        epg_url: None,
+        user_agent: None,
+        insecure_tls: false,
+    };
+    let err = core.add_source(portal("00:1A:79:FF:FF:FF"), &|_| {}).unwrap_err();
+    assert!(err.to_string().contains("MAC"), "{err}");
+    assert!(core.add_source(portal("not-a-mac"), &|_| {}).is_err());
+    assert!(core.sources().unwrap().is_empty());
+
+    // Typed sloppily: dashes, lower case.
+    let (source, summary) = core.add_source(portal("00-1a-79-00-00-01"), &|_| {}).unwrap();
+    assert_eq!(summary.live, 40);
+    assert!(source.expires_at.is_some(), "account end date from the portal");
+    let cats = core.categories(&source.id, ContentKind::Live).unwrap();
+    assert_eq!(cats.last().unwrap().name, "XXX", "adult genre last");
+
+    let first = core.page(&source.id, ContentKind::Live, None, None, 5).unwrap();
+    assert_eq!(first[0].chno, Some(1));
+    let play = core.playback(first[0].id, None).unwrap();
+    assert!(play.url.starts_with(&format!("{}/stalker/play/9000.ts?play_token=", mock_url())), "{}", play.url);
+    let status = reqwest::blocking::get(&play.url).unwrap().status();
+    assert!(status.is_success(), "fresh link plays: {status}");
+    assert!(!core.epg(first[0].id).unwrap().is_empty(), "short EPG from the portal");
+}

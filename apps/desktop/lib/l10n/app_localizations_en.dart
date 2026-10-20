@@ -834,4 +834,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addListUrl => 'Playlist address';
+
+  @override
+  String get addStalker => 'Stalker portal';
+
+  @override
+  String get addNeedPortal => 'Enter the portal address';
+
+  @override
+  String get addNeedMac => 'Enter the MAC address like 00:1A:79:12:34:56';
+
+  @override
+  String get addStalkerHint => 'Portal address and MAC';
+
+  @override
+  String get addPortal => 'Portal address';
+
+  @override
+  String get addMac => 'MAC address';
 }

@@ -83,7 +83,7 @@ class AppState extends ChangeNotifier {
     for (final s in sources) {
       final g = s.guide;
       final stale = g == null || now - g.at > guideMaxAge.inSeconds;
-      if (s.isXtream || s.epgUrl == null || !stale) continue;
+      if (s.kind != SourceType.m3U || s.epgUrl == null || !stale) continue;
       try {
         await library.refreshGuide(s.id);
         await guideUpdated();

@@ -10,7 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
@@ -506,7 +506,7 @@ class ItemDetail {
 enum Kind { live, movie, series }
 
 class NewSourceInput {
-  final bool isXtream;
+  final SourceType kind;
   final String name;
   final String url;
   final String? username;
@@ -518,7 +518,7 @@ class NewSourceInput {
   final String? epgUrl;
 
   const NewSourceInput({
-    required this.isXtream,
+    required this.kind,
     required this.name,
     required this.url,
     this.username,
@@ -530,7 +530,7 @@ class NewSourceInput {
 
   @override
   int get hashCode =>
-      isXtream.hashCode ^
+      kind.hashCode ^
       name.hashCode ^
       url.hashCode ^
       username.hashCode ^
@@ -544,7 +544,7 @@ class NewSourceInput {
       identical(this, other) ||
       other is NewSourceInput &&
           runtimeType == other.runtimeType &&
-          isXtream == other.isXtream &&
+          kind == other.kind &&
           name == other.name &&
           url == other.url &&
           username == other.username &&
@@ -669,7 +669,7 @@ class RegionPreference {
 
 class SourceInfo {
   final String id;
-  final bool isXtream;
+  final SourceType kind;
   final String name;
   final String url;
   final String? username;
@@ -687,7 +687,7 @@ class SourceInfo {
 
   const SourceInfo({
     required this.id,
-    required this.isXtream,
+    required this.kind,
     required this.name,
     required this.url,
     this.username,
@@ -705,7 +705,7 @@ class SourceInfo {
   @override
   int get hashCode =>
       id.hashCode ^
-      isXtream.hashCode ^
+      kind.hashCode ^
       name.hashCode ^
       url.hashCode ^
       username.hashCode ^
@@ -725,7 +725,7 @@ class SourceInfo {
       other is SourceInfo &&
           runtimeType == other.runtimeType &&
           id == other.id &&
-          isXtream == other.isXtream &&
+          kind == other.kind &&
           name == other.name &&
           url == other.url &&
           username == other.username &&
@@ -738,6 +738,14 @@ class SourceInfo {
           seriesCount == other.seriesCount &&
           epgUrl == other.epgUrl &&
           guide == other.guide;
+}
+
+enum SourceType {
+  xtream,
+  m3U,
+
+  /// Stalker / Ministra portal (MAC address).
+  stalker,
 }
 
 @freezed

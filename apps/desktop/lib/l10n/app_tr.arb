@@ -475,5 +475,11 @@
   },
   "addServer": "Sunucu adresi",
   "addServerHint": "http://sunucu:8080",
-  "addListUrl": "Liste adresi"
+  "addListUrl": "Liste adresi",
+  "addStalker": "Stalker portalı",
+  "addNeedPortal": "Portal adresini girin",
+  "addNeedMac": "MAC adresini 00:1A:79:12:34:56 biçiminde girin",
+  "addStalkerHint": "Portal adresi ve MAC",
+  "addPortal": "Portal adresi",
+  "addMac": "MAC adresi"
 }

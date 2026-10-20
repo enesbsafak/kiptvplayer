@@ -30,6 +30,8 @@ pub enum CoreError {
     #[error("{0}")]
     Guide(#[from] GuideError),
     #[error("{0}")]
+    Stalker(#[from] crate::stalker::StalkerError),
+    #[error("{0}")]
     Message(String),
 }
 
@@ -43,6 +45,8 @@ fn msg(s: impl Into<String>) -> CoreError {
 pub enum SourceKind {
     Xtream,
     M3u,
+    /// Stalker / Ministra portal: `url` is the portal, `password` the MAC.
+    Stalker,
 }
 
 #[derive(Debug, Clone)]
@@ -144,6 +148,9 @@ pub struct Core {
     dir: PathBuf,
     /// Open guides by source id.
     guides: Mutex<HashMap<String, Option<Guide>>>,
+    /// Portal sessions by source id: a handshake per channel change would
+    /// cost a round trip every zap.
+    portals: Mutex<HashMap<String, std::sync::Arc<crate::stalker::StalkerClient>>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -165,7 +172,7 @@ impl Core {
     pub fn open(db_path: impl AsRef<Path>, secrets: Box<dyn SecretStore>) -> Result<Self> {
         let db_path = db_path.as_ref();
         let dir = db_path.parent().map(Path::to_path_buf).unwrap_or_else(|| PathBuf::from("."));
-        Ok(Core { store: Mutex::new(Store::open(db_path)?), secrets, dir, guides: Mutex::default() })
+        Ok(Core { store: Mutex::new(Store::open(db_path)?), secrets, dir, guides: Mutex::default(), portals: Mutex::default() })
     }
 
     /// Tests: the library in memory, guides in a fresh temp folder.
@@ -173,7 +180,7 @@ impl Core {
         let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
         let dir = std::env::temp_dir().join(format!("kp-core-{}-{nanos}", std::process::id()));
         std::fs::create_dir_all(&dir).map_err(|e| msg(e.to_string()))?;
-        Ok(Core { store: Mutex::new(Store::open_in_memory()?), secrets, dir, guides: Mutex::default() })
+        Ok(Core { store: Mutex::new(Store::open_in_memory()?), secrets, dir, guides: Mutex::default(), portals: Mutex::default() })
     }
 
     fn store(&self) -> std::sync::MutexGuard<'_, Store> {
@@ -197,11 +204,12 @@ impl Core {
             kind: match new.kind {
                 SourceKind::Xtream => "xtream".into(),
                 SourceKind::M3u => "m3u".into(),
+                SourceKind::Stalker => "stalker".into(),
             },
             name: if name.is_empty() { default_name(&new.url) } else { name.to_string() },
             url: match new.kind {
                 SourceKind::Xtream => crate::xtream::normalize_base(&new.url),
-                SourceKind::M3u => new.url.trim().to_string(),
+                SourceKind::M3u | SourceKind::Stalker => new.url.trim().to_string(),
             },
             username: new.username.clone().filter(|u| !u.trim().is_empty()),
             epg_url: new.epg_url.clone().filter(|u| !u.trim().is_empty()),
@@ -221,6 +229,14 @@ impl Core {
             let client = XtreamClient::new(&row.url, &user, &password, row.user_agent.as_deref(), row.insecure_tls)?;
             client.account()?;
             self.secrets.set(&password_key(&id), &password).map_err(|e| msg(format!("{}: {e}", t("Şifre kaydedilemedi", "Could not save the password"))))?;
+        }
+        if new.kind == SourceKind::Stalker {
+            // The MAC is the subscription's credential: keyring, like a password.
+            let mac = crate::stalker::normalize_mac(new.password.as_deref().unwrap_or(""))?;
+            on_stage(SyncStage::Connecting);
+            let client = crate::stalker::StalkerClient::connect(&row.url, &mac, &local_timezone(), row.insecure_tls)?;
+            self.portals.lock().unwrap_or_else(|p| p.into_inner()).insert(id.clone(), std::sync::Arc::new(client));
+            self.secrets.set(&password_key(&id), &mac).map_err(|e| msg(format!("{}: {e}", t("Şifre kaydedilemedi", "Could not save the password"))))?;
         }
 
         self.store().upsert_source(&row)?;
@@ -245,6 +261,7 @@ impl Core {
         let mut guides = self.guides.lock().unwrap_or_else(|p| p.into_inner());
         guides.remove(id);
         let _ = std::fs::remove_file(self.guide_path(id));
+        self.portals.lock().unwrap_or_else(|p| p.into_inner()).remove(id);
         Ok(())
     }
 
@@ -338,6 +355,23 @@ impl Core {
 
     fn download_catalog(&self, source: &SourceRow, on_stage: &dyn Fn(SyncStage)) -> Result<(Catalog, Option<crate::xtream::AccountInfo>)> {
         on_stage(SyncStage::Connecting);
+        if source.kind == "stalker" {
+            let portal = self.portal(source)?;
+            on_stage(SyncStage::Downloading { what: t("Canlı kanallar", "live channels").into() });
+            let catalog = Catalog::from_stalker(&portal.genres()?, &portal.channels()?);
+            if catalog.channels.is_empty() {
+                return Err(msg(t("Portal kanal listesi boş", "The portal lists no channels")));
+            }
+            let account = crate::xtream::AccountInfo {
+                status: String::new(),
+                expires_at: portal.expires_at(),
+                max_connections: None,
+                active_connections: None,
+                is_trial: false,
+                server_timezone: None,
+            };
+            return Ok((catalog, Some(account)));
+        }
         if source.kind == "xtream" {
             let client = self.xtream(source)?;
             let account = client.account()?;
@@ -360,6 +394,20 @@ impl Core {
             }
             Ok((catalog, None))
         }
+    }
+
+    /// The portal session for [source], opened (handshake) on first use.
+    fn portal(&self, source: &SourceRow) -> Result<std::sync::Arc<crate::stalker::StalkerClient>> {
+        if let Some(p) = self.portals.lock().unwrap_or_else(|p| p.into_inner()).get(&source.id) {
+            return Ok(p.clone());
+        }
+        let mac = self
+            .secrets
+            .get(&password_key(&source.id))
+            .ok_or_else(|| msg(t("Bu kaynağın şifresi bulunamadı; kaynağı yeniden ekleyin", "This source's password is missing; add the source again")))?;
+        let client = std::sync::Arc::new(crate::stalker::StalkerClient::connect(&source.url, &mac, &local_timezone(), source.insecure_tls)?);
+        self.portals.lock().unwrap_or_else(|p| p.into_inner()).insert(source.id.clone(), client.clone());
+        Ok(client)
     }
 
     fn xtream(&self, source: &SourceRow) -> Result<XtreamClient> {
@@ -478,7 +526,10 @@ impl Core {
         let resume_key = episode.as_ref().map(|e| e.0).unwrap_or(item.uid);
         let resume_ms = self.store().progress(&item.source_id, resume_key)?.map(|p| p.position_ms).filter(|p| *p > 5_000);
 
-        let url = if let Some(rest) = item.url.strip_prefix("xtream:") {
+        let url = if let Some(cmd) = item.url.strip_prefix("stalker:") {
+            // Portal links expire: ask for a fresh one now.
+            self.portal(&source)?.create_link(cmd)?
+        } else if let Some(rest) = item.url.strip_prefix("xtream:") {
             let client = self.xtream(&source)?;
             let id = item.ext_id.ok_or_else(|| msg(t("Geçersiz içerik", "Invalid item")))?;
             match (rest.split(':').next(), &episode) {
@@ -755,16 +806,28 @@ impl Core {
     pub fn epg(&self, item_id: i64) -> Result<Vec<Programme>> {
         let item = self.item(item_id)?;
         let t = now();
-        if !item.url.starts_with("xtream:") {
+        let portal = item.url.starts_with("stalker:");
+        if !item.url.starts_with("xtream:") && !portal {
             return Ok(self.guide_programmes(&item, t, t + 2 * 86_400, 8)?.into_iter().map(programme).collect());
         }
         let (cached, fetched) = self.store().epg_short(&item.source_id, item.uid, t)?;
         let fresh = fetched.map(|f| t - f < EPG_TTL_SECS).unwrap_or(false);
-        if fresh || !item.url.starts_with("xtream:live:") {
+        if fresh || !(item.url.starts_with("xtream:live:") || portal) {
             return Ok(cached.into_iter().map(programme).collect());
         }
         let source = self.store().source(&item.source_id)?.ok_or_else(|| msg(crate::lang::t("Kaynak bulunamadı", "Source not found")))?;
-        let entries = match self.xtream(&source).and_then(|c| Ok(c.short_epg(item.ext_id.unwrap_or(0), 6)?)) {
+        let stream = item.ext_id.unwrap_or(0);
+        let fetched = if portal {
+            self.portal(&source).and_then(|p| {
+                Ok(p.short_epg(stream)?
+                    .into_iter()
+                    .map(|e| crate::xtream::ShortEpgEntry { start: e.start, end: e.stop, title: e.title, description: e.description, has_archive: false })
+                    .collect())
+            })
+        } else {
+            self.xtream(&source).and_then(|c| Ok(c.short_epg(stream, 6)?))
+        };
+        let entries = match fetched {
             Ok(e) => e,
             // EPG is decoration: a failing provider keeps the cached copy.
             Err(_) => return Ok(cached.into_iter().map(programme).collect()),
@@ -773,6 +836,12 @@ impl Core {
         store.replace_epg_short(&item.source_id, item.uid, &epg_rows(entries), t, false)?;
         Ok(store.epg_short(&item.source_id, item.uid, t)?.0.into_iter().map(programme).collect())
     }
+}
+
+/// The system's IANA time zone ("Europe/Istanbul"), which portals expect in
+/// the box's cookie.
+fn local_timezone() -> String {
+    iana_time_zone::get_timezone().unwrap_or_else(|_| "Europe/Istanbul".into())
 }
 
 /// A guide download as a decompressed byte stream: a local file or a URL.

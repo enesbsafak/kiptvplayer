@@ -228,6 +228,58 @@ impl Catalog {
     }
 }
 
+impl Catalog {
+    /// Builds the catalog from a Stalker portal's live genres and channels.
+    /// Links expire, so `url` keeps the channel's play command
+    /// (`stalker:<cmd>`), turned into a link when playback starts.
+    pub fn from_stalker(genres: &[crate::stalker::Genre], channels: &[crate::stalker::Channel]) -> Self {
+        let mut catalog = Catalog::default();
+        let mut meta: HashMap<&str, (i64, bool, Option<&'static str>)> = HashMap::new();
+        for (i, g) in genres.iter().enumerate() {
+            let uid = hash_uid(&["scat", &g.id]);
+            let adult = is_adult_label(&g.title);
+            let region = detect_region(&g.title);
+            meta.insert(g.id.as_str(), (uid, adult, region));
+            catalog.categories.push(CategoryRecord {
+                uid,
+                name: g.title.clone(),
+                kind: ContentKind::Live,
+                adult,
+                sort: i as u32,
+                region: region.map(String::from),
+            });
+        }
+        for (sort, c) in channels.iter().enumerate() {
+            let cat = c.genre_id.as_deref().and_then(|g| meta.get(g).copied());
+            catalog.channels.push(ChannelRecord {
+                uid: hash_uid(&["s", &c.id.to_string()]),
+                category_uid: cat.map(|m| m.0),
+                adult: c.adult || cat.is_some_and(|m| m.1) || is_adult_label(&c.name),
+                logo: c.logo.clone(),
+                url: format!("stalker:{}", c.cmd),
+                kind: ContentKind::Live,
+                tvg_id: None,
+                chno: c.number,
+                sort: sort as u32,
+                catchup: None,
+                catchup_days: None,
+                catchup_source: None,
+                tvg_shift: None,
+                user_agent: None,
+                referrer: None,
+                ext_id: Some(c.id),
+                container: None,
+                rating: None,
+                year: None,
+                added: None,
+                region: cat.and_then(|m| m.2).or_else(|| detect_region(&c.name)).map(String::from),
+                name: c.name.clone(),
+            });
+        }
+        catalog
+    }
+}
+
 /// 64-bit stable id. AbiPlayer used a 32-bit string hash and silently dropped
 /// colliding channels; at 100k entries a 32-bit space collides routinely.
 fn hash_uid(parts: &[&str]) -> i64 {

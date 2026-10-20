@@ -812,4 +812,22 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get addListUrl => 'Liste adresi';
+
+  @override
+  String get addStalker => 'Stalker portalı';
+
+  @override
+  String get addNeedPortal => 'Portal adresini girin';
+
+  @override
+  String get addNeedMac => 'MAC adresini 00:1A:79:12:34:56 biçiminde girin';
+
+  @override
+  String get addStalkerHint => 'Portal adresi ve MAC';
+
+  @override
+  String get addPortal => 'Portal adresi';
+
+  @override
+  String get addMac => 'MAC adresi';
 }

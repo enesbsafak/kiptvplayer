@@ -223,7 +223,7 @@ class _SourceRowState extends State<_SourceRow> {
                   children: [
                     Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(width: 8),
-                    KdTag(s.isXtream ? 'Xtream' : 'M3U'),
+                    KdTag(switch (s.kind) { SourceType.xtream => 'Xtream', SourceType.m3U => 'M3U', SourceType.stalker => 'Stalker' }),
                     if (widget.active) ...[const SizedBox(width: 6), KdTag(l10n.sourceActive, ok: true)],
                   ],
                 ),
@@ -249,11 +249,11 @@ class _SourceRowState extends State<_SourceRow> {
                   const SizedBox(height: 4),
                   Text(s.lastError!, style: const TextStyle(fontSize: KdType.chip, color: KdColors.err)),
                 ],
-                if (!s.isXtream && _stage == null) ...[const SizedBox(height: 4), _GuideLine(source: s)],
+                if (s.kind == SourceType.m3U && _stage == null) ...[const SizedBox(height: 4), _GuideLine(source: s)],
               ],
             ),
           ),
-          if (!s.isXtream && s.epgUrl != null) ...[
+          if (s.kind == SourceType.m3U && s.epgUrl != null) ...[
             KdButton(label: l10n.guideButton, icon: LucideIcons.calendarSync, onPressed: _stage == null ? _refreshGuide : null),
             const SizedBox(width: 6),
           ],

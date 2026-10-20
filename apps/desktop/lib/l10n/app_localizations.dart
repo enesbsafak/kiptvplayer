@@ -1543,6 +1543,42 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Liste adresi'**
   String get addListUrl;
+
+  /// No description provided for @addStalker.
+  ///
+  /// In tr, this message translates to:
+  /// **'Stalker portalı'**
+  String get addStalker;
+
+  /// No description provided for @addNeedPortal.
+  ///
+  /// In tr, this message translates to:
+  /// **'Portal adresini girin'**
+  String get addNeedPortal;
+
+  /// No description provided for @addNeedMac.
+  ///
+  /// In tr, this message translates to:
+  /// **'MAC adresini 00:1A:79:12:34:56 biçiminde girin'**
+  String get addNeedMac;
+
+  /// No description provided for @addStalkerHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Portal adresi ve MAC'**
+  String get addStalkerHint;
+
+  /// No description provided for @addPortal.
+  ///
+  /// In tr, this message translates to:
+  /// **'Portal adresi'**
+  String get addPortal;
+
+  /// No description provided for @addMac.
+  ///
+  /// In tr, this message translates to:
+  /// **'MAC adresi'**
+  String get addMac;
 }
 
 class _AppLocalizationsDelegate

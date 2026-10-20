@@ -1553,7 +1553,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     if (arr.length != 8)
       throw Exception('unexpected arr length: expect 8 but see ${arr.length}');
     return NewSourceInput(
-      isXtream: dco_decode_bool(arr[0]),
+      kind: dco_decode_source_type(arr[0]),
       name: dco_decode_String(arr[1]),
       url: dco_decode_String(arr[2]),
       username: dco_decode_opt_String(arr[3]),
@@ -1675,7 +1675,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       throw Exception('unexpected arr length: expect 14 but see ${arr.length}');
     return SourceInfo(
       id: dco_decode_String(arr[0]),
-      isXtream: dco_decode_bool(arr[1]),
+      kind: dco_decode_source_type(arr[1]),
       name: dco_decode_String(arr[2]),
       url: dco_decode_String(arr[3]),
       username: dco_decode_opt_String(arr[4]),
@@ -1689,6 +1689,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       epgUrl: dco_decode_opt_String(arr[12]),
       guide: dco_decode_opt_box_autoadd_guide_info(arr[13]),
     );
+  }
+
+  @protected
+  SourceType dco_decode_source_type(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return SourceType.values[raw as int];
   }
 
   @protected
@@ -2192,7 +2198,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   @protected
   NewSourceInput sse_decode_new_source_input(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    var var_isXtream = sse_decode_bool(deserializer);
+    var var_kind = sse_decode_source_type(deserializer);
     var var_name = sse_decode_String(deserializer);
     var var_url = sse_decode_String(deserializer);
     var var_username = sse_decode_opt_String(deserializer);
@@ -2201,7 +2207,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_insecureTls = sse_decode_bool(deserializer);
     var var_epgUrl = sse_decode_opt_String(deserializer);
     return NewSourceInput(
-      isXtream: var_isXtream,
+      kind: var_kind,
       name: var_name,
       url: var_url,
       username: var_username,
@@ -2358,7 +2364,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   SourceInfo sse_decode_source_info(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_id = sse_decode_String(deserializer);
-    var var_isXtream = sse_decode_bool(deserializer);
+    var var_kind = sse_decode_source_type(deserializer);
     var var_name = sse_decode_String(deserializer);
     var var_url = sse_decode_String(deserializer);
     var var_username = sse_decode_opt_String(deserializer);
@@ -2373,7 +2379,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_guide = sse_decode_opt_box_autoadd_guide_info(deserializer);
     return SourceInfo(
       id: var_id,
-      isXtream: var_isXtream,
+      kind: var_kind,
       name: var_name,
       url: var_url,
       username: var_username,
@@ -2387,6 +2393,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       epgUrl: var_epgUrl,
       guide: var_guide,
     );
+  }
+
+  @protected
+  SourceType sse_decode_source_type(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_i_32(deserializer);
+    return SourceType.values[inner];
   }
 
   @protected
@@ -2854,7 +2867,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     SseSerializer serializer,
   ) {
     // Codec=Sse (Serialization based), see doc to use other codecs
-    sse_encode_bool(self.isXtream, serializer);
+    sse_encode_source_type(self.kind, serializer);
     sse_encode_String(self.name, serializer);
     sse_encode_String(self.url, serializer);
     sse_encode_opt_String(self.username, serializer);
@@ -2995,7 +3008,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_source_info(SourceInfo self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_String(self.id, serializer);
-    sse_encode_bool(self.isXtream, serializer);
+    sse_encode_source_type(self.kind, serializer);
     sse_encode_String(self.name, serializer);
     sse_encode_String(self.url, serializer);
     sse_encode_opt_String(self.username, serializer);
@@ -3008,6 +3021,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_u_64(self.seriesCount, serializer);
     sse_encode_opt_String(self.epgUrl, serializer);
     sse_encode_opt_box_autoadd_guide_info(self.guide, serializer);
+  }
+
+  @protected
+  void sse_encode_source_type(SourceType self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.index, serializer);
   }
 
   @protected

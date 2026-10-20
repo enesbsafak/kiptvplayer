@@ -240,5 +240,11 @@
   "startupDataDir": "Data folder: {dir}",
   "addServer": "Server address",
   "addServerHint": "http://server:8080",
-  "addListUrl": "Playlist address"
+  "addListUrl": "Playlist address",
+  "addStalker": "Stalker portal",
+  "addNeedPortal": "Enter the portal address",
+  "addNeedMac": "Enter the MAC address like 00:1A:79:12:34:56",
+  "addStalkerHint": "Portal address and MAC",
+  "addPortal": "Portal address",
+  "addMac": "MAC address"
 }

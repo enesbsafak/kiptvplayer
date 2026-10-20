@@ -17,6 +17,7 @@ export '../src/rust/api/library.dart'
         RegionCount,
         RegionPreference,
         SourceInfo,
+        SourceType,
         SyncEvent,
         SyncEvent_Connecting,
         SyncEvent_Done,

@@ -11,7 +11,7 @@ import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../l10n/l10n.dart';
 
-enum _Type { xtream, m3uUrl, m3uFile }
+enum _Type { xtream, m3uUrl, m3uFile, stalker }
 
 /// Connect → sync → summary. Used for first run and from Settings.
 class AddSourceForm extends StatefulWidget {
@@ -41,6 +41,7 @@ class _AddSourceFormState extends State<AddSourceForm> {
   StreamSubscription<SyncEvent>? _sub;
 
   bool get _busy => _stage != null;
+  bool get _isM3u => _type == _Type.m3uUrl || _type == _Type.m3uFile;
 
   @override
   void dispose() {
@@ -57,10 +58,14 @@ class _AddSourceFormState extends State<AddSourceForm> {
         _Type.xtream => l10n.addNeedServer,
         _Type.m3uUrl => l10n.addNeedListUrl,
         _Type.m3uFile => l10n.addNeedFile,
+        _Type.stalker => l10n.addNeedPortal,
       };
     }
     if (_type == _Type.xtream && _user.text.trim().isEmpty) return l10n.addNeedUser;
     if (_type == _Type.xtream && _pass.text.isEmpty) return l10n.addNeedPassword;
+    if (_type == _Type.stalker && !RegExp(r'^([0-9A-Fa-f]{2}[:\-]?){5}[0-9A-Fa-f]{2}$').hasMatch(_pass.text.trim())) {
+      return l10n.addNeedMac;
+    }
     return null;
   }
 
@@ -71,14 +76,19 @@ class _AddSourceFormState extends State<AddSourceForm> {
       return;
     }
     final input = NewSourceInput(
-      isXtream: _type == _Type.xtream,
+      kind: switch (_type) {
+        _Type.xtream => SourceType.xtream,
+        _Type.stalker => SourceType.stalker,
+        _ => SourceType.m3U,
+      },
       name: _name.text.trim(),
       url: _url.text.trim(),
       username: _type == _Type.xtream ? _user.text.trim() : null,
-      password: _type == _Type.xtream ? _pass.text : null,
+      // Xtream password, or the portal's MAC address: both go to the keyring.
+      password: _type == _Type.xtream || _type == _Type.stalker ? _pass.text.trim() : null,
       userAgent: _agent.text.trim().isEmpty ? null : _agent.text.trim(),
       insecureTls: _insecure,
-      epgUrl: _type != _Type.xtream && _epg.text.trim().isNotEmpty ? _epg.text.trim() : null,
+      epgUrl: _isM3u && _epg.text.trim().isNotEmpty ? _epg.text.trim() : null,
     );
     setState(() {
       _error = null;
@@ -148,6 +158,14 @@ class _AddSourceFormState extends State<AddSourceForm> {
               selected: _type == _Type.m3uFile,
               onTap: () => setState(() => _type = _Type.m3uFile),
             ),
+            const SizedBox(width: 10),
+            _TypeCard(
+              icon: LucideIcons.router,
+              title: l10n.addStalker,
+              hint: l10n.addStalkerHint,
+              selected: _type == _Type.stalker,
+              onTap: () => setState(() => _type = _Type.stalker),
+            ),
           ],
         ),
         const SizedBox(height: 18),
@@ -156,6 +174,9 @@ class _AddSourceFormState extends State<AddSourceForm> {
           _Row(label: l10n.addServer, child: KdInput(controller: _url, hint: l10n.addServerHint, mono: true)),
           _Row(label: l10n.addUser, child: KdInput(controller: _user)),
           _Row(label: l10n.addPassword, child: KdInput(controller: _pass, obscure: true, onSubmitted: (_) => _submit())),
+        ] else if (_type == _Type.stalker) ...[
+          _Row(label: l10n.addPortal, child: KdInput(controller: _url, hint: 'http://portal:8080/c/', mono: true)),
+          _Row(label: l10n.addMac, child: KdInput(controller: _pass, hint: '00:1A:79:…', mono: true, onSubmitted: (_) => _submit())),
         ] else if (_type == _Type.m3uUrl)
           _Row(label: l10n.addListUrl, child: KdInput(controller: _url, hint: 'https://…/playlist.m3u', mono: true, onSubmitted: (_) => _submit()))
         else
@@ -184,7 +205,7 @@ class _AddSourceFormState extends State<AddSourceForm> {
         ),
         if (_advanced) ...[
           _Row(label: 'User-Agent', child: KdInput(controller: _agent, hint: l10n.addUserAgentHint, mono: true)),
-          if (_type != _Type.xtream)
+          if (_isM3u)
             _Row(
               label: l10n.addGuideUrl,
               child: KdInput(controller: _epg, hint: l10n.addGuideUrlHint, mono: true),

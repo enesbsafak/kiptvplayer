@@ -71,10 +71,18 @@ impl From<ContentKind> for Kind {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourceType {
+    Xtream,
+    M3u,
+    /// Stalker / Ministra portal (MAC address).
+    Stalker,
+}
+
 #[derive(Debug, Clone)]
 pub struct SourceInfo {
     pub id: String,
-    pub is_xtream: bool,
+    pub kind: SourceType,
     pub name: String,
     pub url: String,
     pub username: Option<String>,
@@ -103,7 +111,7 @@ pub struct GuideInfo {
 
 #[derive(Debug, Clone)]
 pub struct NewSourceInput {
-    pub is_xtream: bool,
+    pub kind: SourceType,
     pub name: String,
     pub url: String,
     pub username: Option<String>,
@@ -243,7 +251,11 @@ fn source_info(core: &Core, s: SourceRow) -> Result<SourceInfo> {
         live_count: core.count(&s.id, ContentKind::Live)?,
         movie_count: core.count(&s.id, ContentKind::Movie)?,
         series_count: core.count(&s.id, ContentKind::Series)?,
-        is_xtream: s.kind == "xtream",
+        kind: match s.kind.as_str() {
+            "xtream" => SourceType::Xtream,
+            "stalker" => SourceType::Stalker,
+            _ => SourceType::M3u,
+        },
         id: s.id,
         name: s.name,
         url: s.url,
@@ -275,7 +287,11 @@ pub fn list_sources() -> Result<Vec<SourceInfo>> {
 pub fn add_source(input: NewSourceInput, sink: StreamSink<SyncEvent>) -> Result<()> {
     let core = core()?;
     let new = NewSource {
-        kind: if input.is_xtream { SourceKind::Xtream } else { SourceKind::M3u },
+        kind: match input.kind {
+            SourceType::Xtream => SourceKind::Xtream,
+            SourceType::M3u => SourceKind::M3u,
+            SourceType::Stalker => SourceKind::Stalker,
+        },
         name: input.name,
         url: input.url,
         username: input.username,

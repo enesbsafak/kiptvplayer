@@ -1618,7 +1618,7 @@ impl SseDecode for Vec<crate::api::library::TmdbPerson> {
 impl SseDecode for crate::api::library::NewSourceInput {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
-        let mut var_isXtream = <bool>::sse_decode(deserializer);
+        let mut var_kind = <crate::api::library::SourceType>::sse_decode(deserializer);
         let mut var_name = <String>::sse_decode(deserializer);
         let mut var_url = <String>::sse_decode(deserializer);
         let mut var_username = <Option<String>>::sse_decode(deserializer);
@@ -1627,7 +1627,7 @@ impl SseDecode for crate::api::library::NewSourceInput {
         let mut var_insecureTls = <bool>::sse_decode(deserializer);
         let mut var_epgUrl = <Option<String>>::sse_decode(deserializer);
         return crate::api::library::NewSourceInput {
-            is_xtream: var_isXtream,
+            kind: var_kind,
             name: var_name,
             url: var_url,
             username: var_username,
@@ -1793,7 +1793,7 @@ impl SseDecode for crate::api::library::SourceInfo {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         let mut var_id = <String>::sse_decode(deserializer);
-        let mut var_isXtream = <bool>::sse_decode(deserializer);
+        let mut var_kind = <crate::api::library::SourceType>::sse_decode(deserializer);
         let mut var_name = <String>::sse_decode(deserializer);
         let mut var_url = <String>::sse_decode(deserializer);
         let mut var_username = <Option<String>>::sse_decode(deserializer);
@@ -1808,7 +1808,7 @@ impl SseDecode for crate::api::library::SourceInfo {
         let mut var_guide = <Option<crate::api::library::GuideInfo>>::sse_decode(deserializer);
         return crate::api::library::SourceInfo {
             id: var_id,
-            is_xtream: var_isXtream,
+            kind: var_kind,
             name: var_name,
             url: var_url,
             username: var_username,
@@ -1821,6 +1821,19 @@ impl SseDecode for crate::api::library::SourceInfo {
             series_count: var_seriesCount,
             epg_url: var_epgUrl,
             guide: var_guide,
+        };
+    }
+}
+
+impl SseDecode for crate::api::library::SourceType {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut inner = <i32>::sse_decode(deserializer);
+        return match inner {
+            0 => crate::api::library::SourceType::Xtream,
+            1 => crate::api::library::SourceType::M3u,
+            2 => crate::api::library::SourceType::Stalker,
+            _ => unreachable!("Invalid variant for SourceType: {}", inner),
         };
     }
 }
@@ -2213,7 +2226,7 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::library::Kind> for crate::api
 impl flutter_rust_bridge::IntoDart for crate::api::library::NewSourceInput {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
-            self.is_xtream.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
             self.name.into_into_dart().into_dart(),
             self.url.into_into_dart().into_dart(),
             self.username.into_into_dart().into_dart(),
@@ -2329,7 +2342,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::library::SourceInfo {
     fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
         [
             self.id.into_into_dart().into_dart(),
-            self.is_xtream.into_into_dart().into_dart(),
+            self.kind.into_into_dart().into_dart(),
             self.name.into_into_dart().into_dart(),
             self.url.into_into_dart().into_dart(),
             self.username.into_into_dart().into_dart(),
@@ -2354,6 +2367,28 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::library::SourceInfo>
     for crate::api::library::SourceInfo
 {
     fn into_into_dart(self) -> crate::api::library::SourceInfo {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::library::SourceType {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        match self {
+            Self::Xtream => 0.into_dart(),
+            Self::M3u => 1.into_dart(),
+            Self::Stalker => 2.into_dart(),
+            _ => unreachable!(),
+        }
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::library::SourceType
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::library::SourceType>
+    for crate::api::library::SourceType
+{
+    fn into_into_dart(self) -> crate::api::library::SourceType {
         self
     }
 }
@@ -2760,7 +2795,7 @@ impl SseEncode for Vec<crate::api::library::TmdbPerson> {
 impl SseEncode for crate::api::library::NewSourceInput {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
-        <bool>::sse_encode(self.is_xtream, serializer);
+        <crate::api::library::SourceType>::sse_encode(self.kind, serializer);
         <String>::sse_encode(self.name, serializer);
         <String>::sse_encode(self.url, serializer);
         <Option<String>>::sse_encode(self.username, serializer);
@@ -2894,7 +2929,7 @@ impl SseEncode for crate::api::library::SourceInfo {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
         <String>::sse_encode(self.id, serializer);
-        <bool>::sse_encode(self.is_xtream, serializer);
+        <crate::api::library::SourceType>::sse_encode(self.kind, serializer);
         <String>::sse_encode(self.name, serializer);
         <String>::sse_encode(self.url, serializer);
         <Option<String>>::sse_encode(self.username, serializer);
@@ -2907,6 +2942,23 @@ impl SseEncode for crate::api::library::SourceInfo {
         <u64>::sse_encode(self.series_count, serializer);
         <Option<String>>::sse_encode(self.epg_url, serializer);
         <Option<crate::api::library::GuideInfo>>::sse_encode(self.guide, serializer);
+    }
+}
+
+impl SseEncode for crate::api::library::SourceType {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(
+            match self {
+                crate::api::library::SourceType::Xtream => 0,
+                crate::api::library::SourceType::M3u => 1,
+                crate::api::library::SourceType::Stalker => 2,
+                _ => {
+                    unimplemented!("");
+                }
+            },
+            serializer,
+        );
     }
 }
 

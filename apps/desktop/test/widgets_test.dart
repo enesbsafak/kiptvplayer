@@ -38,6 +38,29 @@ void main() {
     expect(h.library.added, isEmpty, reason: 'nothing is sent with an empty form');
   });
 
+  testWidgets('a Stalker portal is added with its MAC, checked before sending', (tester) async {
+    await setLargeWindow(tester);
+    final h = TestHarness(FakeLibrary());
+    await h.state.load();
+    await tester.pumpWidget(app(h, const AddSourceForm()));
+    await tester.tap(find.text('Stalker portalı'));
+    await tester.pumpAndSettle();
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(1), 'http://portal.tv:8080/c/');
+    await tester.enterText(fields.at(2), '00:1A:79:12:34');
+    await tester.tap(find.text('Bağlan ve eşitle'));
+    await tester.pumpAndSettle();
+    expect(find.text('MAC adresini 00:1A:79:12:34:56 biçiminde girin'), findsOneWidget);
+    expect(h.library.added, isEmpty);
+
+    await tester.enterText(fields.at(2), '00-1a-79-12-34-56');
+    await tester.tap(find.text('Bağlan ve eşitle'));
+    await tester.pumpAndSettle();
+    final added = h.library.added.single;
+    expect((added.kind, added.url, added.password, added.username), (SourceType.stalker, 'http://portal.tv:8080/c/', '00-1a-79-12-34-56', null));
+  });
+
   testWidgets('adding a source streams progress and ends on a summary', (tester) async {
     await setLargeWindow(tester);
     final h = TestHarness(FakeLibrary());
@@ -52,7 +75,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(h.library.added.single.username, 'demo');
-    expect(h.library.added.single.isXtream, isTrue);
+    expect(h.library.added.single.kind, SourceType.xtream);
     expect(find.textContaining('hazır'), findsOneWidget);
     expect(find.text('canlı kanal'), findsOneWidget);
   });
