@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app/library.dart';
 import '../app/scope.dart';
@@ -370,6 +371,143 @@ class _PreferencesTabState extends State<_PreferencesTab> {
             style: TextStyle(fontSize: KdType.small, color: KdColors.muted),
           ),
         ],
+        const SizedBox(height: 28),
+        const Divider(height: 1, color: KdColors.line),
+        const SizedBox(height: 22),
+        const TmdbSettings(),
+      ],
+    );
+  }
+}
+
+/// TMDB key and language. The key is checked with TMDB before it is saved,
+/// and lives in the OS keyring like source passwords.
+class TmdbSettings extends StatefulWidget {
+  const TmdbSettings({super.key});
+
+  @override
+  State<TmdbSettings> createState() => _TmdbSettingsState();
+}
+
+class _TmdbSettingsState extends State<TmdbSettings> {
+  final _key = TextEditingController();
+  TmdbStatus? _status;
+  bool _busy = false;
+  String? _error;
+  String? _done;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_status == null) _reload();
+  }
+
+  @override
+  void dispose() {
+    _key.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reload() async {
+    final s = await context.library.tmdbStatus();
+    if (mounted) setState(() => _status = s);
+  }
+
+  Future<void> _save(String? key) async {
+    setState(() {
+      _busy = true;
+      _error = null;
+      _done = null;
+    });
+    try {
+      await context.library.setTmdbKey(key);
+      _key.clear();
+      _done = key == null ? 'Anahtar kaldırıldı.' : 'Anahtar doğrulandı ve kaydedildi.';
+    } catch (e) {
+      _error = errorText(e);
+    }
+    await _reload();
+    if (mounted) setState(() => _busy = false);
+  }
+
+  Future<void> _language(String l) async {
+    await context.library.setTmdbLanguage(l);
+    await _reload();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = _status;
+    final on = s?.configured ?? false;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text('TMDB içerik bilgileri', style: TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 10),
+            if (s != null) KdTag(on ? 'AÇIK' : 'KAPALI', ok: on),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Film ve dizilerde özet, tür, oyuncu fotoğrafları, fragman, yaş sınırı ve bölüm bilgileri TMDB’den gelir. '
+          'Anahtar yalnızca bu bilgisayarın anahtar deposunda saklanır; TMDB’ye yalnızca içerik adı ve yılı gönderilir.',
+          style: TextStyle(color: KdColors.muted, height: 1.5),
+        ),
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            SizedBox(
+              width: 420,
+              child: KdInput(
+                controller: _key,
+                hint: on ? 'Yeni anahtar ile değiştir' : 'API anahtarı (v3) veya okuma erişim jetonu (v4)',
+                obscure: true,
+                mono: true,
+                prefix: LucideIcons.keyRound,
+                onSubmitted: (v) => v.trim().isEmpty ? null : _save(v.trim()),
+              ),
+            ),
+            const SizedBox(width: 8),
+            KdButton(
+              label: 'Doğrula ve kaydet',
+              icon: LucideIcons.check,
+              kind: KdButtonKind.primary,
+              onPressed: _busy ? null : () => _key.text.trim().isEmpty ? null : _save(_key.text.trim()),
+            ),
+            if (on) ...[
+              const SizedBox(width: 8),
+              KdButton(label: 'Kaldır', icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _busy ? null : () => _save(null)),
+            ],
+          ],
+        ),
+        if (_busy) ...[const SizedBox(height: 10), const SizedBox(width: 420, child: KdIndeterminate())],
+        if (_error != null) ...[const SizedBox(height: 10), Text(_error!, style: const TextStyle(color: KdColors.err))],
+        if (_done != null) ...[const SizedBox(height: 10), Text(_done!, style: const TextStyle(color: KdColors.ok))],
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            const Text('Anahtarı nereden alırım?', style: TextStyle(color: KdColors.muted, fontSize: KdType.small)),
+            const SizedBox(width: 6),
+            KdButton(
+              label: 'themoviedb.org › Ayarlar › API',
+              icon: LucideIcons.externalLink,
+              kind: KdButtonKind.ghost,
+              onPressed: () => launchUrl(Uri.parse('https://www.themoviedb.org/settings/api')),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        const Text('Bilgi dili', style: TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 6,
+          children: [
+            for (final (code, label) in const [('tr-TR', 'Türkçe'), ('en-US', 'English')])
+              KdPill(label: label, selected: s?.language == code, onTap: () => _language(code)),
+          ],
+        ),
       ],
     );
   }
@@ -445,6 +583,13 @@ class _AboutTab extends StatelessWidget {
         const Text(
           'Gizlilik: kaynak şifreleri yalnızca bu bilgisayarın anahtar deposunda tutulur. Uygulama izleme veya reklam SDK’sı içermez.',
           style: TextStyle(height: 1.5, color: KdColors.muted),
+        ),
+        const SizedBox(height: 14),
+        // Required wording of TMDB's API terms.
+        const Text(
+          'This product uses the TMDB API but is not endorsed or certified by TMDB. '
+          'Film ve dizi bilgileri, isteğe bağlı olarak, The Movie Database’den (TMDB) alınır.',
+          style: TextStyle(height: 1.5, color: KdColors.muted, fontSize: KdType.small),
         ),
       ],
     );

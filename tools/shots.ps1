@@ -20,9 +20,12 @@ $data = Join-Path $Out 'appdata'
 Remove-Item -Recurse -Force $Out -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $Out | Out-Null
 
+# TMDB answers come from the mock too (its /3 and /t/p routes).
+$env:KP_TMDB_BASE = $Mock
+
 $before = [KpForeground]::GetForegroundWindow()
 $p = Start-Process (Join-Path $exeDir 'karadelik_player.exe') -WorkingDirectory $exeDir -WindowStyle Hidden -PassThru `
-  -ArgumentList '--kp-offscreen', "--kp-data-dir=$data", "--kp-add-mock=$Mock", "--kp-shot=$Out"
+  -ArgumentList '--kp-offscreen', "--kp-data-dir=$data", "--kp-add-mock=$Mock", "--kp-shot=$Out", '--kp-tmdb-key=kp-mock-tmdb-key'
 $stoleFocus = $false
 $sw = [Diagnostics.Stopwatch]::StartNew()
 while (-not $p.HasExited -and $sw.Elapsed.TotalSeconds -lt 180) {

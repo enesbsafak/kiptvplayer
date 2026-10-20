@@ -52,7 +52,7 @@ Future<void> main(List<String> args) async {
   final state = AppState(library);
   try {
     await RustLib.init();
-    await rust.openLibrary(dataDir: dataDir);
+    await rust.openLibrary(dataDir: dataDir, ephemeralSecrets: offscreen);
     perf.mark('library_open');
     await state.load();
     perf.mark('library_loaded');

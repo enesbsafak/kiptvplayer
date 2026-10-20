@@ -54,6 +54,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   SourceInfo dco_decode_box_autoadd_source_info(dynamic raw);
 
   @protected
+  TmdbInfo dco_decode_box_autoadd_tmdb_info(dynamic raw);
+
+  @protected
   int dco_decode_box_autoadd_u_32(dynamic raw);
 
   @protected
@@ -84,6 +87,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Kind dco_decode_kind(dynamic raw);
 
   @protected
+  List<String> dco_decode_list_String(dynamic raw);
+
+  @protected
   List<Category> dco_decode_list_category(dynamic raw);
 
   @protected
@@ -108,6 +114,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SourceInfo> dco_decode_list_source_info(dynamic raw);
 
   @protected
+  List<TmdbEpisodeInfo> dco_decode_list_tmdb_episode_info(dynamic raw);
+
+  @protected
+  List<TmdbPerson> dco_decode_list_tmdb_person(dynamic raw);
+
+  @protected
   NewSourceInput dco_decode_new_source_input(dynamic raw);
 
   @protected
@@ -124,6 +136,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Kind? dco_decode_opt_box_autoadd_kind(dynamic raw);
+
+  @protected
+  TmdbInfo? dco_decode_opt_box_autoadd_tmdb_info(dynamic raw);
 
   @protected
   int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
@@ -145,6 +160,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SyncEvent dco_decode_sync_event(dynamic raw);
+
+  @protected
+  TmdbEpisodeInfo dco_decode_tmdb_episode_info(dynamic raw);
+
+  @protected
+  TmdbInfo dco_decode_tmdb_info(dynamic raw);
+
+  @protected
+  TmdbPerson dco_decode_tmdb_person(dynamic raw);
+
+  @protected
+  TmdbStatus dco_decode_tmdb_status(dynamic raw);
 
   @protected
   int dco_decode_u_32(dynamic raw);
@@ -193,6 +220,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   SourceInfo sse_decode_box_autoadd_source_info(SseDeserializer deserializer);
 
   @protected
+  TmdbInfo sse_decode_box_autoadd_tmdb_info(SseDeserializer deserializer);
+
+  @protected
   int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
 
   @protected
@@ -223,6 +253,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Kind sse_decode_kind(SseDeserializer deserializer);
 
   @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer);
+
+  @protected
   List<Category> sse_decode_list_category(SseDeserializer deserializer);
 
   @protected
@@ -249,6 +282,14 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SourceInfo> sse_decode_list_source_info(SseDeserializer deserializer);
 
   @protected
+  List<TmdbEpisodeInfo> sse_decode_list_tmdb_episode_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  List<TmdbPerson> sse_decode_list_tmdb_person(SseDeserializer deserializer);
+
+  @protected
   NewSourceInput sse_decode_new_source_input(SseDeserializer deserializer);
 
   @protected
@@ -265,6 +306,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   Kind? sse_decode_opt_box_autoadd_kind(SseDeserializer deserializer);
+
+  @protected
+  TmdbInfo? sse_decode_opt_box_autoadd_tmdb_info(SseDeserializer deserializer);
 
   @protected
   int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
@@ -286,6 +330,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SyncEvent sse_decode_sync_event(SseDeserializer deserializer);
+
+  @protected
+  TmdbEpisodeInfo sse_decode_tmdb_episode_info(SseDeserializer deserializer);
+
+  @protected
+  TmdbInfo sse_decode_tmdb_info(SseDeserializer deserializer);
+
+  @protected
+  TmdbPerson sse_decode_tmdb_person(SseDeserializer deserializer);
+
+  @protected
+  TmdbStatus sse_decode_tmdb_status(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_32(SseDeserializer deserializer);
@@ -345,6 +401,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_tmdb_info(
+    TmdbInfo self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
 
   @protected
@@ -373,6 +435,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_kind(Kind self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer);
 
   @protected
   void sse_encode_list_category(List<Category> self, SseSerializer serializer);
@@ -417,6 +482,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_tmdb_episode_info(
+    List<TmdbEpisodeInfo> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_tmdb_person(
+    List<TmdbPerson> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_new_source_input(
     NewSourceInput self,
     SseSerializer serializer,
@@ -441,6 +518,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_opt_box_autoadd_kind(Kind? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_box_autoadd_tmdb_info(
+    TmdbInfo? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);
 
   @protected
@@ -463,6 +546,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_sync_event(SyncEvent self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_tmdb_episode_info(
+    TmdbEpisodeInfo self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_tmdb_info(TmdbInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_tmdb_person(TmdbPerson self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_tmdb_status(TmdbStatus self, SseSerializer serializer);
 
   @protected
   void sse_encode_u_32(int self, SseSerializer serializer);

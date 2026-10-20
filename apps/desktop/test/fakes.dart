@@ -28,6 +28,13 @@ class FakeLibrary implements LibraryApi {
   final List<(int, int)> caughtUp = [];
   final Map<int, List<Programme>> past = {};
 
+  /// TMDB: the key the fake accepts, what it returns per item.
+  static const goodTmdbKey = 'good-key';
+  String? tmdbKey;
+  String tmdbLanguage = 'tr-TR';
+  final Map<int, TmdbInfo> tmdb = {};
+  final Map<int, List<TmdbEpisodeInfo>> tmdbEpisodes = {};
+
   static SourceInfo source({String id = 's1', String name = 'Demo', String? error}) => SourceInfo(
     id: id,
     isXtream: true,
@@ -114,8 +121,15 @@ class FakeLibrary implements LibraryApi {
   }
 
   @override
-  Future<ItemDetail> detail(int itemId) async =>
-      ItemDetail(id: itemId, kind: Kind.movie, name: 'Film $itemId', episodes: const [], isFavorite: false);
+  Future<ItemDetail> detail(int itemId) async => ItemDetail(
+    id: itemId,
+    kind: Kind.movie,
+    name: 'Film $itemId',
+    plot: 'Sağlayıcının özeti.',
+    cast: 'Oyuncu Bir, Oyuncu İki',
+    episodes: const [],
+    isFavorite: false,
+  );
 
   @override
   Future<List<Programme>> epg(int itemId) async => const [];
@@ -137,6 +151,25 @@ class FakeLibrary implements LibraryApi {
     this.region = region;
     regionChosen = true;
   }
+
+  @override
+  Future<TmdbStatus> tmdbStatus() async => TmdbStatus(configured: tmdbKey != null, language: tmdbLanguage);
+
+  @override
+  Future<void> setTmdbKey(String? key) async {
+    if (key != null && key != goodTmdbKey) throw Exception('TMDB anahtarı geçersiz');
+    tmdbKey = key;
+  }
+
+  @override
+  Future<void> setTmdbLanguage(String language) async => tmdbLanguage = language;
+
+  @override
+  Future<TmdbInfo?> tmdbDetail(int itemId) async => tmdbKey == null ? null : tmdb[itemId];
+
+  @override
+  Future<List<TmdbEpisodeInfo>> tmdbSeason(int itemId, int season) async =>
+      (tmdbEpisodes[itemId] ?? const []).where((e) => e.season == season).toList();
 
   @override
   Future<List<RegionCount>> sourceRegions(String sourceId) async =>

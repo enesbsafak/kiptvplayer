@@ -12,6 +12,7 @@ use serde_json::Value;
 
 use crate::catalog::{Catalog, ContentKind, XtreamLists};
 use crate::secret::{password_key, SecretStore};
+use crate::tmdb::{Media, Tmdb, TmdbDetail, TmdbEpisode, TmdbError};
 use crate::store::{CategoryRow, ChannelRow, EpgRow, ItemRow, ProgressRow, SourceRow, Store, StoreError};
 use crate::xtream::{as_array, as_i64, as_string, XtreamClient, XtreamError};
 
@@ -21,6 +22,8 @@ pub enum CoreError {
     Xtream(#[from] XtreamError),
     #[error("veritabanı hatası: {0}")]
     Store(#[from] StoreError),
+    #[error("{0}")]
+    Tmdb(#[from] TmdbError),
     #[error("{0}")]
     Message(String),
 }
@@ -111,6 +114,19 @@ pub struct Detail {
     pub episodes: Vec<Episode>,
     pub is_favorite: bool,
     pub progress_ms: Option<i64>,
+}
+
+/// TMDB data changes rarely: details are reused for two weeks, and a title
+/// without a match is not searched again for a week.
+const TMDB_TTL_SECS: i64 = 14 * 86_400;
+const TMDB_MISS_TTL_SECS: i64 = 7 * 86_400;
+const TMDB_KEY: &str = "tmdb:api-key";
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct TmdbStatus {
+    pub configured: bool,
+    /// "tr-TR", "en-US": the language TMDB answers in.
+    pub language: String,
 }
 
 /// Short EPG is refetched after this long.
@@ -452,6 +468,117 @@ impl Core {
         Ok(detail)
     }
 
+    // ---- TMDB ----------------------------------------------------------
+
+    pub fn tmdb_status(&self) -> Result<TmdbStatus> {
+        Ok(TmdbStatus { configured: self.secrets.get(TMDB_KEY).is_some(), language: self.tmdb_language()? })
+    }
+
+    fn tmdb_language(&self) -> Result<String> {
+        Ok(self.store().setting("tmdb_language")?.filter(|l| !l.is_empty()).unwrap_or_else(|| "tr-TR".into()))
+    }
+
+    /// Saves (after checking it with TMDB) or, with None, forgets the key.
+    /// v3 API keys and v4 read access tokens both work.
+    pub fn set_tmdb_key(&self, key: Option<&str>) -> Result<()> {
+        match key.map(str::trim).filter(|k| !k.is_empty()) {
+            None => self.secrets.delete(TMDB_KEY),
+            Some(k) => {
+                Tmdb::new(k, &self.tmdb_language()?, tmdb_base().as_deref())?.validate()?;
+                self.secrets.set(TMDB_KEY, k).map_err(|e| msg(format!("Anahtar kaydedilemedi: {e}")))?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn set_tmdb_language(&self, language: &str) -> Result<()> {
+        Ok(self.store().set_setting("tmdb_language", language)?)
+    }
+
+    fn tmdb(&self) -> Result<Option<Tmdb>> {
+        let Some(key) = self.secrets.get(TMDB_KEY) else { return Ok(None) };
+        Ok(Some(Tmdb::new(&key, &self.tmdb_language()?, tmdb_base().as_deref())?))
+    }
+
+    /// TMDB's view of a film or series, matched by title and year; None
+    /// without a key, for live channels, or when TMDB has no match. Separate
+    /// from [detail] so provider data never waits on TMDB.
+    pub fn tmdb_for(&self, item_id: i64) -> Result<Option<TmdbDetail>> {
+        let item = self.item(item_id)?;
+        let media = match item.kind {
+            ContentKind::Movie => Media::Movie,
+            ContentKind::Series => Media::Tv,
+            ContentKind::Live => return Ok(None),
+        };
+        let Some(tmdb) = self.tmdb()? else { return Ok(None) };
+        let language = self.tmdb_language()?;
+        let t = now();
+
+        let match_key = format!("tmdb:match:{}:{}", item.source_id, item.uid);
+        let cached = self.store().cache_get(&match_key, TMDB_MISS_TTL_SECS.max(TMDB_TTL_SECS), t)?;
+        let id = match cached {
+            Some(v) if v == "none" => return Ok(None),
+            Some(v) => v.parse::<i64>().ok(),
+            None => None,
+        };
+        let id = match id {
+            Some(id) => id,
+            None => {
+                let (title, year) = crate::tmdb::clean_title(&item.name);
+                match tmdb.search(media, &title, year.or(item.year))? {
+                    Some(id) => {
+                        self.store().cache_put(&match_key, &id.to_string(), t)?;
+                        id
+                    }
+                    None => {
+                        // Expires sooner than a hit, via the age check below.
+                        self.store().cache_put(&match_key, "none", t - (TMDB_TTL_SECS - TMDB_MISS_TTL_SECS))?;
+                        return Ok(None);
+                    }
+                }
+            }
+        };
+
+        let detail_key = format!("tmdb:{}:{id}:{language}", if media == Media::Movie { "movie" } else { "tv" });
+        if let Some(json) = self.store().cache_get(&detail_key, TMDB_TTL_SECS, t)? {
+            if let Ok(d) = serde_json::from_str::<TmdbDetail>(&json) {
+                return Ok(Some(d));
+            }
+        }
+        let country = language.split('-').nth(1).unwrap_or("TR").to_string();
+        match tmdb.detail(media, id, &country) {
+            Ok(d) => {
+                if let Ok(json) = serde_json::to_string(&d) {
+                    self.store().cache_put(&detail_key, &json, t)?;
+                }
+                Ok(Some(d))
+            }
+            // Offline: an expired copy beats nothing.
+            Err(e) => match self.store().cache_get(&detail_key, i64::MAX / 2, t)? {
+                Some(json) => Ok(serde_json::from_str(&json).ok()),
+                None => Err(e.into()),
+            },
+        }
+    }
+
+    /// TMDB episode names, overviews and stills for one season of a series.
+    pub fn tmdb_season(&self, item_id: i64, season: i32) -> Result<Vec<TmdbEpisode>> {
+        let Some(series) = self.tmdb_for(item_id)? else { return Ok(Vec::new()) };
+        let Some(tmdb) = self.tmdb()? else { return Ok(Vec::new()) };
+        let key = format!("tmdb:season:{}:{season}:{}", series.id, self.tmdb_language()?);
+        let t = now();
+        if let Some(json) = self.store().cache_get(&key, TMDB_TTL_SECS, t)? {
+            if let Ok(list) = serde_json::from_str(&json) {
+                return Ok(list);
+            }
+        }
+        let list = tmdb.season(series.id, season)?;
+        if let Ok(json) = serde_json::to_string(&list) {
+            self.store().cache_put(&key, &json, t)?;
+        }
+        Ok(list)
+    }
+
     /// Programmes of a catch-up channel that can be replayed, newest first,
     /// within the provider's archive window.
     pub fn archive(&self, item_id: i64) -> Result<Vec<Programme>> {
@@ -520,6 +647,11 @@ impl Core {
         store.replace_epg_short(&item.source_id, item.uid, &epg_rows(entries), t, false)?;
         Ok(store.epg_short(&item.source_id, item.uid, t)?.0.into_iter().map(programme).collect())
     }
+}
+
+/// Development and tests only: points TMDB at tools/mock-iptv.
+fn tmdb_base() -> Option<String> {
+    std::env::var("KP_TMDB_BASE").ok().filter(|b| !b.is_empty())
 }
 
 fn epg_rows(entries: Vec<crate::xtream::ShortEpgEntry>) -> Vec<EpgRow> {

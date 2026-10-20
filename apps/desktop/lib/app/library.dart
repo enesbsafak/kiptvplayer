@@ -1,3 +1,5 @@
+import 'package:flutter_rust_bridge/flutter_rust_bridge.dart' show AnyhowException;
+
 import '../src/rust/api/library.dart' as rust;
 
 export '../src/rust/api/library.dart'
@@ -19,7 +21,18 @@ export '../src/rust/api/library.dart'
         SyncEvent_Done,
         SyncEvent_Downloading,
         SyncEvent_Failed,
-        SyncEvent_Saving;
+        SyncEvent_Saving,
+        TmdbEpisodeInfo,
+        TmdbInfo,
+        TmdbPerson,
+        TmdbStatus;
+
+/// A core error as a sentence for the UI: the Rust message, without the
+/// exception wrapper ("AnyhowException(...)", "Exception: ...").
+String errorText(Object e) => switch (e) {
+  AnyhowException(:final message) => message.split('\n').first,
+  _ => '$e'.replaceFirst(RegExp(r'^\w*Exception:\s*'), ''),
+};
 
 /// Everything screens may ask of the data core. Widget tests swap in a fake;
 /// the app uses [RustLibrary].
@@ -60,6 +73,14 @@ abstract interface class LibraryApi {
   Future<rust.RegionPreference> regionPreference();
   Future<void> setRegionPreference(String? region);
   Future<List<rust.RegionCount>> sourceRegions(String sourceId);
+
+  Future<rust.TmdbStatus> tmdbStatus();
+
+  /// Validates [key] with TMDB before saving it; null removes it.
+  Future<void> setTmdbKey(String? key);
+  Future<void> setTmdbLanguage(String language);
+  Future<rust.TmdbInfo?> tmdbDetail(int itemId);
+  Future<List<rust.TmdbEpisodeInfo>> tmdbSeason(int itemId, int season);
 }
 
 class RustLibrary implements LibraryApi {
@@ -158,4 +179,15 @@ class RustLibrary implements LibraryApi {
   @override
   Future<List<rust.RegionCount>> sourceRegions(String sourceId) =>
       rust.sourceRegions(sourceId: sourceId);
+  @override
+  Future<rust.TmdbStatus> tmdbStatus() => rust.tmdbStatus();
+  @override
+  Future<void> setTmdbKey(String? key) => rust.setTmdbKey(key: key);
+  @override
+  Future<void> setTmdbLanguage(String language) => rust.setTmdbLanguage(language: language);
+  @override
+  Future<rust.TmdbInfo?> tmdbDetail(int itemId) => rust.tmdbDetail(itemId: itemId);
+  @override
+  Future<List<rust.TmdbEpisodeInfo>> tmdbSeason(int itemId, int season) =>
+      rust.tmdbSeason(itemId: itemId, season: season);
 }

@@ -12,6 +12,7 @@ pub mod region;
 pub mod secret;
 pub mod store;
 pub mod text;
+pub mod tmdb;
 pub mod xtream;
 
 pub use catalog::{Catalog, CategoryRecord, ChannelRecord, ContentKind, XtreamLists};

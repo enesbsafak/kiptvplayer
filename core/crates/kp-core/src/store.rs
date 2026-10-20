@@ -23,7 +23,17 @@ pub enum StoreError {
 
 pub type Result<T> = std::result::Result<T, StoreError>;
 
-const SCHEMA_VERSION: i64 = 3;
+const SCHEMA_VERSION: i64 = 4;
+
+/// v4: TMDB responses and title matches, so details open offline and the
+/// API is asked once per title, not on every visit.
+const SCHEMA_V4: &str = "
+CREATE TABLE IF NOT EXISTS web_cache (
+    key         TEXT PRIMARY KEY,
+    value       TEXT NOT NULL,
+    fetched_at  INTEGER NOT NULL
+);
+";
 
 /// v2: catch-up. Panel time zone for timeshift URLs, archive flag per programme.
 const SCHEMA_V2: &str = "
@@ -271,6 +281,12 @@ impl Store {
             let tx = self.conn.transaction()?;
             Self::migrate_v3(&tx)?;
             tx.pragma_update(None, "user_version", 3)?;
+            tx.commit()?;
+        }
+        if version < 4 {
+            let tx = self.conn.transaction()?;
+            tx.execute_batch(SCHEMA_V4)?;
+            tx.pragma_update(None, "user_version", 4)?;
             tx.commit()?;
         }
         Ok(())
@@ -749,6 +765,26 @@ impl Store {
             out.push(e);
         }
         Ok((out, fetched))
+    }
+
+    /// A cached web response no older than [max_age] seconds.
+    pub fn cache_get(&self, key: &str, max_age: i64, now: i64) -> Result<Option<String>> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT value FROM web_cache WHERE key = ?1 AND fetched_at > ?2",
+                params![key, now - max_age],
+                |r| r.get(0),
+            )
+            .optional()?)
+    }
+
+    pub fn cache_put(&self, key: &str, value: &str, now: i64) -> Result<()> {
+        self.conn.execute(
+            "INSERT OR REPLACE INTO web_cache (key, value, fetched_at) VALUES (?1, ?2, ?3)",
+            params![key, value, now],
+        )?;
+        Ok(())
     }
 
     /// When the archive (full table) of a channel was last fetched.

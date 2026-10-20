@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1535855015;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 1864411936;
 
 // Section: executor
 
@@ -512,11 +512,13 @@ fn wire__crate__api__library__open_library_impl(
             let mut deserializer =
                 flutter_rust_bridge::for_generated::SseDeserializer::new(message);
             let api_data_dir = <String>::sse_decode(&mut deserializer);
+            let api_ephemeral_secrets = <bool>::sse_decode(&mut deserializer);
             deserializer.end();
             move |context| {
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
-                        let output_ok = crate::api::library::open_library(api_data_dir)?;
+                        let output_ok =
+                            crate::api::library::open_library(api_data_dir, api_ephemeral_secrets)?;
                         std::result::Result::Ok(output_ok)
                     })(),
                 )
@@ -867,6 +869,76 @@ fn wire__crate__api__library__set_region_preference_impl(
         },
     )
 }
+fn wire__crate__api__library__set_tmdb_key_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_tmdb_key",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_key = <Option<String>>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::library::set_tmdb_key(api_key)?;
+                        std::result::Result::Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__library__set_tmdb_language_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "set_tmdb_language",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_language = <String>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::library::set_tmdb_language(api_language)?;
+                        std::result::Result::Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
 fn wire__crate__api__library__source_regions_impl(
     port_: flutter_rust_bridge::for_generated::MessagePort,
     ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
@@ -934,6 +1006,111 @@ fn wire__crate__api__library__sync_source_impl(
                 transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
                     (move || {
                         let output_ok = crate::api::library::sync_source(api_source_id, api_sink)?;
+                        std::result::Result::Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__library__tmdb_detail_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "tmdb_detail",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_item_id = <i64>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::library::tmdb_detail(api_item_id)?;
+                        std::result::Result::Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__library__tmdb_season_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "tmdb_season",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_item_id = <i64>::sse_decode(&mut deserializer);
+            let api_season = <i32>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::library::tmdb_season(api_item_id, api_season)?;
+                        std::result::Result::Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__library__tmdb_status_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "tmdb_status",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::library::tmdb_status()?;
                         std::result::Result::Ok(output_ok)
                     })(),
                 )
@@ -1103,6 +1280,7 @@ impl SseDecode for crate::api::library::ItemDetail {
         let mut var_director = <Option<String>>::sse_decode(deserializer);
         let mut var_durationSecs = <Option<i64>>::sse_decode(deserializer);
         let mut var_backdrop = <Option<String>>::sse_decode(deserializer);
+        let mut var_trailer = <Option<String>>::sse_decode(deserializer);
         let mut var_episodes = <Vec<crate::api::library::EpisodeInfo>>::sse_decode(deserializer);
         let mut var_isFavorite = <bool>::sse_decode(deserializer);
         let mut var_progressMs = <Option<i64>>::sse_decode(deserializer);
@@ -1119,6 +1297,7 @@ impl SseDecode for crate::api::library::ItemDetail {
             director: var_director,
             duration_secs: var_durationSecs,
             backdrop: var_backdrop,
+            trailer: var_trailer,
             episodes: var_episodes,
             is_favorite: var_isFavorite,
             progress_ms: var_progressMs,
@@ -1136,6 +1315,18 @@ impl SseDecode for crate::api::library::Kind {
             2 => crate::api::library::Kind::Series,
             _ => unreachable!("Invalid variant for Kind: {}", inner),
         };
+    }
+}
+
+impl SseDecode for Vec<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<String>::sse_decode(deserializer));
+        }
+        return ans_;
     }
 }
 
@@ -1237,6 +1428,32 @@ impl SseDecode for Vec<crate::api::library::SourceInfo> {
     }
 }
 
+impl SseDecode for Vec<crate::api::library::TmdbEpisodeInfo> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::library::TmdbEpisodeInfo>::sse_decode(
+                deserializer,
+            ));
+        }
+        return ans_;
+    }
+}
+
+impl SseDecode for Vec<crate::api::library::TmdbPerson> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut len_ = <i32>::sse_decode(deserializer);
+        let mut ans_ = Vec::with_capacity(len_ as usize);
+        for idx_ in 0..len_ {
+            ans_.push(<crate::api::library::TmdbPerson>::sse_decode(deserializer));
+        }
+        return ans_;
+    }
+}
+
 impl SseDecode for crate::api::library::NewSourceInput {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1308,6 +1525,17 @@ impl SseDecode for Option<crate::api::library::Kind> {
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
         if (<bool>::sse_decode(deserializer)) {
             return Some(<crate::api::library::Kind>::sse_decode(deserializer));
+        } else {
+            return None;
+        }
+    }
+}
+
+impl SseDecode for Option<crate::api::library::TmdbInfo> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        if (<bool>::sse_decode(deserializer)) {
+            return Some(<crate::api::library::TmdbInfo>::sse_decode(deserializer));
         } else {
             return None;
         }
@@ -1451,6 +1679,96 @@ impl SseDecode for crate::api::library::SyncEvent {
     }
 }
 
+impl SseDecode for crate::api::library::TmdbEpisodeInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_season = <i32>::sse_decode(deserializer);
+        let mut var_number = <i32>::sse_decode(deserializer);
+        let mut var_name = <Option<String>>::sse_decode(deserializer);
+        let mut var_overview = <Option<String>>::sse_decode(deserializer);
+        let mut var_still = <Option<String>>::sse_decode(deserializer);
+        let mut var_runtimeMin = <Option<i32>>::sse_decode(deserializer);
+        let mut var_airDate = <Option<String>>::sse_decode(deserializer);
+        return crate::api::library::TmdbEpisodeInfo {
+            season: var_season,
+            number: var_number,
+            name: var_name,
+            overview: var_overview,
+            still: var_still,
+            runtime_min: var_runtimeMin,
+            air_date: var_airDate,
+        };
+    }
+}
+
+impl SseDecode for crate::api::library::TmdbInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_id = <i64>::sse_decode(deserializer);
+        let mut var_title = <String>::sse_decode(deserializer);
+        let mut var_originalTitle = <Option<String>>::sse_decode(deserializer);
+        let mut var_tagline = <Option<String>>::sse_decode(deserializer);
+        let mut var_overview = <Option<String>>::sse_decode(deserializer);
+        let mut var_genres = <Vec<String>>::sse_decode(deserializer);
+        let mut var_year = <Option<i32>>::sse_decode(deserializer);
+        let mut var_runtimeMin = <Option<i32>>::sse_decode(deserializer);
+        let mut var_rating = <Option<f32>>::sse_decode(deserializer);
+        let mut var_voteCount = <Option<i64>>::sse_decode(deserializer);
+        let mut var_poster = <Option<String>>::sse_decode(deserializer);
+        let mut var_backdrop = <Option<String>>::sse_decode(deserializer);
+        let mut var_certification = <Option<String>>::sse_decode(deserializer);
+        let mut var_trailer = <Option<String>>::sse_decode(deserializer);
+        let mut var_cast = <Vec<crate::api::library::TmdbPerson>>::sse_decode(deserializer);
+        let mut var_makers = <Vec<String>>::sse_decode(deserializer);
+        let mut var_seasons = <i32>::sse_decode(deserializer);
+        return crate::api::library::TmdbInfo {
+            id: var_id,
+            title: var_title,
+            original_title: var_originalTitle,
+            tagline: var_tagline,
+            overview: var_overview,
+            genres: var_genres,
+            year: var_year,
+            runtime_min: var_runtimeMin,
+            rating: var_rating,
+            vote_count: var_voteCount,
+            poster: var_poster,
+            backdrop: var_backdrop,
+            certification: var_certification,
+            trailer: var_trailer,
+            cast: var_cast,
+            makers: var_makers,
+            seasons: var_seasons,
+        };
+    }
+}
+
+impl SseDecode for crate::api::library::TmdbPerson {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_name = <String>::sse_decode(deserializer);
+        let mut var_role = <Option<String>>::sse_decode(deserializer);
+        let mut var_photo = <Option<String>>::sse_decode(deserializer);
+        return crate::api::library::TmdbPerson {
+            name: var_name,
+            role: var_role,
+            photo: var_photo,
+        };
+    }
+}
+
+impl SseDecode for crate::api::library::TmdbStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
+        let mut var_configured = <bool>::sse_decode(deserializer);
+        let mut var_language = <String>::sse_decode(deserializer);
+        return crate::api::library::TmdbStatus {
+            configured: var_configured,
+            language: var_language,
+        };
+    }
+}
+
 impl SseDecode for u32 {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_decode(deserializer: &mut flutter_rust_bridge::for_generated::SseDeserializer) -> Self {
@@ -1510,8 +1828,13 @@ fn pde_ffi_dispatcher_primary_impl(
         22 => {
             wire__crate__api__library__set_region_preference_impl(port, ptr, rust_vec_len, data_len)
         }
-        23 => wire__crate__api__library__source_regions_impl(port, ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__library__sync_source_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__library__set_tmdb_key_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__library__set_tmdb_language_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__library__source_regions_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__library__sync_source_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__library__tmdb_detail_impl(port, ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__library__tmdb_season_impl(port, ptr, rust_vec_len, data_len),
+        29 => wire__crate__api__library__tmdb_status_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }
@@ -1643,6 +1966,7 @@ impl flutter_rust_bridge::IntoDart for crate::api::library::ItemDetail {
             self.director.into_into_dart().into_dart(),
             self.duration_secs.into_into_dart().into_dart(),
             self.backdrop.into_into_dart().into_dart(),
+            self.trailer.into_into_dart().into_dart(),
             self.episodes.into_into_dart().into_dart(),
             self.is_favorite.into_into_dart().into_dart(),
             self.progress_ms.into_into_dart().into_dart(),
@@ -1855,6 +2179,108 @@ impl flutter_rust_bridge::IntoIntoDart<crate::api::library::SyncEvent>
         self
     }
 }
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::library::TmdbEpisodeInfo {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.season.into_into_dart().into_dart(),
+            self.number.into_into_dart().into_dart(),
+            self.name.into_into_dart().into_dart(),
+            self.overview.into_into_dart().into_dart(),
+            self.still.into_into_dart().into_dart(),
+            self.runtime_min.into_into_dart().into_dart(),
+            self.air_date.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::library::TmdbEpisodeInfo
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::library::TmdbEpisodeInfo>
+    for crate::api::library::TmdbEpisodeInfo
+{
+    fn into_into_dart(self) -> crate::api::library::TmdbEpisodeInfo {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::library::TmdbInfo {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.id.into_into_dart().into_dart(),
+            self.title.into_into_dart().into_dart(),
+            self.original_title.into_into_dart().into_dart(),
+            self.tagline.into_into_dart().into_dart(),
+            self.overview.into_into_dart().into_dart(),
+            self.genres.into_into_dart().into_dart(),
+            self.year.into_into_dart().into_dart(),
+            self.runtime_min.into_into_dart().into_dart(),
+            self.rating.into_into_dart().into_dart(),
+            self.vote_count.into_into_dart().into_dart(),
+            self.poster.into_into_dart().into_dart(),
+            self.backdrop.into_into_dart().into_dart(),
+            self.certification.into_into_dart().into_dart(),
+            self.trailer.into_into_dart().into_dart(),
+            self.cast.into_into_dart().into_dart(),
+            self.makers.into_into_dart().into_dart(),
+            self.seasons.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive for crate::api::library::TmdbInfo {}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::library::TmdbInfo>
+    for crate::api::library::TmdbInfo
+{
+    fn into_into_dart(self) -> crate::api::library::TmdbInfo {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::library::TmdbPerson {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.name.into_into_dart().into_dart(),
+            self.role.into_into_dart().into_dart(),
+            self.photo.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::library::TmdbPerson
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::library::TmdbPerson>
+    for crate::api::library::TmdbPerson
+{
+    fn into_into_dart(self) -> crate::api::library::TmdbPerson {
+        self
+    }
+}
+// Codec=Dco (DartCObject based), see doc to use other codecs
+impl flutter_rust_bridge::IntoDart for crate::api::library::TmdbStatus {
+    fn into_dart(self) -> flutter_rust_bridge::for_generated::DartAbi {
+        [
+            self.configured.into_into_dart().into_dart(),
+            self.language.into_into_dart().into_dart(),
+        ]
+        .into_dart()
+    }
+}
+impl flutter_rust_bridge::for_generated::IntoDartExceptPrimitive
+    for crate::api::library::TmdbStatus
+{
+}
+impl flutter_rust_bridge::IntoIntoDart<crate::api::library::TmdbStatus>
+    for crate::api::library::TmdbStatus
+{
+    fn into_into_dart(self) -> crate::api::library::TmdbStatus {
+        self
+    }
+}
 
 impl SseEncode for flutter_rust_bridge::for_generated::anyhow::Error {
     // Codec=Sse (Serialization based), see doc to use other codecs
@@ -1975,6 +2401,7 @@ impl SseEncode for crate::api::library::ItemDetail {
         <Option<String>>::sse_encode(self.director, serializer);
         <Option<i64>>::sse_encode(self.duration_secs, serializer);
         <Option<String>>::sse_encode(self.backdrop, serializer);
+        <Option<String>>::sse_encode(self.trailer, serializer);
         <Vec<crate::api::library::EpisodeInfo>>::sse_encode(self.episodes, serializer);
         <bool>::sse_encode(self.is_favorite, serializer);
         <Option<i64>>::sse_encode(self.progress_ms, serializer);
@@ -1995,6 +2422,16 @@ impl SseEncode for crate::api::library::Kind {
             },
             serializer,
         );
+    }
+}
+
+impl SseEncode for Vec<String> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <String>::sse_encode(item, serializer);
+        }
     }
 }
 
@@ -2078,6 +2515,26 @@ impl SseEncode for Vec<crate::api::library::SourceInfo> {
     }
 }
 
+impl SseEncode for Vec<crate::api::library::TmdbEpisodeInfo> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::library::TmdbEpisodeInfo>::sse_encode(item, serializer);
+        }
+    }
+}
+
+impl SseEncode for Vec<crate::api::library::TmdbPerson> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.len() as _, serializer);
+        for item in self {
+            <crate::api::library::TmdbPerson>::sse_encode(item, serializer);
+        }
+    }
+}
+
 impl SseEncode for crate::api::library::NewSourceInput {
     // Codec=Sse (Serialization based), see doc to use other codecs
     fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
@@ -2137,6 +2594,16 @@ impl SseEncode for Option<crate::api::library::Kind> {
         <bool>::sse_encode(self.is_some(), serializer);
         if let Some(value) = self {
             <crate::api::library::Kind>::sse_encode(value, serializer);
+        }
+    }
+}
+
+impl SseEncode for Option<crate::api::library::TmdbInfo> {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.is_some(), serializer);
+        if let Some(value) = self {
+            <crate::api::library::TmdbInfo>::sse_encode(value, serializer);
         }
     }
 }
@@ -2234,6 +2701,59 @@ impl SseEncode for crate::api::library::SyncEvent {
                 unimplemented!("");
             }
         }
+    }
+}
+
+impl SseEncode for crate::api::library::TmdbEpisodeInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i32>::sse_encode(self.season, serializer);
+        <i32>::sse_encode(self.number, serializer);
+        <Option<String>>::sse_encode(self.name, serializer);
+        <Option<String>>::sse_encode(self.overview, serializer);
+        <Option<String>>::sse_encode(self.still, serializer);
+        <Option<i32>>::sse_encode(self.runtime_min, serializer);
+        <Option<String>>::sse_encode(self.air_date, serializer);
+    }
+}
+
+impl SseEncode for crate::api::library::TmdbInfo {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <i64>::sse_encode(self.id, serializer);
+        <String>::sse_encode(self.title, serializer);
+        <Option<String>>::sse_encode(self.original_title, serializer);
+        <Option<String>>::sse_encode(self.tagline, serializer);
+        <Option<String>>::sse_encode(self.overview, serializer);
+        <Vec<String>>::sse_encode(self.genres, serializer);
+        <Option<i32>>::sse_encode(self.year, serializer);
+        <Option<i32>>::sse_encode(self.runtime_min, serializer);
+        <Option<f32>>::sse_encode(self.rating, serializer);
+        <Option<i64>>::sse_encode(self.vote_count, serializer);
+        <Option<String>>::sse_encode(self.poster, serializer);
+        <Option<String>>::sse_encode(self.backdrop, serializer);
+        <Option<String>>::sse_encode(self.certification, serializer);
+        <Option<String>>::sse_encode(self.trailer, serializer);
+        <Vec<crate::api::library::TmdbPerson>>::sse_encode(self.cast, serializer);
+        <Vec<String>>::sse_encode(self.makers, serializer);
+        <i32>::sse_encode(self.seasons, serializer);
+    }
+}
+
+impl SseEncode for crate::api::library::TmdbPerson {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <String>::sse_encode(self.name, serializer);
+        <Option<String>>::sse_encode(self.role, serializer);
+        <Option<String>>::sse_encode(self.photo, serializer);
+    }
+}
+
+impl SseEncode for crate::api::library::TmdbStatus {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    fn sse_encode(self, serializer: &mut flutter_rust_bridge::for_generated::SseSerializer) {
+        <bool>::sse_encode(self.configured, serializer);
+        <String>::sse_encode(self.language, serializer);
     }
 }
 

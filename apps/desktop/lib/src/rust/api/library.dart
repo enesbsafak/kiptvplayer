@@ -10,11 +10,19 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
-Future<void> openLibrary({required String dataDir}) =>
-    RustLib.instance.api.crateApiLibraryOpenLibrary(dataDir: dataDir);
+/// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
+/// keyring: for automated runs, which must never touch the user's
+/// credentials (or leave entries behind).
+Future<void> openLibrary({
+  required String dataDir,
+  required bool ephemeralSecrets,
+}) => RustLib.instance.api.crateApiLibraryOpenLibrary(
+  dataDir: dataDir,
+  ephemeralSecrets: ephemeralSecrets,
+);
 
 Future<List<SourceInfo>> listSources() =>
     RustLib.instance.api.crateApiLibraryListSources();
@@ -158,6 +166,27 @@ Future<List<Programme>> epg({required PlatformInt64 itemId}) =>
 /// Past programmes that can be replayed, newest first.
 Future<List<Programme>> archive({required PlatformInt64 itemId}) =>
     RustLib.instance.api.crateApiLibraryArchive(itemId: itemId);
+
+Future<TmdbStatus> tmdbStatus() =>
+    RustLib.instance.api.crateApiLibraryTmdbStatus();
+
+/// Checks the key with TMDB and saves it in the OS keyring; None removes it.
+Future<void> setTmdbKey({String? key}) =>
+    RustLib.instance.api.crateApiLibrarySetTmdbKey(key: key);
+
+Future<void> setTmdbLanguage({required String language}) =>
+    RustLib.instance.api.crateApiLibrarySetTmdbLanguage(language: language);
+
+Future<TmdbInfo?> tmdbDetail({required PlatformInt64 itemId}) =>
+    RustLib.instance.api.crateApiLibraryTmdbDetail(itemId: itemId);
+
+Future<List<TmdbEpisodeInfo>> tmdbSeason({
+  required PlatformInt64 itemId,
+  required int season,
+}) => RustLib.instance.api.crateApiLibraryTmdbSeason(
+  itemId: itemId,
+  season: season,
+);
 
 class Category {
   final PlatformInt64 uid;
@@ -345,6 +374,9 @@ class ItemDetail {
   final String? director;
   final PlatformInt64? durationSecs;
   final String? backdrop;
+
+  /// The provider's trailer: a YouTube id or URL.
+  final String? trailer;
   final List<EpisodeInfo> episodes;
   final bool isFavorite;
   final PlatformInt64? progressMs;
@@ -362,6 +394,7 @@ class ItemDetail {
     this.director,
     this.durationSecs,
     this.backdrop,
+    this.trailer,
     required this.episodes,
     required this.isFavorite,
     this.progressMs,
@@ -381,6 +414,7 @@ class ItemDetail {
       director.hashCode ^
       durationSecs.hashCode ^
       backdrop.hashCode ^
+      trailer.hashCode ^
       episodes.hashCode ^
       isFavorite.hashCode ^
       progressMs.hashCode;
@@ -402,6 +436,7 @@ class ItemDetail {
           director == other.director &&
           durationSecs == other.durationSecs &&
           backdrop == other.backdrop &&
+          trailer == other.trailer &&
           episodes == other.episodes &&
           isFavorite == other.isFavorite &&
           progressMs == other.progressMs;
@@ -638,4 +673,170 @@ sealed class SyncEvent with _$SyncEvent {
   const factory SyncEvent.saving() = SyncEvent_Saving;
   const factory SyncEvent.done({required SourceInfo source}) = SyncEvent_Done;
   const factory SyncEvent.failed({required String message}) = SyncEvent_Failed;
+}
+
+class TmdbEpisodeInfo {
+  final int season;
+  final int number;
+  final String? name;
+  final String? overview;
+  final String? still;
+  final int? runtimeMin;
+  final String? airDate;
+
+  const TmdbEpisodeInfo({
+    required this.season,
+    required this.number,
+    this.name,
+    this.overview,
+    this.still,
+    this.runtimeMin,
+    this.airDate,
+  });
+
+  @override
+  int get hashCode =>
+      season.hashCode ^
+      number.hashCode ^
+      name.hashCode ^
+      overview.hashCode ^
+      still.hashCode ^
+      runtimeMin.hashCode ^
+      airDate.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TmdbEpisodeInfo &&
+          runtimeType == other.runtimeType &&
+          season == other.season &&
+          number == other.number &&
+          name == other.name &&
+          overview == other.overview &&
+          still == other.still &&
+          runtimeMin == other.runtimeMin &&
+          airDate == other.airDate;
+}
+
+class TmdbInfo {
+  final PlatformInt64 id;
+  final String title;
+  final String? originalTitle;
+  final String? tagline;
+  final String? overview;
+  final List<String> genres;
+  final int? year;
+  final int? runtimeMin;
+  final double? rating;
+  final PlatformInt64? voteCount;
+  final String? poster;
+  final String? backdrop;
+  final String? certification;
+
+  /// YouTube video id.
+  final String? trailer;
+  final List<TmdbPerson> cast;
+  final List<String> makers;
+  final int seasons;
+
+  const TmdbInfo({
+    required this.id,
+    required this.title,
+    this.originalTitle,
+    this.tagline,
+    this.overview,
+    required this.genres,
+    this.year,
+    this.runtimeMin,
+    this.rating,
+    this.voteCount,
+    this.poster,
+    this.backdrop,
+    this.certification,
+    this.trailer,
+    required this.cast,
+    required this.makers,
+    required this.seasons,
+  });
+
+  @override
+  int get hashCode =>
+      id.hashCode ^
+      title.hashCode ^
+      originalTitle.hashCode ^
+      tagline.hashCode ^
+      overview.hashCode ^
+      genres.hashCode ^
+      year.hashCode ^
+      runtimeMin.hashCode ^
+      rating.hashCode ^
+      voteCount.hashCode ^
+      poster.hashCode ^
+      backdrop.hashCode ^
+      certification.hashCode ^
+      trailer.hashCode ^
+      cast.hashCode ^
+      makers.hashCode ^
+      seasons.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TmdbInfo &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          title == other.title &&
+          originalTitle == other.originalTitle &&
+          tagline == other.tagline &&
+          overview == other.overview &&
+          genres == other.genres &&
+          year == other.year &&
+          runtimeMin == other.runtimeMin &&
+          rating == other.rating &&
+          voteCount == other.voteCount &&
+          poster == other.poster &&
+          backdrop == other.backdrop &&
+          certification == other.certification &&
+          trailer == other.trailer &&
+          cast == other.cast &&
+          makers == other.makers &&
+          seasons == other.seasons;
+}
+
+class TmdbPerson {
+  final String name;
+  final String? role;
+  final String? photo;
+
+  const TmdbPerson({required this.name, this.role, this.photo});
+
+  @override
+  int get hashCode => name.hashCode ^ role.hashCode ^ photo.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TmdbPerson &&
+          runtimeType == other.runtimeType &&
+          name == other.name &&
+          role == other.role &&
+          photo == other.photo;
+}
+
+class TmdbStatus {
+  final bool configured;
+  final String language;
+
+  const TmdbStatus({required this.configured, required this.language});
+
+  @override
+  int get hashCode => configured.hashCode ^ language.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is TmdbStatus &&
+          runtimeType == other.runtimeType &&
+          configured == other.configured &&
+          language == other.language;
 }

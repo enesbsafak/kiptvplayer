@@ -69,7 +69,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.13.0';
 
   @override
-  int get rustContentHash => -1535855015;
+  int get rustContentHash => 1864411936;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -126,7 +126,10 @@ abstract class RustLibApi extends BaseApi {
 
   Future<List<SourceInfo>> crateApiLibraryListSources();
 
-  Future<void> crateApiLibraryOpenLibrary({required String dataDir});
+  Future<void> crateApiLibraryOpenLibrary({
+    required String dataDir,
+    required bool ephemeralSecrets,
+  });
 
   Future<Playback> crateApiLibraryPlayback({
     required PlatformInt64 itemId,
@@ -171,11 +174,24 @@ abstract class RustLibApi extends BaseApi {
 
   Future<void> crateApiLibrarySetRegionPreference({String? region});
 
+  Future<void> crateApiLibrarySetTmdbKey({String? key});
+
+  Future<void> crateApiLibrarySetTmdbLanguage({required String language});
+
   Future<List<RegionCount>> crateApiLibrarySourceRegions({
     required String sourceId,
   });
 
   Stream<SyncEvent> crateApiLibrarySyncSource({required String sourceId});
+
+  Future<TmdbInfo?> crateApiLibraryTmdbDetail({required PlatformInt64 itemId});
+
+  Future<List<TmdbEpisodeInfo>> crateApiLibraryTmdbSeason({
+    required PlatformInt64 itemId,
+    required int season,
+  });
+
+  Future<TmdbStatus> crateApiLibraryTmdbStatus();
 }
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
@@ -568,12 +584,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: "list_sources", argNames: []);
 
   @override
-  Future<void> crateApiLibraryOpenLibrary({required String dataDir}) {
+  Future<void> crateApiLibraryOpenLibrary({
+    required String dataDir,
+    required bool ephemeralSecrets,
+  }) {
     return handler.executeNormal(
       NormalTask(
         callFfi: (port_) {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(dataDir, serializer);
+          sse_encode_bool(ephemeralSecrets, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -586,14 +606,16 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiLibraryOpenLibraryConstMeta,
-        argValues: [dataDir],
+        argValues: [dataDir, ephemeralSecrets],
         apiImpl: this,
       ),
     );
   }
 
-  TaskConstMeta get kCrateApiLibraryOpenLibraryConstMeta =>
-      const TaskConstMeta(debugName: "open_library", argNames: ["dataDir"]);
+  TaskConstMeta get kCrateApiLibraryOpenLibraryConstMeta => const TaskConstMeta(
+    debugName: "open_library",
+    argNames: ["dataDir", "ephemeralSecrets"],
+  );
 
   @override
   Future<Playback> crateApiLibraryPlayback({
@@ -902,6 +924,65 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       );
 
   @override
+  Future<void> crateApiLibrarySetTmdbKey({String? key}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_opt_String(key, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 23,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiLibrarySetTmdbKeyConstMeta,
+        argValues: [key],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLibrarySetTmdbKeyConstMeta =>
+      const TaskConstMeta(debugName: "set_tmdb_key", argNames: ["key"]);
+
+  @override
+  Future<void> crateApiLibrarySetTmdbLanguage({required String language}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_String(language, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 24,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiLibrarySetTmdbLanguageConstMeta,
+        argValues: [language],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLibrarySetTmdbLanguageConstMeta =>
+      const TaskConstMeta(
+        debugName: "set_tmdb_language",
+        argNames: ["language"],
+      );
+
+  @override
   Future<List<RegionCount>> crateApiLibrarySourceRegions({
     required String sourceId,
   }) {
@@ -913,7 +994,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
-            funcId: 23,
+            funcId: 25,
             port: port_,
           );
         },
@@ -944,7 +1025,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             pdeCallFfi(
               generalizedFrbRustBinding,
               serializer,
-              funcId: 24,
+              funcId: 26,
               port: port_,
             );
           },
@@ -965,6 +1046,95 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     debugName: "sync_source",
     argNames: ["sourceId", "sink"],
   );
+
+  @override
+  Future<TmdbInfo?> crateApiLibraryTmdbDetail({required PlatformInt64 itemId}) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(itemId, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 27,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_opt_box_autoadd_tmdb_info,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiLibraryTmdbDetailConstMeta,
+        argValues: [itemId],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLibraryTmdbDetailConstMeta =>
+      const TaskConstMeta(debugName: "tmdb_detail", argNames: ["itemId"]);
+
+  @override
+  Future<List<TmdbEpisodeInfo>> crateApiLibraryTmdbSeason({
+    required PlatformInt64 itemId,
+    required int season,
+  }) {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_i_64(itemId, serializer);
+          sse_encode_i_32(season, serializer);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 28,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_list_tmdb_episode_info,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiLibraryTmdbSeasonConstMeta,
+        argValues: [itemId, season],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLibraryTmdbSeasonConstMeta => const TaskConstMeta(
+    debugName: "tmdb_season",
+    argNames: ["itemId", "season"],
+  );
+
+  @override
+  Future<TmdbStatus> crateApiLibraryTmdbStatus() {
+    return handler.executeNormal(
+      NormalTask(
+        callFfi: (port_) {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          pdeCallFfi(
+            generalizedFrbRustBinding,
+            serializer,
+            funcId: 29,
+            port: port_,
+          );
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_tmdb_status,
+          decodeErrorData: sse_decode_AnyhowException,
+        ),
+        constMeta: kCrateApiLibraryTmdbStatusConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiLibraryTmdbStatusConstMeta =>
+      const TaskConstMeta(debugName: "tmdb_status", argNames: []);
 
   @protected
   AnyhowException dco_decode_AnyhowException(dynamic raw) {
@@ -1024,6 +1194,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   SourceInfo dco_decode_box_autoadd_source_info(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return dco_decode_source_info(raw);
+  }
+
+  @protected
+  TmdbInfo dco_decode_box_autoadd_tmdb_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_tmdb_info(raw);
   }
 
   @protected
@@ -1123,8 +1299,8 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   ItemDetail dco_decode_item_detail(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
-    if (arr.length != 15)
-      throw Exception('unexpected arr length: expect 15 but see ${arr.length}');
+    if (arr.length != 16)
+      throw Exception('unexpected arr length: expect 16 but see ${arr.length}');
     return ItemDetail(
       id: dco_decode_i_64(arr[0]),
       kind: dco_decode_kind(arr[1]),
@@ -1138,9 +1314,10 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       director: dco_decode_opt_String(arr[9]),
       durationSecs: dco_decode_opt_box_autoadd_i_64(arr[10]),
       backdrop: dco_decode_opt_String(arr[11]),
-      episodes: dco_decode_list_episode_info(arr[12]),
-      isFavorite: dco_decode_bool(arr[13]),
-      progressMs: dco_decode_opt_box_autoadd_i_64(arr[14]),
+      trailer: dco_decode_opt_String(arr[12]),
+      episodes: dco_decode_list_episode_info(arr[13]),
+      isFavorite: dco_decode_bool(arr[14]),
+      progressMs: dco_decode_opt_box_autoadd_i_64(arr[15]),
     );
   }
 
@@ -1148,6 +1325,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Kind dco_decode_kind(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return Kind.values[raw as int];
+  }
+
+  @protected
+  List<String> dco_decode_list_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_String).toList();
   }
 
   @protected
@@ -1199,6 +1382,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<TmdbEpisodeInfo> dco_decode_list_tmdb_episode_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_tmdb_episode_info).toList();
+  }
+
+  @protected
+  List<TmdbPerson> dco_decode_list_tmdb_person(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return (raw as List<dynamic>).map(dco_decode_tmdb_person).toList();
+  }
+
+  @protected
   NewSourceInput dco_decode_new_source_input(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -1243,6 +1438,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Kind? dco_decode_opt_box_autoadd_kind(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw == null ? null : dco_decode_box_autoadd_kind(raw);
+  }
+
+  @protected
+  TmdbInfo? dco_decode_opt_box_autoadd_tmdb_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_box_autoadd_tmdb_info(raw);
   }
 
   @protected
@@ -1350,6 +1551,75 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TmdbEpisodeInfo dco_decode_tmdb_episode_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 7)
+      throw Exception('unexpected arr length: expect 7 but see ${arr.length}');
+    return TmdbEpisodeInfo(
+      season: dco_decode_i_32(arr[0]),
+      number: dco_decode_i_32(arr[1]),
+      name: dco_decode_opt_String(arr[2]),
+      overview: dco_decode_opt_String(arr[3]),
+      still: dco_decode_opt_String(arr[4]),
+      runtimeMin: dco_decode_opt_box_autoadd_i_32(arr[5]),
+      airDate: dco_decode_opt_String(arr[6]),
+    );
+  }
+
+  @protected
+  TmdbInfo dco_decode_tmdb_info(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 17)
+      throw Exception('unexpected arr length: expect 17 but see ${arr.length}');
+    return TmdbInfo(
+      id: dco_decode_i_64(arr[0]),
+      title: dco_decode_String(arr[1]),
+      originalTitle: dco_decode_opt_String(arr[2]),
+      tagline: dco_decode_opt_String(arr[3]),
+      overview: dco_decode_opt_String(arr[4]),
+      genres: dco_decode_list_String(arr[5]),
+      year: dco_decode_opt_box_autoadd_i_32(arr[6]),
+      runtimeMin: dco_decode_opt_box_autoadd_i_32(arr[7]),
+      rating: dco_decode_opt_box_autoadd_f_32(arr[8]),
+      voteCount: dco_decode_opt_box_autoadd_i_64(arr[9]),
+      poster: dco_decode_opt_String(arr[10]),
+      backdrop: dco_decode_opt_String(arr[11]),
+      certification: dco_decode_opt_String(arr[12]),
+      trailer: dco_decode_opt_String(arr[13]),
+      cast: dco_decode_list_tmdb_person(arr[14]),
+      makers: dco_decode_list_String(arr[15]),
+      seasons: dco_decode_i_32(arr[16]),
+    );
+  }
+
+  @protected
+  TmdbPerson dco_decode_tmdb_person(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return TmdbPerson(
+      name: dco_decode_String(arr[0]),
+      role: dco_decode_opt_String(arr[1]),
+      photo: dco_decode_opt_String(arr[2]),
+    );
+  }
+
+  @protected
+  TmdbStatus dco_decode_tmdb_status(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return TmdbStatus(
+      configured: dco_decode_bool(arr[0]),
+      language: dco_decode_String(arr[1]),
+    );
+  }
+
+  @protected
   int dco_decode_u_32(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     return raw as int;
@@ -1437,6 +1707,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   SourceInfo sse_decode_box_autoadd_source_info(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return (sse_decode_source_info(deserializer));
+  }
+
+  @protected
+  TmdbInfo sse_decode_box_autoadd_tmdb_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_tmdb_info(deserializer));
   }
 
   @protected
@@ -1564,6 +1840,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     var var_director = sse_decode_opt_String(deserializer);
     var var_durationSecs = sse_decode_opt_box_autoadd_i_64(deserializer);
     var var_backdrop = sse_decode_opt_String(deserializer);
+    var var_trailer = sse_decode_opt_String(deserializer);
     var var_episodes = sse_decode_list_episode_info(deserializer);
     var var_isFavorite = sse_decode_bool(deserializer);
     var var_progressMs = sse_decode_opt_box_autoadd_i_64(deserializer);
@@ -1580,6 +1857,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       director: var_director,
       durationSecs: var_durationSecs,
       backdrop: var_backdrop,
+      trailer: var_trailer,
       episodes: var_episodes,
       isFavorite: var_isFavorite,
       progressMs: var_progressMs,
@@ -1591,6 +1869,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var inner = sse_decode_i_32(deserializer);
     return Kind.values[inner];
+  }
+
+  @protected
+  List<String> sse_decode_list_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <String>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_String(deserializer));
+    }
+    return ans_;
   }
 
   @protected
@@ -1687,6 +1977,32 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  List<TmdbEpisodeInfo> sse_decode_list_tmdb_episode_info(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <TmdbEpisodeInfo>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_tmdb_episode_info(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
+  List<TmdbPerson> sse_decode_list_tmdb_person(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    var len_ = sse_decode_i_32(deserializer);
+    var ans_ = <TmdbPerson>[];
+    for (var idx_ = 0; idx_ < len_; ++idx_) {
+      ans_.add(sse_decode_tmdb_person(deserializer));
+    }
+    return ans_;
+  }
+
+  @protected
   NewSourceInput sse_decode_new_source_input(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_isXtream = sse_decode_bool(deserializer);
@@ -1757,6 +2073,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
     if (sse_decode_bool(deserializer)) {
       return (sse_decode_box_autoadd_kind(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
+  TmdbInfo? sse_decode_opt_box_autoadd_tmdb_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_box_autoadd_tmdb_info(deserializer));
     } else {
       return null;
     }
@@ -1881,6 +2208,85 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  TmdbEpisodeInfo sse_decode_tmdb_episode_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_season = sse_decode_i_32(deserializer);
+    var var_number = sse_decode_i_32(deserializer);
+    var var_name = sse_decode_opt_String(deserializer);
+    var var_overview = sse_decode_opt_String(deserializer);
+    var var_still = sse_decode_opt_String(deserializer);
+    var var_runtimeMin = sse_decode_opt_box_autoadd_i_32(deserializer);
+    var var_airDate = sse_decode_opt_String(deserializer);
+    return TmdbEpisodeInfo(
+      season: var_season,
+      number: var_number,
+      name: var_name,
+      overview: var_overview,
+      still: var_still,
+      runtimeMin: var_runtimeMin,
+      airDate: var_airDate,
+    );
+  }
+
+  @protected
+  TmdbInfo sse_decode_tmdb_info(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_id = sse_decode_i_64(deserializer);
+    var var_title = sse_decode_String(deserializer);
+    var var_originalTitle = sse_decode_opt_String(deserializer);
+    var var_tagline = sse_decode_opt_String(deserializer);
+    var var_overview = sse_decode_opt_String(deserializer);
+    var var_genres = sse_decode_list_String(deserializer);
+    var var_year = sse_decode_opt_box_autoadd_i_32(deserializer);
+    var var_runtimeMin = sse_decode_opt_box_autoadd_i_32(deserializer);
+    var var_rating = sse_decode_opt_box_autoadd_f_32(deserializer);
+    var var_voteCount = sse_decode_opt_box_autoadd_i_64(deserializer);
+    var var_poster = sse_decode_opt_String(deserializer);
+    var var_backdrop = sse_decode_opt_String(deserializer);
+    var var_certification = sse_decode_opt_String(deserializer);
+    var var_trailer = sse_decode_opt_String(deserializer);
+    var var_cast = sse_decode_list_tmdb_person(deserializer);
+    var var_makers = sse_decode_list_String(deserializer);
+    var var_seasons = sse_decode_i_32(deserializer);
+    return TmdbInfo(
+      id: var_id,
+      title: var_title,
+      originalTitle: var_originalTitle,
+      tagline: var_tagline,
+      overview: var_overview,
+      genres: var_genres,
+      year: var_year,
+      runtimeMin: var_runtimeMin,
+      rating: var_rating,
+      voteCount: var_voteCount,
+      poster: var_poster,
+      backdrop: var_backdrop,
+      certification: var_certification,
+      trailer: var_trailer,
+      cast: var_cast,
+      makers: var_makers,
+      seasons: var_seasons,
+    );
+  }
+
+  @protected
+  TmdbPerson sse_decode_tmdb_person(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_name = sse_decode_String(deserializer);
+    var var_role = sse_decode_opt_String(deserializer);
+    var var_photo = sse_decode_opt_String(deserializer);
+    return TmdbPerson(name: var_name, role: var_role, photo: var_photo);
+  }
+
+  @protected
+  TmdbStatus sse_decode_tmdb_status(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_configured = sse_decode_bool(deserializer);
+    var var_language = sse_decode_String(deserializer);
+    return TmdbStatus(configured: var_configured, language: var_language);
+  }
+
+  @protected
   int sse_decode_u_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint32();
@@ -1987,6 +2393,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_box_autoadd_tmdb_info(
+    TmdbInfo self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_tmdb_info(self, serializer);
+  }
+
+  @protected
   void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_u_32(self, serializer);
@@ -2074,6 +2489,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_opt_String(self.director, serializer);
     sse_encode_opt_box_autoadd_i_64(self.durationSecs, serializer);
     sse_encode_opt_String(self.backdrop, serializer);
+    sse_encode_opt_String(self.trailer, serializer);
     sse_encode_list_episode_info(self.episodes, serializer);
     sse_encode_bool(self.isFavorite, serializer);
     sse_encode_opt_box_autoadd_i_64(self.progressMs, serializer);
@@ -2083,6 +2499,15 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_kind(Kind self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_i_32(self.index, serializer);
+  }
+
+  @protected
+  void sse_encode_list_String(List<String> self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_String(item, serializer);
+    }
   }
 
   @protected
@@ -2174,6 +2599,30 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_list_tmdb_episode_info(
+    List<TmdbEpisodeInfo> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_tmdb_episode_info(item, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_list_tmdb_person(
+    List<TmdbPerson> self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    for (final item in self) {
+      sse_encode_tmdb_person(item, serializer);
+    }
+  }
+
+  @protected
   void sse_encode_new_source_input(
     NewSourceInput self,
     SseSerializer serializer,
@@ -2238,6 +2687,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_kind(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_box_autoadd_tmdb_info(
+    TmdbInfo? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_box_autoadd_tmdb_info(self, serializer);
     }
   }
 
@@ -2324,6 +2786,58 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
         sse_encode_i_32(4, serializer);
         sse_encode_String(message, serializer);
     }
+  }
+
+  @protected
+  void sse_encode_tmdb_episode_info(
+    TmdbEpisodeInfo self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.season, serializer);
+    sse_encode_i_32(self.number, serializer);
+    sse_encode_opt_String(self.name, serializer);
+    sse_encode_opt_String(self.overview, serializer);
+    sse_encode_opt_String(self.still, serializer);
+    sse_encode_opt_box_autoadd_i_32(self.runtimeMin, serializer);
+    sse_encode_opt_String(self.airDate, serializer);
+  }
+
+  @protected
+  void sse_encode_tmdb_info(TmdbInfo self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_64(self.id, serializer);
+    sse_encode_String(self.title, serializer);
+    sse_encode_opt_String(self.originalTitle, serializer);
+    sse_encode_opt_String(self.tagline, serializer);
+    sse_encode_opt_String(self.overview, serializer);
+    sse_encode_list_String(self.genres, serializer);
+    sse_encode_opt_box_autoadd_i_32(self.year, serializer);
+    sse_encode_opt_box_autoadd_i_32(self.runtimeMin, serializer);
+    sse_encode_opt_box_autoadd_f_32(self.rating, serializer);
+    sse_encode_opt_box_autoadd_i_64(self.voteCount, serializer);
+    sse_encode_opt_String(self.poster, serializer);
+    sse_encode_opt_String(self.backdrop, serializer);
+    sse_encode_opt_String(self.certification, serializer);
+    sse_encode_opt_String(self.trailer, serializer);
+    sse_encode_list_tmdb_person(self.cast, serializer);
+    sse_encode_list_String(self.makers, serializer);
+    sse_encode_i_32(self.seasons, serializer);
+  }
+
+  @protected
+  void sse_encode_tmdb_person(TmdbPerson self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_String(self.name, serializer);
+    sse_encode_opt_String(self.role, serializer);
+    sse_encode_opt_String(self.photo, serializer);
+  }
+
+  @protected
+  void sse_encode_tmdb_status(TmdbStatus self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_bool(self.configured, serializer);
+    sse_encode_String(self.language, serializer);
   }
 
   @protected

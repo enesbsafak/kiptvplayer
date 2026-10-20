@@ -32,6 +32,7 @@ dependencies:
   freezed_annotation: ^3.1.0
   path_provider: ^2.1.6
   file_selector: ^1.1.0
+  url_launcher: ^6.3.3
 
 dependency_overrides:
   # media_kit_video asks for media_kit from pub; keep both on the same commit.

@@ -15,6 +15,7 @@ import '../player/player_controller.dart';
 /// - `--kp-add-mock=<url>` adds the local mock provider when no source exists
 /// - `--kp-shot=<dir>` (with `--kp-offscreen` only) visits each section,
 ///   saves `<section>.png`, then exits
+/// - `--kp-tmdb-key=<key>` (with `--kp-shot`) turns TMDB on for the run
 ///
 /// Screenshots come from Flutter's own layer tree, so nothing is captured
 /// from (or shown on) the user's desktop.
@@ -54,6 +55,10 @@ class Automation {
 
     final dir = _arg('kp-shot');
     if (dir == null || !_offscreen) return;
+    // Offscreen runs keep secrets in memory, so a test key never reaches
+    // (or replaces a key in) the user's keyring.
+    final tmdbKey = _arg('kp-tmdb-key');
+    if (tmdbKey != null) await app.library.setTmdbKey(tmdbKey);
     await Directory(dir).create(recursive: true);
     Future<void> shot(String name, {Duration wait = const Duration(milliseconds: 1500)}) async {
       await Future<void>.delayed(wait);

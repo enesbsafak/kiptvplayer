@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../app/library.dart';
 import '../app/paging.dart';
@@ -253,10 +254,17 @@ class _DetailViewState extends State<DetailView> {
   int _season = 1;
   bool? _fav;
 
+  /// TMDB's view, when a key is set and the title matched; loads beside the
+  /// provider's detail and never holds it up.
+  TmdbInfo? _tmdb;
+  final Map<(int, int), TmdbEpisodeInfo> _tmdbEpisodes = {};
+  final Set<int> _tmdbSeasons = {};
+
   @override
   void initState() {
     super.initState();
     _load();
+    _loadTmdb();
   }
 
   Future<void> _load() async {
@@ -269,8 +277,36 @@ class _DetailViewState extends State<DetailView> {
         final seasons = d.episodes.map((e) => e.season).toSet();
         _season = seasons.isEmpty ? 1 : seasons.reduce((a, b) => a < b ? a : b);
       });
+      _loadTmdbSeason();
     } catch (e) {
       if (mounted) setState(() => _error = e);
+    }
+  }
+
+  Future<void> _loadTmdb() async {
+    try {
+      final t = await context.library.tmdbDetail(widget.item.id);
+      if (!mounted || t == null) return;
+      setState(() => _tmdb = t);
+      _loadTmdbSeason();
+    } catch (_) {
+      // TMDB is decoration: the provider's detail stands on its own.
+    }
+  }
+
+  Future<void> _loadTmdbSeason() async {
+    final season = _season;
+    if (widget.kind != Kind.series || _tmdb == null || !_tmdbSeasons.add(season)) return;
+    try {
+      final list = await context.library.tmdbSeason(widget.item.id, season);
+      if (!mounted) return;
+      setState(() {
+        for (final e in list) {
+          _tmdbEpisodes[(e.season, e.number)] = e;
+        }
+      });
+    } catch (_) {
+      _tmdbSeasons.remove(season);
     }
   }
 
@@ -278,22 +314,28 @@ class _DetailViewState extends State<DetailView> {
     context.player.play(widget.item, widget.kind, episode: episode, view: PlayerView.full, fromStart: fromStart);
   }
 
+  String? get _trailer => _tmdb?.trailer ?? _d?.trailer;
+
   @override
   Widget build(BuildContext context) {
     final d = _d;
+    final t = _tmdb;
     final item = widget.item;
+    final backdrop = t?.backdrop ?? d?.backdrop;
+    final plot = t?.overview ?? d?.plot;
+    final makers = t != null && t.makers.isNotEmpty ? t.makers.join(', ') : d?.director;
     return Stack(
       children: [
-        if (d?.backdrop != null)
+        if (backdrop != null)
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: 340,
+            height: 380,
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Opacity(opacity: 0.35, child: Image.network(d!.backdrop!, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox())),
+                Opacity(opacity: 0.35, child: Image.network(backdrop, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox())),
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -317,27 +359,37 @@ class _DetailViewState extends State<DetailView> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                KdArt(url: item.logo, label: item.name, width: 180, height: 270, radius: KdRadius.card),
+                KdArt(url: t?.poster ?? item.logo, label: item.name, width: 180, height: 270, radius: KdRadius.card),
                 const SizedBox(width: 24),
                 Expanded(child: _facts(d)),
               ],
             ),
             const SizedBox(height: 22),
             if (_error != null)
-              Text('Ayrıntılar alınamadı: $_error', style: const TextStyle(color: KdColors.err))
+              Text('Ayrıntılar alınamadı: ${errorText(_error!)}', style: const TextStyle(color: KdColors.err))
             else if (d == null)
               const SizedBox(width: 240, child: KdIndeterminate())
             else ...[
-              if (d.plot != null) ...[
+              if (plot != null) ...[
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 760),
-                  child: Text(d.plot!, style: const TextStyle(height: 1.55)),
+                  child: Text(plot, style: const TextStyle(height: 1.55)),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
               ],
-              if (d.cast != null) _fact('Oyuncular', d.cast!),
-              if (d.director != null) _fact('Yönetmen', d.director!),
+              if (makers != null) _fact(widget.kind == Kind.series ? 'Yaratıcı' : 'Yönetmen', makers),
+              if (t != null && t.cast.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                const KdSectionLabel('Oyuncular'),
+                const SizedBox(height: 10),
+                _CastRow(cast: t.cast),
+              ] else if (d.cast != null)
+                _fact('Oyuncular', d.cast!),
               if (widget.kind == Kind.series) ...[const SizedBox(height: 22), _episodes(d)],
+              if (t != null) ...[
+                const SizedBox(height: 24),
+                const Text('Bilgiler: TMDB', style: TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+              ],
             ],
           ],
         ),
@@ -347,24 +399,41 @@ class _DetailViewState extends State<DetailView> {
 
   Widget _facts(ItemDetail? d) {
     final item = widget.item;
+    final t = _tmdb;
+    final runtime = t?.runtimeMin != null ? t!.runtimeMin! * 60 : d?.durationSecs;
+    final genres = t != null && t.genres.isNotEmpty ? t.genres.take(3).join(', ') : d?.genre;
+    final year = t?.year ?? item.year;
+    final rating = t?.rating ?? item.rating;
     final meta = <String>[
-      if (item.year != null) '${item.year}',
-      if (d?.genre != null) d!.genre!,
-      if (d?.durationSecs case final s? when s > 0 && widget.kind == Kind.movie) kdDuration(s),
+      if (year != null) '$year',
+      ?genres,
+      if (runtime case final s? when s > 0 && widget.kind == Kind.movie) kdDuration(s),
       if (widget.kind == Kind.series && d != null) '${d.episodes.map((e) => e.season).toSet().length} sezon',
     ];
     final progress = d?.progressMs;
+    final original = t?.originalTitle;
+    final title = t?.title ?? item.name;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(item.name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w600, height: 1.2)),
+        Text(title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w600, height: 1.2)),
+        if (original != null && original != title) ...[
+          const SizedBox(height: 2),
+          Text(original, style: const TextStyle(color: KdColors.muted)),
+        ],
+        if (t?.tagline case final tag? when tag.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(tag, style: const TextStyle(color: KdColors.muted, fontStyle: FontStyle.italic)),
+        ],
         const SizedBox(height: 8),
         Row(
           children: [
-            if (item.rating case final r? when r > 0) ...[
+            if (t?.certification case final c? when c.isNotEmpty) ...[KdTag(c), const SizedBox(width: 10)],
+            if (rating case final r? when r > 0) ...[
               const Icon(LucideIcons.star, size: 14, color: KdColors.accent),
               const SizedBox(width: 3),
               Text(r.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.w600)),
+              if (t?.voteCount case final v? when v > 0) Text('  ${_votes(v)}', style: const TextStyle(color: KdColors.muted, fontSize: KdType.small)),
               const SizedBox(width: 12),
             ],
             Flexible(child: Text(meta.join('  ·  '), style: const TextStyle(color: KdColors.muted))),
@@ -392,6 +461,13 @@ class _DetailViewState extends State<DetailView> {
                 kind: KdButtonKind.cta,
                 large: true,
                 onPressed: () => _play(episode: _resumeEpisode(d) ?? d.episodes.first),
+              ),
+            if (_trailer case final key?)
+              KdButton(
+                label: 'Fragman',
+                icon: LucideIcons.clapperboard,
+                large: true,
+                onPressed: () => launchUrl(_youtube(key)),
               ),
             KdButton(
               label: _fav == true ? 'Listemde' : 'Listeme ekle',
@@ -440,22 +516,72 @@ class _DetailViewState extends State<DetailView> {
             const KdSectionLabel('Bölümler'),
             const SizedBox(width: 14),
             for (final s in seasons) ...[
-              KdPill(label: '$s. Sezon', selected: s == _season, onTap: () => setState(() => _season = s)),
+              KdPill(
+                label: '$s. Sezon',
+                selected: s == _season,
+                onTap: () {
+                  setState(() => _season = s);
+                  _loadTmdbSeason();
+                },
+              ),
               const SizedBox(width: 6),
             ],
           ],
         ),
         const SizedBox(height: 12),
-        for (final e in list) _EpisodeRow(e: e, onTap: () => _play(episode: e)),
+        for (final e in list) _EpisodeRow(e: e, tmdb: _tmdbEpisodes[(e.season, e.number)], onTap: () => _play(episode: e)),
       ],
     );
   }
 }
 
+/// A trailer key from TMDB or the provider: a YouTube id, or already a URL.
+Uri _youtube(String key) =>
+    key.startsWith('http') ? Uri.parse(key) : Uri.parse('https://www.youtube.com/watch?v=${Uri.encodeComponent(key)}');
+
+String _votes(int v) => v >= 1000 ? '${(v / 1000).toStringAsFixed(1).replaceAll('.', ',')} B oy' : '$v oy';
+
+/// Cast with photos, scrolling sideways.
+class _CastRow extends StatelessWidget {
+  const _CastRow({required this.cast});
+
+  final List<TmdbPerson> cast;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 150,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: cast.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (context, i) {
+          final p = cast[i];
+          return SizedBox(
+            width: 92,
+            child: Column(
+              children: [
+                KdArt(url: p.photo, label: p.name, width: 84, height: 84, radius: 42),
+                const SizedBox(height: 8),
+                Text(p.name, maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.small, fontWeight: FontWeight.w500)),
+                if (p.role != null)
+                  Text(p.role!, maxLines: 1, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _EpisodeRow extends StatefulWidget {
-  const _EpisodeRow({required this.e, required this.onTap});
+  const _EpisodeRow({required this.e, required this.onTap, this.tmdb});
 
   final EpisodeInfo e;
+
+  /// TMDB's episode: a clean, localized name and overview, a still.
+  final TmdbEpisodeInfo? tmdb;
   final VoidCallback onTap;
 
   @override
@@ -468,7 +594,11 @@ class _EpisodeRowState extends State<_EpisodeRow> {
   @override
   Widget build(BuildContext context) {
     final e = widget.e;
-    final dur = e.durationSecs;
+    final t = widget.tmdb;
+    final title = t?.name ?? e.title;
+    final plot = t?.overview ?? e.plot;
+    final image = e.image ?? t?.still;
+    final dur = e.durationSecs ?? (t?.runtimeMin != null ? t!.runtimeMin! * 60 : null);
     final progress = dur != null && dur > 0 && e.progressMs != null ? (e.progressMs! / 1000) / dur : null;
     return MouseRegion(
       cursor: SystemMouseCursors.click,
@@ -492,7 +622,7 @@ class _EpisodeRowState extends State<_EpisodeRow> {
               ),
               Stack(
                 children: [
-                  KdArt(url: e.image, label: e.title, width: 160, height: 90),
+                  KdArt(url: image, label: title, width: 160, height: 90),
                   if (_hover)
                     const Positioned.fill(child: Center(child: Icon(LucideIcons.play, color: KdColors.text, size: 22))),
                   if (progress != null)
@@ -506,13 +636,13 @@ class _EpisodeRowState extends State<_EpisodeRow> {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: Text(e.title, style: const TextStyle(fontWeight: FontWeight.w600))),
+                        Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600))),
                         if (dur != null && dur > 0) Text(kdDuration(dur), style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
                       ],
                     ),
-                    if (e.plot != null) ...[
+                    if (plot != null) ...[
                       const SizedBox(height: 4),
-                      Text(e.plot!, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
+                      Text(plot, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
                     ],
                   ],
                 ),

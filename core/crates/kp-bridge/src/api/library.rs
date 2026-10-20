@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 use anyhow::{anyhow, Result};
 use flutter_rust_bridge::frb;
 use kp_core::core::{Core, NewSource, SourceKind, SyncStage};
-use kp_core::secret::OsKeyring;
+use kp_core::secret::{MemorySecrets, OsKeyring};
 use kp_core::store::{CategoryRow, ChannelRow, SourceRow};
 use kp_core::ContentKind;
 
@@ -26,13 +26,18 @@ pub fn init_app() {
 }
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
-pub fn open_library(data_dir: String) -> Result<()> {
+/// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
+/// keyring: for automated runs, which must never touch the user's
+/// credentials (or leave entries behind).
+pub fn open_library(data_dir: String, ephemeral_secrets: bool) -> Result<()> {
     if CORE.get().is_some() {
         return Ok(());
     }
     let dir = PathBuf::from(data_dir);
     std::fs::create_dir_all(&dir)?;
-    let core = Core::open(dir.join("library.sqlite"), Box::new(OsKeyring))?;
+    let secrets: Box<dyn kp_core::secret::SecretStore> =
+        if ephemeral_secrets { Box::new(MemorySecrets::default()) } else { Box::new(OsKeyring) };
+    let core = Core::open(dir.join("library.sqlite"), secrets)?;
     let _ = CORE.set(core);
     Ok(())
 }
@@ -171,6 +176,8 @@ pub struct ItemDetail {
     pub director: Option<String>,
     pub duration_secs: Option<i64>,
     pub backdrop: Option<String>,
+    /// The provider's trailer: a YouTube id or URL.
+    pub trailer: Option<String>,
     pub episodes: Vec<EpisodeInfo>,
     pub is_favorite: bool,
     pub progress_ms: Option<i64>,
@@ -423,6 +430,7 @@ pub fn detail(item_id: i64) -> Result<ItemDetail> {
         director: d.director,
         duration_secs: d.duration_secs,
         backdrop: d.backdrop,
+        trailer: d.trailer,
         episodes: d
             .episodes
             .into_iter()
@@ -454,4 +462,104 @@ pub fn archive(item_id: i64) -> Result<Vec<Programme>> {
 
 fn to_programme(p: kp_core::core::Programme) -> Programme {
     Programme { start: p.start, stop: p.stop, title: p.title, description: p.description, archive: p.archive }
+}
+
+// ---- TMDB -----------------------------------------------------------------
+
+#[derive(Debug, Clone)]
+pub struct TmdbStatus {
+    pub configured: bool,
+    pub language: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct TmdbPerson {
+    pub name: String,
+    pub role: Option<String>,
+    pub photo: Option<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct TmdbInfo {
+    pub id: i64,
+    pub title: String,
+    pub original_title: Option<String>,
+    pub tagline: Option<String>,
+    pub overview: Option<String>,
+    pub genres: Vec<String>,
+    pub year: Option<i32>,
+    pub runtime_min: Option<i32>,
+    pub rating: Option<f32>,
+    pub vote_count: Option<i64>,
+    pub poster: Option<String>,
+    pub backdrop: Option<String>,
+    pub certification: Option<String>,
+    /// YouTube video id.
+    pub trailer: Option<String>,
+    pub cast: Vec<TmdbPerson>,
+    pub makers: Vec<String>,
+    pub seasons: i32,
+}
+
+#[derive(Debug, Clone)]
+pub struct TmdbEpisodeInfo {
+    pub season: i32,
+    pub number: i32,
+    pub name: Option<String>,
+    pub overview: Option<String>,
+    pub still: Option<String>,
+    pub runtime_min: Option<i32>,
+    pub air_date: Option<String>,
+}
+
+pub fn tmdb_status() -> Result<TmdbStatus> {
+    let s = core()?.tmdb_status()?;
+    Ok(TmdbStatus { configured: s.configured, language: s.language })
+}
+
+/// Checks the key with TMDB and saves it in the OS keyring; None removes it.
+pub fn set_tmdb_key(key: Option<String>) -> Result<()> {
+    Ok(core()?.set_tmdb_key(key.as_deref())?)
+}
+
+pub fn set_tmdb_language(language: String) -> Result<()> {
+    Ok(core()?.set_tmdb_language(&language)?)
+}
+
+pub fn tmdb_detail(item_id: i64) -> Result<Option<TmdbInfo>> {
+    Ok(core()?.tmdb_for(item_id)?.map(|d| TmdbInfo {
+        id: d.id,
+        title: d.title,
+        original_title: d.original_title,
+        tagline: d.tagline,
+        overview: d.overview,
+        genres: d.genres,
+        year: d.year,
+        runtime_min: d.runtime_min,
+        rating: d.rating,
+        vote_count: d.vote_count,
+        poster: d.poster,
+        backdrop: d.backdrop,
+        certification: d.certification,
+        trailer: d.trailer,
+        cast: d.cast.into_iter().map(|p| TmdbPerson { name: p.name, role: p.role, photo: p.photo }).collect(),
+        makers: d.makers,
+        seasons: d.seasons,
+    }))
+}
+
+pub fn tmdb_season(item_id: i64, season: i32) -> Result<Vec<TmdbEpisodeInfo>> {
+    Ok(core()?
+        .tmdb_season(item_id, season)?
+        .into_iter()
+        .map(|e| TmdbEpisodeInfo {
+            season: e.season,
+            number: e.number,
+            name: e.name,
+            overview: e.overview,
+            still: e.still,
+            runtime_min: e.runtime_min,
+            air_date: e.air_date,
+        })
+        .collect())
 }

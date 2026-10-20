@@ -90,3 +90,42 @@ fn xtream_source_end_to_end() {
     let hits = core.search("haber", Some(ContentKind::Live), 20).unwrap();
     assert!(!hits.is_empty());
 }
+
+#[test]
+#[ignore = "needs tools/mock-iptv running"]
+fn tmdb_enriches_films_and_series() {
+    // The mock answers TMDB's API shapes under /3 and images under /t/p.
+    std::env::set_var("KP_TMDB_BASE", mock_url());
+    let core = Core::open_in_memory(Box::new(MemorySecrets::default())).unwrap();
+    let (source, _) = core.add_source(xtream("demo"), &|_| {}).unwrap();
+    let movie = core.page(&source.id, ContentKind::Movie, None, None, 1).unwrap().remove(0);
+    let series = core.page(&source.id, ContentKind::Series, None, None, 1).unwrap().remove(0);
+
+    assert!(core.tmdb_for(movie.id).unwrap().is_none(), "no key, no TMDB call");
+    assert!(!core.tmdb_status().unwrap().configured);
+    let err = core.set_tmdb_key(Some("yanlis-anahtar")).unwrap_err();
+    assert!(err.to_string().contains("geçersiz"), "{err}");
+    assert!(!core.tmdb_status().unwrap().configured, "a rejected key is not saved");
+
+    // v4 read access token (Bearer), then a v3 key (api_key).
+    core.set_tmdb_key(Some("eyJrcC1tb2NrLXRva2VuIn0")).unwrap();
+    core.set_tmdb_key(Some("kp-mock-tmdb-key")).unwrap();
+    assert!(core.tmdb_status().unwrap().configured);
+
+    let d = core.tmdb_for(movie.id).unwrap().expect("film matched by title and year");
+    assert!(d.overview.unwrap().starts_with("TMDB özeti"));
+    assert_eq!((d.cast.len(), d.certification.as_deref(), d.trailer.as_deref()), (6, Some("13+"), Some("kp-mock-trailer")));
+    assert_eq!(d.makers, vec!["Ayşe Karadeniz"]);
+    assert!(d.poster.unwrap().starts_with(&format!("{}/t/p/w500/", mock_url())));
+
+    let tv = core.tmdb_for(series.id).unwrap().expect("series matched");
+    assert_eq!(tv.certification.as_deref(), Some("16+"));
+    let eps = core.tmdb_season(series.id, 1).unwrap();
+    assert_eq!(eps.len(), 8);
+    assert!(eps[0].name.as_deref().unwrap().starts_with("1. Sezon 1. Bölüm"));
+
+    // Cached: a second look needs no network (same answer, instantly).
+    let t = Instant::now();
+    assert!(core.tmdb_for(movie.id).unwrap().is_some());
+    assert!(t.elapsed().as_millis() < 50, "served from cache");
+}

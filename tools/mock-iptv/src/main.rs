@@ -82,6 +82,13 @@ async fn main() {
         .route("/timeshift/{user}/{pass}/{minutes}/{start}/{file}", get(timeshift_stream))
         .route("/spike/channels.json", get(spike_channels))
         .route("/playlist.m3u", get(playlist))
+        // TMDB stand-in: the real API's shapes for the titles above.
+        .route("/3/authentication", get(tmdb_auth))
+        .route("/3/search/{media}", get(tmdb_search))
+        .route("/3/movie/{id}", get(tmdb_movie))
+        .route("/3/tv/{id}", get(tmdb_tv))
+        .route("/3/tv/{id}/season/{season}", get(tmdb_season))
+        .route("/t/p/{size}/{file}", get(tmdb_image))
         .nest_service("/media", ServeDir::new(&media))
         .with_state(state);
 
@@ -387,4 +394,154 @@ async fn playlist(State(s): State<AppState>, Query(q): Query<HashMap<String, Str
         );
     }
     ([(header::CONTENT_TYPE, "audio/x-mpegurl; charset=utf-8")], body)
+}
+
+// ---- TMDB stand-in ------------------------------------------------------
+
+/// Keys the mock accepts: a v3-style key and a v4-style (JWT-looking) token.
+pub const TMDB_KEY: &str = "kp-mock-tmdb-key";
+pub const TMDB_TOKEN: &str = "eyJrcC1tb2NrLXRva2VuIn0";
+
+fn tmdb_authorized(q: &HashMap<String, String>, headers: &axum::http::HeaderMap) -> bool {
+    let bearer = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .and_then(|v| v.strip_prefix("Bearer "));
+    q.get("api_key").map(String::as_str) == Some(TMDB_KEY) || bearer == Some(TMDB_TOKEN)
+}
+
+fn tmdb_denied() -> Response {
+    (
+        StatusCode::UNAUTHORIZED,
+        Json(json!({"status_code": 7, "status_message": "Invalid API key: You must be granted a valid key.", "success": false})),
+    )
+        .into_response()
+}
+
+async fn tmdb_auth(Query(q): Query<HashMap<String, String>>, headers: axum::http::HeaderMap) -> Response {
+    if !tmdb_authorized(&q, &headers) {
+        return tmdb_denied();
+    }
+    Json(json!({"success": true, "status_code": 1, "status_message": "Success."})).into_response()
+}
+
+async fn tmdb_search(
+    Path(media): Path<String>,
+    Query(q): Query<HashMap<String, String>>,
+    headers: axum::http::HeaderMap,
+) -> Response {
+    if !tmdb_authorized(&q, &headers) {
+        return tmdb_denied();
+    }
+    let query = q.get("query").cloned().unwrap_or_default();
+    // Films are title(i); series are "title(i + 7) Dizisi".
+    let hit = (0..300usize).find(|&i| match media.as_str() {
+        "movie" => title(i) == query,
+        _ => format!("{} Dizisi", title(i + 7)) == query,
+    });
+    let results: Vec<Value> = hit
+        .map(|i| {
+            let id = if media == "movie" { 100_000 + i } else { 200_000 + i };
+            vec![json!({"id": id, "title": query, "name": query})]
+        })
+        .unwrap_or_default();
+    Json(json!({"page": 1, "results": results, "total_results": results.len()})).into_response()
+}
+
+fn tmdb_people() -> Value {
+    let names = ["Deniz Aksoy", "Ece Yılmaz", "Mert Kaya", "Selin Demir", "Can Öztürk", "Zeynep Arslan"];
+    let roles = ["Kaptan", "Doktor", "Muhabir", "Komiser", "Ressam", "Öğretmen"];
+    json!({
+        "cast": names.iter().zip(roles).enumerate().map(|(k, (n, r))| json!({
+            "name": n, "character": r, "profile_path": format!("/person-{}.png", k % 12)
+        })).collect::<Vec<_>>(),
+        "crew": [{"name": "Ayşe Karadeniz", "job": "Director"}, {"name": "Ali Veli", "job": "Writer"}]
+    })
+}
+
+async fn tmdb_movie(Path(id): Path<usize>, Query(q): Query<HashMap<String, String>>, headers: axum::http::HeaderMap) -> Response {
+    if !tmdb_authorized(&q, &headers) {
+        return tmdb_denied();
+    }
+    let i = id.saturating_sub(100_000);
+    Json(json!({
+        "id": id,
+        "title": title(i),
+        "original_title": format!("The {}", title(i)),
+        "tagline": "Bazı sırlar denizin dibinde kalmaz.",
+        "overview": format!("TMDB özeti: {} için yazılmış, oyuncuları ve ekibiyle eksiksiz bir tanıtım. Test verisidir.", title(i)),
+        "genres": [{"id": 18, "name": "Dram"}, {"id": 53, "name": "Gerilim"}],
+        "release_date": format!("{}-05-17", 1995 + i % 30),
+        "runtime": 112,
+        "vote_average": 7.8,
+        "vote_count": 1834,
+        "poster_path": format!("/poster-{}.jpg", i % 24),
+        "backdrop_path": format!("/backdrop-{}.jpg", i % 4),
+        "credits": tmdb_people(),
+        "videos": {"results": [{"site": "YouTube", "type": "Trailer", "official": true, "key": "kp-mock-trailer"}]},
+        "release_dates": {"results": [{"iso_3166_1": "TR", "release_dates": [{"certification": "13+"}]}]}
+    }))
+    .into_response()
+}
+
+async fn tmdb_tv(Path(id): Path<usize>, Query(q): Query<HashMap<String, String>>, headers: axum::http::HeaderMap) -> Response {
+    if !tmdb_authorized(&q, &headers) {
+        return tmdb_denied();
+    }
+    let i = id.saturating_sub(200_000);
+    Json(json!({
+        "id": id,
+        "name": format!("{} Dizisi", title(i + 7)),
+        "original_name": format!("The {}", title(i + 7)),
+        "tagline": "",
+        "overview": "TMDB özeti: bir kıyı kasabasında her sezon yeni bir gizem. Test verisidir.",
+        "genres": [{"id": 9648, "name": "Gizem"}, {"id": 18, "name": "Dram"}],
+        "first_air_date": format!("{}-09-01", 2010 + i % 15),
+        "episode_run_time": [45],
+        "number_of_seasons": 1 + i % 3,
+        "vote_average": 8.1,
+        "vote_count": 921,
+        "poster_path": format!("/poster-{}.jpg", (i + 5) % 24),
+        "backdrop_path": format!("/backdrop-{}.jpg", i % 4),
+        "created_by": [{"name": "Murat Sezer"}],
+        "credits": tmdb_people(),
+        "videos": {"results": []},
+        "content_ratings": {"results": [{"iso_3166_1": "TR", "rating": "16+"}]}
+    }))
+    .into_response()
+}
+
+async fn tmdb_season(
+    Path((id, season)): Path<(usize, i32)>,
+    Query(q): Query<HashMap<String, String>>,
+    headers: axum::http::HeaderMap,
+) -> Response {
+    if !tmdb_authorized(&q, &headers) {
+        return tmdb_denied();
+    }
+    let episodes: Vec<Value> = (1..=8)
+        .map(|n| {
+            json!({
+                "episode_number": n,
+                "name": format!("{}. Sezon {}. Bölüm: {}", season, n, SHOWS[(id + n as usize) % SHOWS.len()]),
+                "overview": format!("Sezon {season}, bölüm {n}: kasabada yeni bir iz ortaya çıkar."),
+                "still_path": format!("/backdrop-{}.jpg", n % 4),
+                "runtime": 44,
+                "air_date": format!("2020-0{}-1{}", 1 + n % 9, n % 10)
+            })
+        })
+        .collect();
+    Json(json!({"season_number": season, "episodes": episodes})).into_response()
+}
+
+/// Serves TMDB image paths from the generated media: poster-N, backdrop-N, person-N.
+async fn tmdb_image(State(s): State<AppState>, Path((_size, file)): Path<(String, String)>, req: Request) -> Response {
+    let (kind, rest) = file.split_once('-').unwrap_or(("", ""));
+    let path = match kind {
+        "poster" => format!("posters/{rest}"),
+        "backdrop" => format!("backdrops/{rest}"),
+        "person" => format!("logos/{rest}"),
+        _ => return StatusCode::NOT_FOUND.into_response(),
+    };
+    serve(&s, &path, req).await
 }
