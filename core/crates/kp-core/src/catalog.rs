@@ -108,7 +108,7 @@ impl Catalog {
             *n += 1;
 
             let meta = entry.group.as_deref().and_then(|g| group_meta.get(g)).cloned();
-            let name = if entry.title.is_empty() { "Bilinmeyen".to_string() } else { entry.title.clone() };
+            let name = if entry.title.is_empty() { crate::lang::t("Bilinmeyen", "Unknown").to_string() } else { entry.title.clone() };
             channels.push(ChannelRecord {
                 uid,
                 category_uid: meta.as_ref().map(|m| m.0),
@@ -182,7 +182,7 @@ impl Catalog {
             for item in &list.items {
                 let id_field = if list.kind == ContentKind::Series { "series_id" } else { "stream_id" };
                 let Some(ext_id) = as_i64(item.get(id_field)) else { continue };
-                let name = as_string(item.get("name")).unwrap_or_else(|| "Bilinmeyen".to_string());
+                let name = as_string(item.get("name")).unwrap_or_else(|| crate::lang::t("Bilinmeyen", "Unknown").to_string());
                 let cat = as_string(item.get("category_id")).and_then(|c| adult_cats.get(&c).copied());
                 let poster_key = if list.kind == ContentKind::Series { "cover" } else { "stream_icon" };
                 let archive = list.kind == ContentKind::Live && as_i64(item.get("tv_archive")) == Some(1);

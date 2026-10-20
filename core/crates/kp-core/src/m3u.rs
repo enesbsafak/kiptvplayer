@@ -169,7 +169,7 @@ fn name_from_url(url: &str) -> String {
         Some(dot) if dot > 0 => &segment[..dot],
         _ => segment,
     };
-    if stem.is_empty() { "Bilinmeyen".to_string() } else { stem.to_string() }
+    if stem.is_empty() { crate::lang::t("Bilinmeyen", "Unknown").to_string() } else { stem.to_string() }
 }
 
 fn non_empty(s: &str) -> Option<String> {
