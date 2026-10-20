@@ -17,6 +17,8 @@ import '../player/player_controller.dart';
 ///   saves `<section>.png`, then exits
 /// - `--kp-tmdb-key=<key>` (with `--kp-shot`) turns TMDB on for the run
 /// - `--kp-language=tr|en` (with `--kp-shot`) captures in that language
+/// - `--kp-soak=<minutes>` (with `--kp-offscreen` only) plays live TV, zapping
+///   every minute, then exits: a leak check (tools/soak.ps1)
 ///
 /// Screenshots come from Flutter's own layer tree, so nothing is captured
 /// from (or shown on) the user's desktop.
@@ -35,7 +37,7 @@ class Automation {
 
   bool get _offscreen => args.contains('--kp-offscreen');
 
-  bool get active => _arg('kp-add-mock') != null || (_offscreen && _arg('kp-shot') != null);
+  bool get active => _arg('kp-add-mock') != null || (_offscreen && (_arg('kp-shot') != null || _arg('kp-soak') != null));
 
   Future<void> run(AppState app, PlayerController player) async {
     final mock = _arg('kp-add-mock');
@@ -52,6 +54,13 @@ class Automation {
         if (e is SyncEvent_Done) await app.sourceChanged(e.source);
         if (e is SyncEvent_Failed) stderr.writeln('add mock failed: ${e.message}');
       }
+    }
+
+    final soak = int.tryParse(_arg('kp-soak') ?? '');
+    if (soak != null && _offscreen) {
+      await _soak(app, player, Duration(minutes: soak));
+      await windowManager.destroy();
+      return;
     }
 
     final dir = _arg('kp-shot');
@@ -128,6 +137,24 @@ class Automation {
       await shot('settings-m3u', wait: const Duration(milliseconds: 1500));
     }
     await windowManager.destroy();
+  }
+
+  /// Long run for leaks: live TV for [length], a new channel every minute.
+  /// Memory is sampled from outside (tools/soak.ps1); zap times and
+  /// reconnects land in perf.jsonl as usual.
+  Future<void> _soak(AppState app, PlayerController player, Duration length) async {
+    final sid = app.activeSource?.id;
+    if (sid == null) return;
+    final channels = await app.library.page(sid, Kind.live, limit: 40);
+    if (channels.isEmpty) return;
+    final end = DateTime.now().add(length);
+    app.go(Section.live);
+    await player.play(channels.first, Kind.live, queue: channels, view: PlayerView.full);
+    while (DateTime.now().isBefore(end)) {
+      await Future<void>.delayed(const Duration(minutes: 1));
+      await player.zap(1);
+    }
+    await player.stop();
   }
 
   Future<void> _capture(String path) async {
