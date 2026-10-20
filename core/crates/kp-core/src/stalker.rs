@@ -50,6 +50,22 @@ pub struct Channel {
     pub adult: bool,
 }
 
+/// A film from the portal's video library.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Movie {
+    pub id: i64,
+    pub name: String,
+    pub cmd: String,
+    pub poster: Option<String>,
+    pub category_id: String,
+    pub year: Option<i32>,
+    pub rating: Option<f32>,
+    pub adult: bool,
+}
+
+/// Pages fetched at once from the video library (14 items per page).
+const VOD_PARALLEL: usize = 6;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct EpgEntry {
     pub start: i64,
@@ -220,6 +236,73 @@ impl StalkerClient {
                 })
             })
             .collect())
+    }
+
+    /// Video library categories ("*", the portal's "All", left out).
+    pub fn vod_categories(&self) -> Result<Vec<Genre>> {
+        let js = self.call(&[("type", "vod"), ("action", "get_categories")])?;
+        Ok(as_array(js)
+            .iter()
+            .filter_map(|g| {
+                let id = as_string(g.get("id"))?;
+                (id != "*").then(|| Genre { title: as_string(g.get("title")).unwrap_or_else(|| id.clone()), id })
+            })
+            .collect())
+    }
+
+    fn vod_page(&self, category: &str, page: u32) -> Result<(Vec<Movie>, u32)> {
+        let p = page.to_string();
+        let js = self.call(&[("type", "vod"), ("action", "get_ordered_list"), ("category", category), ("p", &p), ("sortby", "added")])?;
+        let total = as_i64(js.get("total_items")).unwrap_or(0).max(0) as u32;
+        let per_page = as_i64(js.get("max_page_items")).unwrap_or(14).max(1) as u32;
+        let movies = js
+            .get("data")
+            .cloned()
+            .map(as_array)
+            .unwrap_or_default()
+            .iter()
+            // Series need the portal's season/episode API: films only here.
+            .filter(|m| as_i64(m.get("is_series")) != Some(1))
+            .filter_map(|m| {
+                Some(Movie {
+                    id: as_i64(m.get("id"))?,
+                    name: as_string(m.get("name"))?,
+                    cmd: as_string(m.get("cmd"))?,
+                    poster: as_string(m.get("screenshot_uri")).filter(|u| u.starts_with("http")),
+                    category_id: category.to_string(),
+                    year: as_string(m.get("year")).and_then(|y| y.get(..4)?.parse().ok()),
+                    rating: crate::xtream::as_f32(m.get("rating_imdb")).filter(|r| *r > 0.0),
+                    adult: as_i64(m.get("censored")) == Some(1),
+                })
+            })
+            .collect();
+        Ok((movies, total.div_ceil(per_page)))
+    }
+
+    /// Every film of the library. Pages are small, so they are fetched
+    /// [VOD_PARALLEL] at a time; a page that fails is skipped, not fatal.
+    pub fn movies(&self, categories: &[Genre]) -> Result<Vec<Movie>> {
+        let mut all = Vec::new();
+        for c in categories {
+            let (first, pages) = self.vod_page(&c.id, 1)?;
+            all.extend(first);
+            let rest: Vec<u32> = (2..=pages).collect();
+            for chunk in rest.chunks(VOD_PARALLEL) {
+                let got: Vec<Vec<Movie>> = std::thread::scope(|s| {
+                    let handles: Vec<_> = chunk.iter().map(|&p| s.spawn(move || self.vod_page(&c.id, p))).collect();
+                    handles.into_iter().filter_map(|h| h.join().ok().and_then(|r| r.ok()).map(|(m, _)| m)).collect()
+                });
+                all.extend(got.into_iter().flatten());
+            }
+        }
+        Ok(all)
+    }
+
+    /// The stream URL for a film's command, valid for a short while.
+    pub fn create_vod_link(&self, cmd: &str) -> Result<String> {
+        let js = self.call(&[("type", "vod"), ("action", "create_link"), ("cmd", cmd), ("forced_storage", "undefined"), ("disable_ad", "0")])?;
+        let link = as_string(js.get("cmd")).ok_or(StalkerError::BadResponse)?;
+        Ok(link.split_whitespace().last().unwrap_or(&link).to_string())
     }
 
     /// The stream URL for a channel's command, valid for a short while.

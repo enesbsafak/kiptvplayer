@@ -660,6 +660,37 @@ async fn stalker(State(s): State<AppState>, Query(q): Query<HashMap<String, Stri
             let id = q.get("cmd").and_then(|c| c.rsplit('/').next()).map(|c| c.trim_end_matches('_').to_string()).unwrap_or_default();
             json!({"cmd": format!("ffmpeg {}/stalker/play/{id}.ts?play_token=mock{}", s.base, now())})
         }
+        ("vod", "get_categories") => {
+            let mut list = vec![json!({"id": "*", "title": "All"})];
+            list.extend(["Aksiyon", "Dram", "Belgesel"].iter().enumerate().map(|(i, g)| json!({"id": (i + 1).to_string(), "title": g})));
+            Value::Array(list)
+        }
+        // 30 entries per category, 14 per page like Ministra; every tenth is a series.
+        ("vod", "get_ordered_list") => {
+            let cat: usize = q.get("category").and_then(|v| v.parse().ok()).unwrap_or(1);
+            let page: usize = q.get("p").and_then(|v| v.parse().ok()).unwrap_or(1).max(1);
+            let data: Vec<Value> = (0..30usize)
+                .skip((page - 1) * 14)
+                .take(14)
+                .map(|i| {
+                    let id = cat * 1000 + i;
+                    json!({
+                        "id": id.to_string(),
+                        "name": format!("{} (Portal)", title(id)),
+                        "cmd": format!("/media/vod/{id}.mpg"),
+                        "screenshot_uri": format!("{}/media/posters/{}.jpg", s.base, i % 24),
+                        "year": format!("{}-01-01", 2000 + i % 25),
+                        "rating_imdb": format!("{:.1}", 6.0 + (i % 30) as f32 / 10.0),
+                        "is_series": if i % 10 == 9 { "1" } else { "0" }
+                    })
+                })
+                .collect();
+            json!({"total_items": 30, "max_page_items": 14, "data": data})
+        }
+        ("vod", "create_link") => {
+            let id = q.get("cmd").and_then(|c| c.rsplit('/').next()).map(|c| c.trim_end_matches(".mpg").to_string()).unwrap_or_default();
+            json!({"cmd": format!("ffmpeg {}/stalker/play/vod-{id}.ts?play_token=mock{}", s.base, now())})
+        }
         ("itv", "get_short_epg") => {
             let id: usize = q.get("ch_id").and_then(|v| v.parse().ok()).unwrap_or(9000);
             let t = now();

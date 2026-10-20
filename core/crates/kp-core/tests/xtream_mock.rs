@@ -210,4 +210,11 @@ fn stalker_portal_end_to_end() {
     let status = reqwest::blocking::get(&play.url).unwrap().status();
     assert!(status.is_success(), "fresh link plays: {status}");
     assert!(!core.epg(first[0].id).unwrap().is_empty(), "short EPG from the portal");
+
+    // Films: three categories of 30 (14 per page), every tenth a series and left out.
+    assert_eq!(summary.movies, 81);
+    let film = core.page(&source.id, ContentKind::Movie, None, None, 1).unwrap().remove(0);
+    let play = core.playback(film.id, None).unwrap();
+    assert!(play.url.contains("/stalker/play/vod-"), "{}", play.url);
+    assert!(!play.is_live);
 }

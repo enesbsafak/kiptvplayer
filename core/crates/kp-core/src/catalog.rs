@@ -232,7 +232,12 @@ impl Catalog {
     /// Builds the catalog from a Stalker portal's live genres and channels.
     /// Links expire, so `url` keeps the channel's play command
     /// (`stalker:<cmd>`), turned into a link when playback starts.
-    pub fn from_stalker(genres: &[crate::stalker::Genre], channels: &[crate::stalker::Channel]) -> Self {
+    pub fn from_stalker(
+        genres: &[crate::stalker::Genre],
+        channels: &[crate::stalker::Channel],
+        vod_categories: &[crate::stalker::Genre],
+        movies: &[crate::stalker::Movie],
+    ) -> Self {
         let mut catalog = Catalog::default();
         let mut meta: HashMap<&str, (i64, bool, Option<&'static str>)> = HashMap::new();
         for (i, g) in genres.iter().enumerate() {
@@ -274,6 +279,50 @@ impl Catalog {
                 added: None,
                 region: cat.and_then(|m| m.2).or_else(|| detect_region(&c.name)).map(String::from),
                 name: c.name.clone(),
+            });
+        }
+        // Films: `stalker-vod:<cmd>`, a link asked for at playback like live.
+        let mut vod_meta: HashMap<&str, (i64, bool, Option<&'static str>)> = HashMap::new();
+        for (i, g) in vod_categories.iter().enumerate() {
+            let uid = hash_uid(&["svcat", &g.id]);
+            let adult = is_adult_label(&g.title);
+            let region = detect_region(&g.title);
+            vod_meta.insert(g.id.as_str(), (uid, adult, region));
+            catalog.categories.push(CategoryRecord {
+                uid,
+                name: g.title.clone(),
+                kind: ContentKind::Movie,
+                adult,
+                sort: i as u32,
+                region: region.map(String::from),
+            });
+        }
+        let base = channels.len() as u32;
+        for (i, m) in movies.iter().enumerate() {
+            let cat = vod_meta.get(m.category_id.as_str()).copied();
+            catalog.channels.push(ChannelRecord {
+                uid: hash_uid(&["sv", &m.id.to_string()]),
+                category_uid: cat.map(|c| c.0),
+                adult: m.adult || cat.is_some_and(|c| c.1) || is_adult_label(&m.name),
+                logo: m.poster.clone(),
+                url: format!("stalker-vod:{}", m.cmd),
+                kind: ContentKind::Movie,
+                tvg_id: None,
+                chno: None,
+                sort: base + i as u32,
+                catchup: None,
+                catchup_days: None,
+                catchup_source: None,
+                tvg_shift: None,
+                user_agent: None,
+                referrer: None,
+                ext_id: Some(m.id),
+                container: None,
+                rating: m.rating,
+                year: m.year,
+                added: None,
+                region: cat.and_then(|c| c.2).or_else(|| detect_region(&m.name)).map(String::from),
+                name: m.name.clone(),
             });
         }
         catalog

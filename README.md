@@ -59,5 +59,5 @@ tools\release.ps1 -Version 0.2.0      # dist\: kurulum dosyası + latest.json
 | M1 Temel | Tasarım sistemi, kabuk, kaynak ekleme, SQLite katalog, anahtar deposu, dil | ✓ TR/EN, tek örnek. Açık: tray |
 | M2 Canlı + oynatıcı | Önizleme, OSD, zap, ses/altyazı, mini oynatıcı, favoriler | ✓ Yedek yayına geçme, numarayla kanal, medya tuşları (SMTC), ayırt edilebilir ses/altyazı listesi. Açık: 4 saatlik uzun süre testi |
 | M3 EPG + catch-up | XMLTV, eşleştirme, grid, catch-up | ✓ XMLTV (250 MB rehber 3.4 sn, 53 MB bellek), tvg-id/ad eşleştirme, tvg-shift, catch-up (Xtream + M3U). Açık: elle eşleştirme tablosu |
-| M4 VOD / arama / Stalker / TMDB | Film/dizi, devam et, arama, Stalker, TMDB | ✓ Stalker canlı TV, TMDB (anahtar ayarlardan). Açık: Stalker VOD |
+| M4 VOD / arama / Stalker / TMDB | Film/dizi, devam et, arama, Stalker, TMDB | ✓ Stalker canlı TV ve filmler, TMDB (anahtar ayarlardan). Açık: Stalker dizileri |
 | M5 Yayın | Güncelleyici, kurulum, imza, CI | ◐ Güncelleyici, Inno kurulum, CI ve sürüm iş akışı hazır. Açık: imza sertifikası, GitHub deposu, çökme raporu |

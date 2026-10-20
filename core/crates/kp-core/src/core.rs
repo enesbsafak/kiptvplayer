@@ -363,7 +363,12 @@ impl Core {
         if source.kind == "stalker" {
             let portal = self.portal(source)?;
             on_stage(SyncStage::Downloading { what: t("Canlı kanallar", "live channels").into() });
-            let catalog = Catalog::from_stalker(&portal.genres()?, &portal.channels()?);
+            let (genres, channels) = (portal.genres()?, portal.channels()?);
+            on_stage(SyncStage::Downloading { what: t("Filmler", "movies").into() });
+            // A portal without a video library (or a broken one) still gives live TV.
+            let vod_categories = portal.vod_categories().unwrap_or_default();
+            let movies = portal.movies(&vod_categories).unwrap_or_default();
+            let catalog = Catalog::from_stalker(&genres, &channels, &vod_categories, &movies);
             if catalog.channels.is_empty() {
                 return Err(msg(t("Portal kanal listesi boş", "The portal lists no channels")));
             }
@@ -534,6 +539,8 @@ impl Core {
         let url = if let Some(cmd) = item.url.strip_prefix("stalker:") {
             // Portal links expire: ask for a fresh one now.
             self.portal(&source)?.create_link(cmd)?
+        } else if let Some(cmd) = item.url.strip_prefix("stalker-vod:") {
+            self.portal(&source)?.create_vod_link(cmd)?
         } else if let Some(rest) = item.url.strip_prefix("xtream:") {
             let client = self.xtream(&source)?;
             let id = item.ext_id.ok_or_else(|| msg(t("Geçersiz içerik", "Invalid item")))?;
