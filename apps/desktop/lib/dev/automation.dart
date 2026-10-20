@@ -1,0 +1,108 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
+import 'package:window_manager/window_manager.dart';
+
+import '../app/app_state.dart';
+import '../app/library.dart';
+import '../player/player_controller.dart';
+
+/// Development driver:
+/// - `--kp-add-mock=<url>` adds the local mock provider when no source exists
+/// - `--kp-shot=<dir>` (with `--kp-offscreen` only) visits each section,
+///   saves `<section>.png`, then exits
+///
+/// Screenshots come from Flutter's own layer tree, so nothing is captured
+/// from (or shown on) the user's desktop.
+class Automation {
+  Automation(this.args, this.boundaryKey);
+
+  final List<String> args;
+  final GlobalKey boundaryKey;
+
+  String? _arg(String name) {
+    for (final a in args) {
+      if (a.startsWith('--$name=')) return a.substring(name.length + 3);
+    }
+    return null;
+  }
+
+  bool get _offscreen => args.contains('--kp-offscreen');
+
+  bool get active => _arg('kp-add-mock') != null || (_offscreen && _arg('kp-shot') != null);
+
+  Future<void> run(AppState app, PlayerController player) async {
+    final mock = _arg('kp-add-mock');
+    if (mock != null && app.sources.isEmpty) {
+      final input = NewSourceInput(
+        isXtream: true,
+        name: 'Demo sağlayıcı',
+        url: mock,
+        username: 'demo',
+        password: 'demo',
+        insecureTls: false,
+      );
+      await for (final e in app.library.addSource(input)) {
+        if (e is SyncEvent_Done) await app.sourceChanged(e.source);
+        if (e is SyncEvent_Failed) stderr.writeln('add mock failed: ${e.message}');
+      }
+    }
+
+    final dir = _arg('kp-shot');
+    if (dir == null || !_offscreen) return;
+    await Directory(dir).create(recursive: true);
+    Future<void> shot(String name, {Duration wait = const Duration(milliseconds: 1500)}) async {
+      await Future<void>.delayed(wait);
+      await _capture('$dir${Platform.pathSeparator}$name.png');
+    }
+
+    for (final s in [Section.home, Section.live, Section.guide, Section.movies, Section.series, Section.search, Section.settings]) {
+      app.go(s);
+      await shot(s.name, wait: const Duration(milliseconds: 2500));
+    }
+
+    // Live preview, then the full player with its OSD.
+    app.go(Section.live);
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+    final sid = app.activeSource?.id;
+    if (sid != null) {
+      final channels = await app.library.page(sid, Kind.live, limit: 30);
+      if (channels.isNotEmpty) {
+        // A catch-up channel, so the preview shows its past programmes too.
+        final channel = channels.firstWhere((c) => c.hasCatchup, orElse: () => channels.first);
+        await player.play(channel, Kind.live, queue: channels, view: PlayerView.preview);
+        await shot('live-preview', wait: const Duration(milliseconds: 2500));
+        player.setView(PlayerView.full);
+        await shot('player', wait: const Duration(milliseconds: 1200));
+        final past = await app.library.archive(channel.id);
+        if (past.isNotEmpty) {
+          await player.play(channel, Kind.live, queue: channels, programme: past.first, view: PlayerView.full);
+          await shot('player-catchup', wait: const Duration(milliseconds: 1500));
+        }
+        await player.stop();
+      }
+      final movies = await app.library.page(sid, Kind.movie, limit: 5);
+      if (movies.isNotEmpty) {
+        app.openDetail(movies.first, Kind.movie);
+        await shot('movie-detail', wait: const Duration(milliseconds: 2500));
+      }
+      final series = await app.library.page(sid, Kind.series, limit: 5);
+      if (series.isNotEmpty) {
+        app.openDetail(series.first, Kind.series);
+        await shot('series-detail', wait: const Duration(milliseconds: 2500));
+      }
+    }
+    await windowManager.destroy();
+  }
+
+  Future<void> _capture(String path) async {
+    final boundary = boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+    if (boundary == null) return;
+    final image = await boundary.toImage(pixelRatio: 1);
+    final png = await image.toByteData(format: ui.ImageByteFormat.png);
+    if (png != null) await File(path).writeAsBytes(png.buffer.asUint8List());
+  }
+}

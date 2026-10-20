@@ -1,0 +1,55 @@
+name: karadelik_player
+description: "Karadelik IPTV Player"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # media_kit is pinned to a commit: the pub releases lag the repository by
+  # about a year on Windows. libmpv comes from karadelik_mpv_libs, never from
+  # media_kit_libs_video.
+  media_kit:
+    git:
+      url: https://github.com/media-kit/media-kit.git
+      ref: c533e446755f51cf53c7e57aea873f2aa5355f81
+      path: media_kit
+  media_kit_video:
+    git:
+      url: https://github.com/media-kit/media-kit.git
+      ref: c533e446755f51cf53c7e57aea873f2aa5355f81
+      path: media_kit_video
+  karadelik_mpv_libs:
+    path: ../../packages/karadelik_mpv_libs
+  window_manager: ^0.5.2
+  lucide_icons_flutter: ^4.0.0
+  kp_bridge:
+    path: rust_builder
+  flutter_rust_bridge: 2.13.0
+  freezed_annotation: ^3.1.0
+  path_provider: ^2.1.6
+  file_selector: ^1.1.0
+
+dependency_overrides:
+  # media_kit_video asks for media_kit from pub; keep both on the same commit.
+  media_kit:
+    git:
+      url: https://github.com/media-kit/media-kit.git
+      ref: c533e446755f51cf53c7e57aea873f2aa5355f81
+      path: media_kit
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  freezed: ^4.0.3
+  build_runner: ^2.17.1
+  fake_async: ^1.3.3
+
+flutter:
+  uses-material-design: false
+  assets:
+    - assets/brand/

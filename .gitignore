@@ -1,0 +1,19 @@
+# Rust
+target/
+
+# Flutter / Dart
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+
+
+# Local runtime output
+perf.jsonl
+*.log
+.DS_Store
+
+# Generated test media (tools/mock-iptv/make-media.ps1)
+tools/mock-iptv/media/

@@ -1,0 +1,526 @@
+import 'package:flutter/material.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../app/library.dart';
+import '../app/paging.dart';
+import '../app/scope.dart';
+import '../design/tokens.dart';
+import '../design/widgets/kd_controls.dart';
+import '../design/widgets/kd_widgets.dart';
+import '../player/player_controller.dart';
+
+/// Movies or series: category rail + poster grid, detail on click.
+class VodScreen extends StatefulWidget {
+  const VodScreen({super.key, required this.kind, this.initialDetail});
+
+  final Kind kind;
+
+  /// Opens straight into this item's detail (from home or search).
+  final Item? initialDetail;
+
+  @override
+  State<VodScreen> createState() => _VodScreenState();
+}
+
+class _VodScreenState extends State<VodScreen> {
+  List<Category> _categories = const [];
+  int? _category;
+  ItemPager? _pager;
+  Item? _detail;
+  String? _sourceId;
+  int _version = -1;
+
+  @override
+  void initState() {
+    super.initState();
+    _detail = widget.initialDetail;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final app = context.app;
+    final sid = app.activeSource?.id;
+    if (sid != _sourceId || app.catalogVersion != _version) {
+      final first = _sourceId == null;
+      _sourceId = sid;
+      _version = app.catalogVersion;
+      if (!first) _detail = null;
+      _load();
+    }
+  }
+
+  @override
+  void didUpdateWidget(VodScreen old) {
+    super.didUpdateWidget(old);
+    if (old.kind != widget.kind) {
+      _detail = null;
+      _load();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pager?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final sid = _sourceId;
+    if (sid == null) return;
+    final cats = await context.library.categories(sid, widget.kind);
+    if (!mounted) return;
+    setState(() => _categories = cats);
+    _select(null);
+  }
+
+  void _select(int? uid) {
+    final sid = _sourceId;
+    if (sid == null) return;
+    _pager?.dispose();
+    final pager = ItemPager(library: context.library, sourceId: sid, kind: widget.kind, categoryUid: uid, pageSize: 300)
+      ..addListener(() => setState(() {}));
+    setState(() {
+      _category = uid;
+      _pager = pager;
+    });
+    pager.loadMore();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_sourceId == null) {
+      return const KdEmpty(title: 'Kaynak yok', hint: 'Ayarlar › Kaynaklar bölümünden bir kaynak ekleyin.');
+    }
+    final detail = _detail;
+    if (detail != null) {
+      return DetailView(item: detail, kind: widget.kind, onBack: () => setState(() => _detail = null));
+    }
+    final total = _categories.fold<int>(0, (a, c) => a + c.count);
+    final pager = _pager;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+          child: Row(
+            children: [
+              Text(
+                widget.kind == Kind.movie ? 'Filmler' : 'Diziler',
+                style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(width: 10),
+              Text('$total', style: const TextStyle(color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()])),
+            ],
+          ),
+        ),
+        SizedBox(
+          height: 34,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            children: [
+              KdPill(label: 'Tümü', selected: _category == null, onTap: () => _select(null)),
+              for (final c in _categories) ...[
+                const SizedBox(width: 6),
+                KdPill(label: c.name, trailing: '${c.count}', selected: _category == c.uid, onTap: () => _select(c.uid)),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (pager != null && pager.loading && pager.items.isEmpty)
+          const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: KdIndeterminate()),
+        Expanded(
+          child: pager == null || (pager.items.isEmpty && !pager.loading)
+              ? KdEmpty(
+                  icon: widget.kind == Kind.movie ? LucideIcons.clapperboard : LucideIcons.layers,
+                  title: 'Bu kategoride içerik yok',
+                )
+              : NotificationListener<ScrollNotification>(
+                  onNotification: (n) {
+                    if (n.metrics.extentAfter < 1200) pager.loadMore();
+                    return false;
+                  },
+                  child: GridView.builder(
+                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 170,
+                      mainAxisSpacing: 18,
+                      crossAxisSpacing: 14,
+                      childAspectRatio: 0.58,
+                    ),
+                    itemCount: pager.items.length,
+                    itemBuilder: (context, i) => PosterCard(
+                      item: pager.items[i],
+                      onTap: () => setState(() => _detail = pager.items[i]),
+                    ),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 2:3 poster with title, year and rating underneath.
+class PosterCard extends StatefulWidget {
+  const PosterCard({super.key, required this.item, required this.onTap, this.progress, this.width});
+
+  final Item item;
+  final VoidCallback onTap;
+  final double? progress;
+  final double? width;
+
+  @override
+  State<PosterCard> createState() => _PosterCardState();
+}
+
+class _PosterCardState extends State<PosterCard> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: SizedBox(
+          width: widget.width,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              AspectRatio(
+                aspectRatio: 2 / 3,
+                child: LayoutBuilder(
+                  builder: (context, c) => Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      KdArt(url: item.logo, label: item.name, width: c.maxWidth, height: c.maxHeight, radius: KdRadius.card),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 120),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(KdRadius.card),
+                          border: Border.all(color: _hover ? KdColors.accent : KdColors.line, width: _hover ? 1.5 : 1),
+                        ),
+                      ),
+                      if (item.rating case final r? when r > 0)
+                        Positioned(
+                          top: 6,
+                          right: 6,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(color: const Color(0xCC0B0B10), borderRadius: BorderRadius.circular(4)),
+                            child: Text(r.toStringAsFixed(1), style: const TextStyle(fontSize: KdType.tag, fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                      if (widget.progress case final p?)
+                        Positioned(left: 8, right: 8, bottom: 8, child: KdProgress(value: p, height: 3)),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w500, color: _hover ? KdColors.accent2 : KdColors.text)),
+              if (item.year != null)
+                Text('${item.year}', style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Movie / series page: backdrop, poster, facts, play, seasons/episodes.
+class DetailView extends StatefulWidget {
+  const DetailView({super.key, required this.item, required this.kind, required this.onBack});
+
+  final Item item;
+  final Kind kind;
+  final VoidCallback onBack;
+
+  @override
+  State<DetailView> createState() => _DetailViewState();
+}
+
+class _DetailViewState extends State<DetailView> {
+  ItemDetail? _d;
+  Object? _error;
+  int _season = 1;
+  bool? _fav;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final d = await context.library.detail(widget.item.id);
+      if (!mounted) return;
+      setState(() {
+        _d = d;
+        _fav = d.isFavorite;
+        final seasons = d.episodes.map((e) => e.season).toSet();
+        _season = seasons.isEmpty ? 1 : seasons.reduce((a, b) => a < b ? a : b);
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = e);
+    }
+  }
+
+  void _play({EpisodeInfo? episode, bool fromStart = false}) {
+    context.player.play(widget.item, widget.kind, episode: episode, view: PlayerView.full, fromStart: fromStart);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final d = _d;
+    final item = widget.item;
+    return Stack(
+      children: [
+        if (d?.backdrop != null)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 340,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Opacity(opacity: 0.35, child: Image.network(d!.backdrop!, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox())),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x000B0B10), KdColors.bg],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ListView(
+          padding: const EdgeInsets.fromLTRB(28, 16, 28, 32),
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: KdButton(label: 'Geri', icon: LucideIcons.arrowLeft, kind: KdButtonKind.ghost, onPressed: widget.onBack),
+            ),
+            const SizedBox(height: 40),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                KdArt(url: item.logo, label: item.name, width: 180, height: 270, radius: KdRadius.card),
+                const SizedBox(width: 24),
+                Expanded(child: _facts(d)),
+              ],
+            ),
+            const SizedBox(height: 22),
+            if (_error != null)
+              Text('Ayrıntılar alınamadı: $_error', style: const TextStyle(color: KdColors.err))
+            else if (d == null)
+              const SizedBox(width: 240, child: KdIndeterminate())
+            else ...[
+              if (d.plot != null) ...[
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Text(d.plot!, style: const TextStyle(height: 1.55)),
+                ),
+                const SizedBox(height: 12),
+              ],
+              if (d.cast != null) _fact('Oyuncular', d.cast!),
+              if (d.director != null) _fact('Yönetmen', d.director!),
+              if (widget.kind == Kind.series) ...[const SizedBox(height: 22), _episodes(d)],
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _facts(ItemDetail? d) {
+    final item = widget.item;
+    final meta = <String>[
+      if (item.year != null) '${item.year}',
+      if (d?.genre != null) d!.genre!,
+      if (d?.durationSecs case final s? when s > 0 && widget.kind == Kind.movie) kdDuration(s),
+      if (widget.kind == Kind.series && d != null) '${d.episodes.map((e) => e.season).toSet().length} sezon',
+    ];
+    final progress = d?.progressMs;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(item.name, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w600, height: 1.2)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            if (item.rating case final r? when r > 0) ...[
+              const Icon(LucideIcons.star, size: 14, color: KdColors.accent),
+              const SizedBox(width: 3),
+              Text(r.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(width: 12),
+            ],
+            Flexible(child: Text(meta.join('  ·  '), style: const TextStyle(color: KdColors.muted))),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            if (widget.kind == Kind.movie)
+              KdButton(
+                label: progress != null && progress > 0 ? 'Devam et' : 'Oynat',
+                icon: LucideIcons.play,
+                kind: KdButtonKind.cta,
+                large: true,
+                onPressed: d == null ? null : () => _play(),
+              ),
+            if (widget.kind == Kind.movie && progress != null && progress > 0)
+              KdButton(label: 'Baştan başlat', large: true, onPressed: () => _play(fromStart: true)),
+            if (widget.kind == Kind.series && d != null && d.episodes.isNotEmpty)
+              KdButton(
+                label: _resumeEpisode(d) == null ? 'İlk bölümü oynat' : 'Devam et',
+                icon: LucideIcons.play,
+                kind: KdButtonKind.cta,
+                large: true,
+                onPressed: () => _play(episode: _resumeEpisode(d) ?? d.episodes.first),
+              ),
+            KdButton(
+              label: _fav == true ? 'Listemde' : 'Listeme ekle',
+              icon: _fav == true ? LucideIcons.check : LucideIcons.plus,
+              large: true,
+              onPressed: _fav == null
+                  ? null
+                  : () async {
+                      final v = !_fav!;
+                      await context.library.setFavorite(widget.item.id, v);
+                      if (mounted) setState(() => _fav = v);
+                    },
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  EpisodeInfo? _resumeEpisode(ItemDetail d) {
+    for (final e in d.episodes) {
+      if ((e.progressMs ?? 0) > 0) return e;
+    }
+    return null;
+  }
+
+  Widget _fact(String label, String value) => Padding(
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(width: 110, child: Text(label, style: const TextStyle(color: KdColors.muted))),
+        Expanded(child: Text(value)),
+      ],
+    ),
+  );
+
+  Widget _episodes(ItemDetail d) {
+    final seasons = d.episodes.map((e) => e.season).toSet().toList()..sort();
+    final list = d.episodes.where((e) => e.season == _season).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const KdSectionLabel('Bölümler'),
+            const SizedBox(width: 14),
+            for (final s in seasons) ...[
+              KdPill(label: '$s. Sezon', selected: s == _season, onTap: () => setState(() => _season = s)),
+              const SizedBox(width: 6),
+            ],
+          ],
+        ),
+        const SizedBox(height: 12),
+        for (final e in list) _EpisodeRow(e: e, onTap: () => _play(episode: e)),
+      ],
+    );
+  }
+}
+
+class _EpisodeRow extends StatefulWidget {
+  const _EpisodeRow({required this.e, required this.onTap});
+
+  final EpisodeInfo e;
+  final VoidCallback onTap;
+
+  @override
+  State<_EpisodeRow> createState() => _EpisodeRowState();
+}
+
+class _EpisodeRowState extends State<_EpisodeRow> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final e = widget.e;
+    final dur = e.durationSecs;
+    final progress = dur != null && dur > 0 && e.progressMs != null ? (e.progressMs! / 1000) / dur : null;
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: _hover ? KdColors.bg2 : Colors.transparent,
+            border: Border.all(color: _hover ? KdColors.line : Colors.transparent),
+            borderRadius: BorderRadius.circular(KdRadius.card),
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 28,
+                child: Text('${e.number}', style: const TextStyle(color: KdColors.muted, fontSize: KdType.title, fontFeatures: [FontFeature.tabularFigures()])),
+              ),
+              Stack(
+                children: [
+                  KdArt(url: e.image, label: e.title, width: 160, height: 90),
+                  if (_hover)
+                    const Positioned.fill(child: Center(child: Icon(LucideIcons.play, color: KdColors.text, size: 22))),
+                  if (progress != null)
+                    Positioned(left: 6, right: 6, bottom: 6, child: KdProgress(value: progress, height: 3)),
+                ],
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: Text(e.title, style: const TextStyle(fontWeight: FontWeight.w600))),
+                        if (dur != null && dur > 0) Text(kdDuration(dur), style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
+                      ],
+                    ),
+                    if (e.plot != null) ...[
+                      const SizedBox(height: 4),
+                      Text(e.plot!, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -1,0 +1,25 @@
+[package]
+name = "kp-core"
+description = "Karadelik IPTV Player data core: sources, catalog storage, search"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+rusqlite.workspace = true
+thiserror.workspace = true
+xxhash-rust.workspace = true
+unicode-normalization.workspace = true
+# OS TLS (schannel / Security.framework): system trust store, no extra C toolchain.
+reqwest = { version = "0.13", default-features = false, features = ["native-tls", "blocking", "json", "gzip", "query"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+base64 = "0.22"
+keyring = { version = "3", features = ["windows-native", "apple-native"] }
+percent-encoding = "2"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+chrono-tz = "0.10"
+
+[dev-dependencies]
+tempfile = "3"

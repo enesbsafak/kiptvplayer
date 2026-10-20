@@ -1,0 +1,19 @@
+[package]
+name = "kp_bridge"
+description = "flutter_rust_bridge surface of kp-core for the Flutter app"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+# Must match the Dart package exactly (apps/desktop/pubspec.yaml).
+flutter_rust_bridge = "=2.13.0"
+kp-core = { path = "../kp-core" }
+anyhow = "1"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }

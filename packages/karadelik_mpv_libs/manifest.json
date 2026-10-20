@@ -1,0 +1,19 @@
+{
+  "_comment": "Native playback artifacts. packages/karadelik_mpv_libs downloads these at build time and refuses any file whose SHA-256 differs.",
+  "windows-x64": {
+    "libmpv": {
+      "file": "mpv-dev-x86_64-20261020-git-6a262d11f6.7z",
+      "url": "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261020/mpv-dev-x86_64-20261020-git-6a262d11f6.7z",
+      "sha256": "d16ea67bcc46d4ee9170f05b322d7184768f216f458bef089c3397a6beaff83e",
+      "mpv_commit": "6a262d11f6",
+      "license": "GPL-3.0-or-later",
+      "distribution": "SPIKE ONLY. shinchiro nightlies are GPL builds and get pruned. Replace with our own mirrored LGPL build (-Dgpl=false) before any public release."
+    },
+    "angle": {
+      "file": "ANGLE.7z",
+      "url": "https://github.com/alexmercerind/flutter-windows-ANGLE-OpenGL-ES/releases/download/v1.0.1/ANGLE.7z",
+      "sha256": "cc5911bb15d596fd5a2b362613ad35b7093b427117269a7359054a65746a5f9a",
+      "license": "BSD-3-Clause (ANGLE)"
+    }
+  }
+}
