@@ -265,6 +265,11 @@ impl Core {
         Ok(())
     }
 
+    /// Where downloaded app updates are kept (beside the library).
+    pub fn updates_dir(&self) -> PathBuf {
+        self.dir.join("updates")
+    }
+
     // ---- XMLTV guide ------------------------------------------------------
 
     fn guide_path(&self, source_id: &str) -> PathBuf {

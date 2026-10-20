@@ -16,6 +16,7 @@ pub mod stalker;
 pub mod store;
 pub mod text;
 pub mod tmdb;
+pub mod update;
 pub mod xmltv;
 pub mod xtream;
 

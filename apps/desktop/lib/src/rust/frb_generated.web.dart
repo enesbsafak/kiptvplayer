@@ -7,6 +7,7 @@
 // ignore_for_file: argument_type_not_assignable
 
 import 'api/library.dart';
+import 'api/update.dart';
 
 import 'dart:async';
 import 'dart:convert';
@@ -28,6 +29,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RustStreamSink<SyncEvent> dco_decode_StreamSink_sync_event_Sse(dynamic raw);
+
+  @protected
+  RustStreamSink<UpdateProgress> dco_decode_StreamSink_update_progress_Sse(
+    dynamic raw,
+  );
 
   @protected
   String dco_decode_String(dynamic raw);
@@ -54,6 +60,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   NewSourceInput dco_decode_box_autoadd_new_source_input(dynamic raw);
 
   @protected
+  (String, String) dco_decode_box_autoadd_record_string_string(dynamic raw);
+
+  @protected
   SourceInfo dco_decode_box_autoadd_source_info(dynamic raw);
 
   @protected
@@ -61,6 +70,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int dco_decode_box_autoadd_u_32(dynamic raw);
+
+  @protected
+  UpdateInfo dco_decode_box_autoadd_update_info(dynamic raw);
 
   @protected
   Category dco_decode_category(dynamic raw);
@@ -73,6 +85,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double dco_decode_f_32(dynamic raw);
+
+  @protected
+  double dco_decode_f_64(dynamic raw);
 
   @protected
   GuideInfo dco_decode_guide_info(dynamic raw);
@@ -147,16 +162,27 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Kind? dco_decode_opt_box_autoadd_kind(dynamic raw);
 
   @protected
+  (String, String)? dco_decode_opt_box_autoadd_record_string_string(
+    dynamic raw,
+  );
+
+  @protected
   TmdbInfo? dco_decode_opt_box_autoadd_tmdb_info(dynamic raw);
 
   @protected
   int? dco_decode_opt_box_autoadd_u_32(dynamic raw);
 
   @protected
+  UpdateInfo? dco_decode_opt_box_autoadd_update_info(dynamic raw);
+
+  @protected
   Playback dco_decode_playback(dynamic raw);
 
   @protected
   Programme dco_decode_programme(dynamic raw);
+
+  @protected
+  (String, String) dco_decode_record_string_string(dynamic raw);
 
   @protected
   RegionCount dco_decode_region_count(dynamic raw);
@@ -198,10 +224,21 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void dco_decode_unit(dynamic raw);
 
   @protected
+  UpdateInfo dco_decode_update_info(dynamic raw);
+
+  @protected
+  UpdateProgress dco_decode_update_progress(dynamic raw);
+
+  @protected
   AnyhowException sse_decode_AnyhowException(SseDeserializer deserializer);
 
   @protected
   RustStreamSink<SyncEvent> sse_decode_StreamSink_sync_event_Sse(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  RustStreamSink<UpdateProgress> sse_decode_StreamSink_update_progress_Sse(
     SseDeserializer deserializer,
   );
 
@@ -232,6 +269,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  (String, String) sse_decode_box_autoadd_record_string_string(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   SourceInfo sse_decode_box_autoadd_source_info(SseDeserializer deserializer);
 
   @protected
@@ -239,6 +281,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int sse_decode_box_autoadd_u_32(SseDeserializer deserializer);
+
+  @protected
+  UpdateInfo sse_decode_box_autoadd_update_info(SseDeserializer deserializer);
 
   @protected
   Category sse_decode_category(SseDeserializer deserializer);
@@ -251,6 +296,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double sse_decode_f_32(SseDeserializer deserializer);
+
+  @protected
+  double sse_decode_f_64(SseDeserializer deserializer);
 
   @protected
   GuideInfo sse_decode_guide_info(SseDeserializer deserializer);
@@ -331,16 +379,31 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Kind? sse_decode_opt_box_autoadd_kind(SseDeserializer deserializer);
 
   @protected
+  (String, String)? sse_decode_opt_box_autoadd_record_string_string(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   TmdbInfo? sse_decode_opt_box_autoadd_tmdb_info(SseDeserializer deserializer);
 
   @protected
   int? sse_decode_opt_box_autoadd_u_32(SseDeserializer deserializer);
 
   @protected
+  UpdateInfo? sse_decode_opt_box_autoadd_update_info(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   Playback sse_decode_playback(SseDeserializer deserializer);
 
   @protected
   Programme sse_decode_programme(SseDeserializer deserializer);
+
+  @protected
+  (String, String) sse_decode_record_string_string(
+    SseDeserializer deserializer,
+  );
 
   @protected
   RegionCount sse_decode_region_count(SseDeserializer deserializer);
@@ -382,6 +445,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_decode_unit(SseDeserializer deserializer);
 
   @protected
+  UpdateInfo sse_decode_update_info(SseDeserializer deserializer);
+
+  @protected
+  UpdateProgress sse_decode_update_progress(SseDeserializer deserializer);
+
+  @protected
   void sse_encode_AnyhowException(
     AnyhowException self,
     SseSerializer serializer,
@@ -390,6 +459,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_StreamSink_sync_event_Sse(
     RustStreamSink<SyncEvent> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_StreamSink_update_progress_Sse(
+    RustStreamSink<UpdateProgress> self,
     SseSerializer serializer,
   );
 
@@ -427,6 +502,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_box_autoadd_record_string_string(
+    (String, String) self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_source_info(
     SourceInfo self,
     SseSerializer serializer,
@@ -442,6 +523,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_box_autoadd_u_32(int self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_update_info(
+    UpdateInfo self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_category(Category self, SseSerializer serializer);
 
   @protected
@@ -452,6 +539,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_f_32(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_f_64(double self, SseSerializer serializer);
 
   @protected
   void sse_encode_guide_info(GuideInfo self, SseSerializer serializer);
@@ -559,6 +649,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_opt_box_autoadd_kind(Kind? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_box_autoadd_record_string_string(
+    (String, String)? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_opt_box_autoadd_tmdb_info(
     TmdbInfo? self,
     SseSerializer serializer,
@@ -568,10 +664,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_opt_box_autoadd_u_32(int? self, SseSerializer serializer);
 
   @protected
+  void sse_encode_opt_box_autoadd_update_info(
+    UpdateInfo? self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_playback(Playback self, SseSerializer serializer);
 
   @protected
   void sse_encode_programme(Programme self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_record_string_string(
+    (String, String) self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_region_count(RegionCount self, SseSerializer serializer);
@@ -617,6 +725,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_unit(void self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_update_info(UpdateInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_update_progress(
+    UpdateProgress self,
+    SseSerializer serializer,
+  );
 }
 
 // Section: wire_class

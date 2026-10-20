@@ -830,4 +830,50 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get addMac => 'MAC adresi';
+
+  @override
+  String get updTitle => 'Güncellemeler';
+
+  @override
+  String updIdle(String version) {
+    return 'Sürüm $version';
+  }
+
+  @override
+  String get updChecking => 'Denetleniyor…';
+
+  @override
+  String updUpToDate(String version) {
+    return 'Güncelsiniz: $version en yeni sürüm.';
+  }
+
+  @override
+  String updAvailable(String version) {
+    return 'Yeni sürüm hazır: $version';
+  }
+
+  @override
+  String updFailed(String error) {
+    return 'Denetlenemedi: $error';
+  }
+
+  @override
+  String get updCheck => 'Güncellemeleri denetle';
+
+  @override
+  String get updDownload => 'İndir';
+
+  @override
+  String get updInstall => 'Kur ve yeniden başlat';
+
+  @override
+  String updRollBack(String version) {
+    return '$version sürümüne dön';
+  }
+
+  @override
+  String get updBadge => 'Güncelleme var';
+
+  @override
+  String get updBadgeReady => 'Güncelleme hazır';
 }

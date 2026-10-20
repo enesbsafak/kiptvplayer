@@ -481,5 +481,52 @@
   "addNeedMac": "MAC adresini 00:1A:79:12:34:56 biçiminde girin",
   "addStalkerHint": "Portal adresi ve MAC",
   "addPortal": "Portal adresi",
-  "addMac": "MAC adresi"
+  "addMac": "MAC adresi",
+  "updTitle": "Güncellemeler",
+  "updIdle": "Sürüm {version}",
+  "@updIdle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updChecking": "Denetleniyor…",
+  "updUpToDate": "Güncelsiniz: {version} en yeni sürüm.",
+  "@updUpToDate": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updAvailable": "Yeni sürüm hazır: {version}",
+  "@updAvailable": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updFailed": "Denetlenemedi: {error}",
+  "@updFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "updCheck": "Güncellemeleri denetle",
+  "updDownload": "İndir",
+  "updInstall": "Kur ve yeniden başlat",
+  "updRollBack": "{version} sürümüne dön",
+  "@updRollBack": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updBadge": "Güncelleme var",
+  "updBadgeReady": "Güncelleme hazır"
 }

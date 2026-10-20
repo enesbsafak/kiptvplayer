@@ -1579,6 +1579,78 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'MAC adresi'**
   String get addMac;
+
+  /// No description provided for @updTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Güncellemeler'**
+  String get updTitle;
+
+  /// No description provided for @updIdle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sürüm {version}'**
+  String updIdle(String version);
+
+  /// No description provided for @updChecking.
+  ///
+  /// In tr, this message translates to:
+  /// **'Denetleniyor…'**
+  String get updChecking;
+
+  /// No description provided for @updUpToDate.
+  ///
+  /// In tr, this message translates to:
+  /// **'Güncelsiniz: {version} en yeni sürüm.'**
+  String updUpToDate(String version);
+
+  /// No description provided for @updAvailable.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni sürüm hazır: {version}'**
+  String updAvailable(String version);
+
+  /// No description provided for @updFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Denetlenemedi: {error}'**
+  String updFailed(String error);
+
+  /// No description provided for @updCheck.
+  ///
+  /// In tr, this message translates to:
+  /// **'Güncellemeleri denetle'**
+  String get updCheck;
+
+  /// No description provided for @updDownload.
+  ///
+  /// In tr, this message translates to:
+  /// **'İndir'**
+  String get updDownload;
+
+  /// No description provided for @updInstall.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kur ve yeniden başlat'**
+  String get updInstall;
+
+  /// No description provided for @updRollBack.
+  ///
+  /// In tr, this message translates to:
+  /// **'{version} sürümüne dön'**
+  String updRollBack(String version);
+
+  /// No description provided for @updBadge.
+  ///
+  /// In tr, this message translates to:
+  /// **'Güncelleme var'**
+  String get updBadge;
+
+  /// No description provided for @updBadgeReady.
+  ///
+  /// In tr, this message translates to:
+  /// **'Güncelleme hazır'**
+  String get updBadgeReady;
 }
 
 class _AppLocalizationsDelegate

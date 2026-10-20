@@ -246,5 +246,17 @@
   "addNeedMac": "Enter the MAC address like 00:1A:79:12:34:56",
   "addStalkerHint": "Portal address and MAC",
   "addPortal": "Portal address",
-  "addMac": "MAC address"
+  "addMac": "MAC address",
+  "updTitle": "Updates",
+  "updIdle": "Version {version}",
+  "updChecking": "Checking…",
+  "updUpToDate": "You're up to date: {version} is the latest.",
+  "updAvailable": "A new version is available: {version}",
+  "updFailed": "Could not check: {error}",
+  "updCheck": "Check for updates",
+  "updDownload": "Download",
+  "updInstall": "Install and restart",
+  "updRollBack": "Go back to {version}",
+  "updBadge": "Update available",
+  "updBadgeReady": "Update ready"
 }

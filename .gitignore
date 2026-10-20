@@ -17,3 +17,6 @@ perf.jsonl
 
 # Generated test media (tools/mock-iptv/make-media.ps1)
 tools/mock-iptv/media/
+
+# Release output (tools/release.ps1)
+dist/

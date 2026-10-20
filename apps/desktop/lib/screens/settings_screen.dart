@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app/library.dart';
 import '../app/scope.dart';
+import '../app/updates.dart';
 import '../app/version.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
@@ -27,6 +28,17 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   _Tab _tab = _Tab.sources;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Opened from the update badge: straight to "About".
+    final app = context.app;
+    if (app.settingsTab == 'about') {
+      _tab = _Tab.about;
+      app.settingsTab = null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -292,6 +304,78 @@ class _GuideLine extends StatelessWidget {
 
 String _count(int n) => NumberFormat.compact(locale: languageCode).format(n);
 
+
+/// "Updates": check, download with progress, install and restart, go back.
+class _UpdatesSection extends StatelessWidget {
+  const _UpdatesSection();
+
+  @override
+  Widget build(BuildContext context) {
+    final u = context.updates;
+    return ListenableBuilder(
+      listenable: u,
+      builder: (context, _) {
+        final info = u.available;
+        final status = switch (u.phase) {
+          UpdatePhase.idle => l10n.updIdle(appVersion),
+          UpdatePhase.checking => l10n.updChecking,
+          UpdatePhase.upToDate => l10n.updUpToDate(appVersion),
+          UpdatePhase.available || UpdatePhase.downloading || UpdatePhase.ready => l10n.updAvailable(info?.version ?? ''),
+          UpdatePhase.failed => l10n.updFailed(u.error ?? ''),
+        };
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: KdColors.bg2,
+            border: Border.all(color: u.phase == UpdatePhase.available || u.phase == UpdatePhase.ready ? KdColors.accentAlpha(0.45) : KdColors.line),
+            borderRadius: BorderRadius.circular(KdRadius.card),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(LucideIcons.download, size: 15, color: KdColors.accent2),
+                  const SizedBox(width: 8),
+                  Text(l10n.updTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(status, style: TextStyle(color: u.phase == UpdatePhase.failed ? KdColors.err : KdColors.muted)),
+              if (info != null && info.notes.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(info.notes, style: const TextStyle(fontSize: KdType.small, height: 1.5)),
+              ],
+              if (u.phase == UpdatePhase.downloading) ...[
+                const SizedBox(height: 10),
+                SizedBox(width: 360, child: KdProgress(value: u.progress)),
+              ],
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (u.phase == UpdatePhase.available)
+                    KdButton(label: l10n.updDownload, icon: LucideIcons.download, kind: KdButtonKind.cta, onPressed: u.download)
+                  else if (u.phase == UpdatePhase.ready)
+                    KdButton(label: l10n.updInstall, icon: LucideIcons.refreshCw, kind: KdButtonKind.cta, onPressed: u.installAndRestart)
+                  else
+                    KdButton(
+                      label: l10n.updCheck,
+                      icon: LucideIcons.refreshCw,
+                      onPressed: u.phase == UpdatePhase.checking || u.phase == UpdatePhase.downloading ? null : () => u.check(),
+                    ),
+                  if (u.previous case final p? when u.phase != UpdatePhase.downloading)
+                    KdButton(label: l10n.updRollBack(p.$1), icon: LucideIcons.undo2, kind: KdButtonKind.ghost, onPressed: u.rollBack),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
 String _host(String url) {
   final u = Uri.tryParse(url);
@@ -640,7 +724,9 @@ class _AboutTab extends StatelessWidget {
           'This product uses the TMDB API but is not endorsed or certified by TMDB. ${l10n.aboutTmdb}',
           style: const TextStyle(height: 1.5, color: KdColors.muted, fontSize: KdType.small),
         ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 22),
+        const _UpdatesSection(),
+        const SizedBox(height: 22),
         Align(
           alignment: Alignment.centerLeft,
           child: KdButton(

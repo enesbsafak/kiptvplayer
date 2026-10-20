@@ -102,6 +102,16 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Settings tab to open on the next visit ("about" from the update badge).
+  String? settingsTab;
+
+  void openSettings(String tab) {
+    settingsTab = tab;
+    section = Section.settings;
+    pendingDetail = null;
+    notifyListeners();
+  }
+
   void go(Section s) {
     if (section == s) return;
     section = s;

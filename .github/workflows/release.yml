@@ -1,0 +1,54 @@
+# A "v1.2.3" tag builds the installer and latest.json (tools/release.ps1) and
+# publishes them as a GitHub release; the in-app updater reads latest.json
+# from the newest release.
+#
+# Signing: add a repository secret KP_SIGN_CMD (see tools/release.ps1); the
+# signing tool it names must be available on the runner. Without it the
+# release is unsigned and SmartScreen warns on first run.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - name: Inno Setup
+        run: choco install innosetup --no-progress -y
+
+      - name: Build installer and update feed
+        shell: pwsh
+        env:
+          KP_SIGN_CMD: ${{ secrets.KP_SIGN_CMD }}
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          ./tools/release.ps1 -Version $version -BaseUrl "https://github.com/${{ github.repository }}/releases/download/v{0}"
+
+      - name: Publish the release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = '${{ github.ref_name }}'.TrimStart('v')
+          $notes = "tools/release-notes/$version.tr.txt"
+          if (-not (Test-Path $notes)) { $notes = $null }
+          $ghArgs = @('${{ github.ref_name }}', "dist/KaradelikIPTVPlayer-Setup-$version.exe", 'dist/latest.json', '--title', "Karadelik IPTV Player $version")
+          if ($notes) { $ghArgs += @('--notes-file', $notes) } else { $ghArgs += @('--notes', '') }
+          gh release create @ghArgs

@@ -852,4 +852,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addMac => 'MAC address';
+
+  @override
+  String get updTitle => 'Updates';
+
+  @override
+  String updIdle(String version) {
+    return 'Version $version';
+  }
+
+  @override
+  String get updChecking => 'Checking…';
+
+  @override
+  String updUpToDate(String version) {
+    return 'You\'re up to date: $version is the latest.';
+  }
+
+  @override
+  String updAvailable(String version) {
+    return 'A new version is available: $version';
+  }
+
+  @override
+  String updFailed(String error) {
+    return 'Could not check: $error';
+  }
+
+  @override
+  String get updCheck => 'Check for updates';
+
+  @override
+  String get updDownload => 'Download';
+
+  @override
+  String get updInstall => 'Install and restart';
+
+  @override
+  String updRollBack(String version) {
+    return 'Go back to $version';
+  }
+
+  @override
+  String get updBadge => 'Update available';
+
+  @override
+  String get updBadgeReady => 'Update ready';
 }

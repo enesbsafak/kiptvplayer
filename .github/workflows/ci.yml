@@ -1,0 +1,76 @@
+# Every push and pull request: Rust and Flutter tests, the end-to-end tests
+# against the mock provider, a Windows release build; the data core is also
+# tested on macOS so the later port stays cheap.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - name: Rust tests
+        run: cargo test --workspace
+
+      - name: End-to-end tests against the mock provider
+        shell: pwsh
+        run: |
+          # The tests only check that streams answer, so tiny stand-ins
+          # replace the generated test media (tools/mock-iptv/make-media.ps1).
+          New-Item -ItemType Directory -Force tools/mock-iptv/media | Out-Null
+          Set-Content -Path tools/mock-iptv/media/ts1080.ts -Value 'mock' -NoNewline
+          cargo build -p mock-iptv --release
+          $mock = Start-Process target/release/mock-iptv.exe -ArgumentList 8089 -PassThru
+          try {
+            Start-Sleep -Seconds 1
+            cargo test -p kp-core --test xtream_mock -- --ignored --test-threads=1
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Stop-Process $mock
+          }
+
+      - name: Flutter analyze and tests (headless)
+        working-directory: apps/desktop
+        run: |
+          flutter pub get
+          flutter analyze
+          flutter test
+
+      - name: Windows release build
+        working-directory: apps/desktop
+        run: flutter build windows --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: karadelik-player-windows
+          path: apps/desktop/build/windows/x64/runner/Release
+          retention-days: 14
+
+  macos-core:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Data core tests
+        run: cargo test -p kp-core

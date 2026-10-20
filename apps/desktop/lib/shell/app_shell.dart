@@ -6,7 +6,9 @@ import 'package:window_manager/window_manager.dart';
 import '../app/app_state.dart';
 import '../app/library.dart';
 import '../app/scope.dart';
+import '../app/updates.dart';
 import '../design/tokens.dart';
+import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_icon_button.dart';
 import '../design/widgets/kd_titlebar.dart';
 import '../l10n/l10n.dart';
@@ -85,6 +87,7 @@ class _AppShellState extends State<AppShell> with WindowListener {
                     KdTitlebar(
                       actions: [
                         if (app.sources.isNotEmpty)
+                          const _UpdateBadge(),
                           KdIconButton(icon: LucideIcons.search, tooltip: l10n.tipSearch, onPressed: () => app.go(Section.search)),
                         if (app.sources.isNotEmpty)
                           KdIconButton(icon: LucideIcons.settings, tooltip: l10n.tipSettings, onPressed: () => app.go(Section.settings)),
@@ -204,6 +207,32 @@ class _MiniPlayerState extends State<_MiniPlayer> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A quiet pill in the title bar while an update waits; opens Settings › About.
+class _UpdateBadge extends StatelessWidget {
+  const _UpdateBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final u = context.updates;
+    return ListenableBuilder(
+      listenable: u,
+      builder: (context, _) {
+        final show = u.phase == UpdatePhase.available || u.phase == UpdatePhase.downloading || u.phase == UpdatePhase.ready;
+        if (!show) return const SizedBox.shrink();
+        return Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: KdButton(
+            label: u.phase == UpdatePhase.ready ? l10n.updBadgeReady : l10n.updBadge,
+            icon: LucideIcons.download,
+            kind: KdButtonKind.ghost,
+            onPressed: () => context.app.openSettings('about'),
+          ),
+        );
+      },
     );
   }
 }

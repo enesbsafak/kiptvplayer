@@ -5,6 +5,7 @@ import 'package:karadelik_player/app/app_state.dart';
 import 'package:karadelik_player/app/library.dart';
 import 'package:karadelik_player/app/paging.dart';
 import 'package:karadelik_player/app/scope.dart';
+import 'package:karadelik_player/app/updates.dart';
 import 'package:karadelik_player/perf/perf.dart';
 import 'package:karadelik_player/player/media_track.dart';
 import 'package:karadelik_player/player/player_controller.dart';
@@ -286,7 +287,22 @@ class TestHarness {
     state = AppState(library);
     player = PlayerController(engine, library, Perf.init(const []));
     epg = EpgCache(library);
+    updates = UpdateService(
+      check: () async => nextUpdate,
+      download: () => Stream.fromIterable(downloadEvents),
+      install: (path) async => installed.add(path),
+      previous: () async => previousRelease,
+      quit: () async => quits++,
+    );
   }
+
+  /// What the fake update feed offers, and what happened with it.
+  UpdateInfo? nextUpdate;
+  List<UpdateProgress> downloadEvents = const [];
+  (String, String)? previousRelease;
+  final List<String> installed = [];
+  int quits = 0;
+  late final UpdateService updates;
 
   final FakeLibrary library;
   final FakeEngine engine;
@@ -294,5 +310,5 @@ class TestHarness {
   late final PlayerController player;
   late final EpgCache epg;
 
-  Widget wrap(Widget child) => AppScope(state: state, player: player, library: library, epg: epg, child: child);
+  Widget wrap(Widget child) => AppScope(state: state, player: player, library: library, epg: epg, updates: updates, child: child);
 }

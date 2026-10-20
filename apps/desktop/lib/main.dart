@@ -12,6 +12,7 @@ import 'app/library.dart';
 import 'app/licenses.dart';
 import 'app/paging.dart';
 import 'app/scope.dart';
+import 'app/updates.dart';
 import 'design/theme.dart';
 import 'dev/automation.dart';
 import 'l10n/l10n.dart';
@@ -73,6 +74,8 @@ Future<void> main(List<String> args) async {
   }
   final player = PlayerController(engine, library, perf);
   final epg = EpgCache(library);
+  final updates = UpdateService();
+  if (!offscreen) updates.startBackgroundCheck();
   MediaSession(player);
   var guideVersion = state.guideVersion;
   state.addListener(() {
@@ -89,6 +92,7 @@ Future<void> main(List<String> args) async {
       player: player,
       library: library,
       epg: epg,
+      updates: updates,
       child: KaradelikPlayerApp(boundaryKey: boundary, perf: perf, state: state),
     ),
   );

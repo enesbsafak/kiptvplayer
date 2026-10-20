@@ -4,6 +4,7 @@ import '../player/player_controller.dart';
 import 'app_state.dart';
 import 'library.dart';
 import 'paging.dart';
+import 'updates.dart';
 
 /// Hands the long-lived controllers to every screen. [AppState] is exposed
 /// through an [InheritedNotifier], so any widget that reads `context.app`
@@ -15,6 +16,7 @@ class AppScope extends StatelessWidget {
     required this.player,
     required this.library,
     required this.epg,
+    required this.updates,
     required this.child,
   });
 
@@ -22,6 +24,7 @@ class AppScope extends StatelessWidget {
   final PlayerController player;
   final LibraryApi library;
   final EpgCache epg;
+  final UpdateService updates;
   final Widget child;
 
   @override
@@ -30,20 +33,23 @@ class AppScope extends StatelessWidget {
       player: player,
       library: library,
       epg: epg,
+      updates: updates,
       child: _AppStateScope(notifier: state, child: child),
     );
   }
 }
 
 class _Services extends InheritedWidget {
-  const _Services({required this.player, required this.library, required this.epg, required super.child});
+  const _Services({required this.player, required this.library, required this.epg, required this.updates, required super.child});
 
   final PlayerController player;
   final LibraryApi library;
   final EpgCache epg;
+  final UpdateService updates;
 
   @override
-  bool updateShouldNotify(_Services old) => player != old.player || library != old.library || epg != old.epg;
+  bool updateShouldNotify(_Services old) =>
+      player != old.player || library != old.library || epg != old.epg || updates != old.updates;
 }
 
 class _AppStateScope extends InheritedNotifier<AppState> {
@@ -55,4 +61,5 @@ extension AppScopeX on BuildContext {
   PlayerController get player => getInheritedWidgetOfExactType<_Services>()!.player;
   LibraryApi get library => getInheritedWidgetOfExactType<_Services>()!.library;
   EpgCache get epg => getInheritedWidgetOfExactType<_Services>()!.epg;
+  UpdateService get updates => getInheritedWidgetOfExactType<_Services>()!.updates;
 }

@@ -16,8 +16,8 @@ use crate::frb_generated::StreamSink;
 
 static CORE: OnceLock<Core> = OnceLock::new();
 
-fn core() -> Result<&'static Core> {
-    CORE.get().ok_or_else(|| anyhow!("kütüphane başlatılmadı"))
+pub(crate) fn core() -> Result<&'static Core> {
+    CORE.get().ok_or_else(|| anyhow!(kp_core::lang::t("kütüphane başlatılmadı", "the library is not open")))
 }
 
 #[frb(init)]
