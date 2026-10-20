@@ -567,6 +567,36 @@ impl Store {
         Ok(rows)
     }
 
+    /// Other live channels of the source carrying the same programme: same
+    /// tvg-id, or the same name once region, quality and punctuation are
+    /// gone ("TR: TRT 1 HD", "TRT 1 FHD", "TRT1 Yedek"). Failover candidates,
+    /// in display order.
+    pub fn alternates(&self, source_id: &str, uid: i64) -> Result<Vec<ChannelRow>> {
+        let mut me = self.conn.prepare_cached("SELECT name, tvg_id FROM channel WHERE source_id = ?1 AND uid = ?2")?;
+        let Some((name, tvg)) = me
+            .query_row(params![source_id, uid], |r| Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?)))
+            .optional()?
+        else {
+            return Ok(Vec::new());
+        };
+        let key = crate::guide::match_name(&name);
+        let tvg = tvg.map(|t| t.trim().to_lowercase()).filter(|t| !t.is_empty());
+        let mut stmt = self.conn.prepare_cached(&format!(
+            "SELECT {CHANNEL_ROW_COLS}, tvg_id FROM channel WHERE source_id = ?1 AND kind = 0 AND uid != ?2 ORDER BY order_key"
+        ))?;
+        let mut out = Vec::new();
+        let mut rows = stmt.query(params![source_id, uid])?;
+        while let Some(r) = rows.next()? {
+            let row = channel_row(r)?;
+            let other_tvg: Option<String> = r.get(10)?;
+            let same_id = matches!((&tvg, other_tvg), (Some(a), Some(b)) if *a == b.trim().to_lowercase());
+            if same_id || (!key.is_empty() && crate::guide::match_name(&row.name) == key) {
+                out.push(row);
+            }
+        }
+        Ok(out)
+    }
+
     /// Newest additions, for the home screen.
     pub fn recently_added(&self, source_id: &str, kind: ContentKind, limit: u32) -> Result<Vec<ChannelRow>> {
         let mut stmt = self.conn.prepare_cached(&format!(
@@ -1035,6 +1065,28 @@ mod tests {
         let past = store.epg_past("src", uid, 0, t + 150).unwrap();
         assert_eq!(past.iter().map(|e| (e.title.as_str(), e.archive)).collect::<Vec<_>>(), vec![("Bitti", true)]);
         assert_eq!(store.epg_short("src", uid, t + 150).unwrap().0[0].title, "Sonra");
+    }
+
+    #[test]
+    fn alternates_share_tvg_id_or_name() {
+        let mut store = Store::open_in_memory().unwrap();
+        store.upsert_source(&source("src")).unwrap();
+        let catalog = Catalog::from_m3u(parse(
+            "#EXTM3U
+             #EXTINF:-1 tvg-id=\"trt1.tr\" group-title=\"TR\",TR: TRT 1 HD
+http://a/1
+             #EXTINF:-1 tvg-id=\"TRT1.tr\" group-title=\"Yedek\",Kanal Bir
+http://b/1
+             #EXTINF:-1 group-title=\"Yedek\",TRT1 FHD
+http://c/1
+             #EXTINF:-1 group-title=\"TR\",TRT 2
+http://a/2
+",
+        ));
+        store.replace_catalog("src", &catalog, 1).unwrap();
+        let trt1 = store.search("trt 1 hd", None, 1).unwrap()[0].uid;
+        let alts: Vec<_> = store.alternates("src", trt1).unwrap().into_iter().map(|c| c.name).collect();
+        assert_eq!(alts, vec!["Kanal Bir", "TRT1 FHD"], "by tvg-id and by normalized name, never TRT 2");
     }
 
     #[test]

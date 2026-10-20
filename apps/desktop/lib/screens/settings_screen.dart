@@ -566,6 +566,8 @@ class _ShortcutsTab extends StatelessWidget {
     ('Ctrl 1 … 6', 'Ana sayfa, Canlı TV, Yayın akışı, Filmler, Diziler, Favoriler'),
     ('Ctrl ,', 'Ayarlar'),
     ('↑ / ↓', 'Kanal değiştir'),
+    ('0 … 9', 'Kanal numarasıyla geç (Enter beklemeden açar)'),
+    ('Medya tuşları', 'Oynat / duraklat, sonraki / önceki kanal (film ve dizide ileri / geri sarma)'),
     ('PgUp / PgDn', 'Listede 10 kanal atla'),
     ('Enter', 'Tam ekran oynat'),
     ('Space', 'Oynat / duraklat'),

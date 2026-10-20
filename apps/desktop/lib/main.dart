@@ -14,6 +14,7 @@ import 'app/scope.dart';
 import 'design/theme.dart';
 import 'dev/automation.dart';
 import 'perf/perf.dart';
+import 'player/media_session.dart';
 import 'player/player_controller.dart';
 import 'player/player_engine.dart';
 import 'shell/app_shell.dart';
@@ -67,6 +68,7 @@ Future<void> main(List<String> args) async {
   }
   final player = PlayerController(engine, library, perf);
   final epg = EpgCache(library);
+  MediaSession(player);
   var guideVersion = state.guideVersion;
   state.addListener(() {
     if (state.guideVersion != guideVersion) {

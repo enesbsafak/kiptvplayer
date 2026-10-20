@@ -28,6 +28,7 @@ bool FlutterWindow::OnCreate() {
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
   chrome_ = std::make_unique<WindowChrome>(GetHandle(), flutter_controller_->view()->GetNativeWindow(),
                                            flutter_controller_->engine()->messenger());
+  media_ = std::make_unique<MediaControls>(GetHandle(), flutter_controller_->engine()->messenger(), !offscreen());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
@@ -43,6 +44,7 @@ bool FlutterWindow::OnCreate() {
 
 void FlutterWindow::OnDestroy() {
   chrome_ = nullptr;
+  media_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -57,6 +59,9 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (chrome_) {
     if (auto handled = chrome_->HandleTopLevel(hwnd, message, wparam, lparam)) return *handled;
+  }
+  if (media_) {
+    if (auto handled = media_->HandleTopLevel(hwnd, message, wparam, lparam)) return *handled;
   }
   if (flutter_controller_) {
     std::optional<LRESULT> result =

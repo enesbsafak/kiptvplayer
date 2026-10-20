@@ -90,6 +90,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
       _togglePanel(_Panel.tracks);
     } else if (k == LogicalKeyboardKey.keyL && live) {
       _togglePanel(_Panel.channels);
+    } else if (live && digitOf(k) != null) {
+      p.typeDigit(digitOf(k)!);
+    } else if (live && p.zapDigits.isNotEmpty && (k == LogicalKeyboardKey.enter || k == LogicalKeyboardKey.numpadEnter)) {
+      p.commitDigits();
     } else if (k == LogicalKeyboardKey.keyM) {
       p.setVolume(p.volume > 0 ? 0 : 100);
     } else if (live && k == LogicalKeyboardKey.arrowUp) {
@@ -168,6 +172,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     ),
                   ),
                 ),
+                Positioned(top: 70, right: 24, child: ZapDigits(player: player)),
                 if (_panel == _Panel.tracks)
                   Positioned(right: 20, bottom: 110, child: _TracksPanel(player: player)),
                 if (_panel == _Panel.channels && now != null)
@@ -233,6 +238,7 @@ class _TopBar extends StatelessWidget {
                       const SizedBox(width: 10),
                       if (n.isLive) const KdTag('CANLI'),
                       if (n.isCatchup) const KdTag('GEÇMİŞ YAYIN'),
+                      if (player.backupName != null) ...[const SizedBox(width: 6), const KdTag('YEDEK YAYIN')],
                       if (player.videoHeight case final h? when h > 0) ...[
                         const SizedBox(width: 6),
                         KdTag(h >= 2000 ? '4K' : h >= 1000 ? 'FHD' : h >= 700 ? 'HD' : 'SD', ok: true),

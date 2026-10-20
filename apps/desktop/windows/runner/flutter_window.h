@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "win32_window.h"
+#include "media_controls.h"
 #include "window_chrome.h"
 
 // A window that does nothing but host a Flutter view.
@@ -31,6 +32,7 @@ class FlutterWindow : public Win32Window {
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
 
   std::unique_ptr<WindowChrome> chrome_;
+  std::unique_ptr<MediaControls> media_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

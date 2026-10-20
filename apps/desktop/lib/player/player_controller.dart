@@ -77,6 +77,27 @@ class PlayerController extends ChangeNotifier {
   /// A live stream buffering longer than this is treated as stalled.
   static const stallLimit = Duration(seconds: 10);
 
+  /// Failover: after this many failed reopens of the chosen stream, the
+  /// channel's backup streams (same tvg-id or name) are tried in turn, then
+  /// the original again, with the same growing waits.
+  static const failoverAfter = 2;
+
+  /// The channel the user picked; [now] may be one of its backups.
+  Item? _origin;
+  List<Item>? _backups;
+
+  /// Name of the backup stream playing (or being tried) instead of the
+  /// chosen one; null on the original.
+  String? get backupName {
+    final n = now, o = _origin;
+    return n == null || o == null || n.item.id == o.id ? null : n.item.name;
+  }
+
+  /// Number-key channel entry: digits typed so far, shown on screen.
+  String zapDigits = '';
+  Timer? _digitTimer;
+  static const digitWait = Duration(milliseconds: 1500);
+
   Timer? _progressTimer;
   Timer? _stallTimer;
   Timer? _retryTimer;
@@ -102,7 +123,11 @@ class PlayerController extends ChangeNotifier {
     final token = ++_openToken;
     _stallTimer?.cancel();
     _retryTimer?.cancel();
-    if (!retry) _clearReconnect();
+    if (!retry) {
+      _clearReconnect();
+      _origin = item;
+      _backups = null;
+    }
     await _saveProgress();
     _set(() {
       opening = true;
@@ -203,11 +228,51 @@ class PlayerController extends ChangeNotifier {
     _retryTimer = Timer(delay, _retry);
   }
 
-  void _retry() {
+  Future<void> _retry() async {
     final n = now;
     if (n == null) return;
     perf.record('reconnect', reconnectAttempt, {'reason': reconnectReason});
-    play(n.item, n.kind, queue: n.queue, episode: n.episode, view: view, retry: true);
+    final next = await _nextStream(n);
+    if (now != n) return; // the user moved on meanwhile
+    play(next, n.kind, queue: n.queue, episode: n.episode, view: view, retry: true);
+  }
+
+  /// The stream to reopen: the current one at first, then backups in turn.
+  Future<Item> _nextStream(NowPlaying n) async {
+    final origin = _origin ?? n.item;
+    if (!n.isLive || reconnectAttempt <= failoverAfter) return n.item;
+    _backups ??= await library.alternates(origin.id).catchError((_) => <Item>[]);
+    final candidates = [..._backups!, origin];
+    if (candidates.length == 1) return origin;
+    final next = candidates[(reconnectAttempt - failoverAfter - 1) % candidates.length];
+    if (next.id != n.item.id) perf.record('failover', reconnectAttempt, {'to': next.id});
+    return next;
+  }
+
+  /// A digit pressed while live TV plays: after a short pause (or Enter),
+  /// tunes to that channel number in the current list.
+  void typeDigit(int digit) {
+    final n = now;
+    if (n == null || !n.isLive || n.queue.isEmpty) return;
+    zapDigits = '$zapDigits$digit';
+    if (zapDigits.length > 4) zapDigits = zapDigits.substring(zapDigits.length - 4);
+    _digitTimer?.cancel();
+    _digitTimer = Timer(digitWait, commitDigits);
+    notifyListeners();
+  }
+
+  /// Tunes to the typed number: the channel carrying that number (tvg-chno /
+  /// provider order), else that position in the list.
+  Future<void> commitDigits() async {
+    _digitTimer?.cancel();
+    final typed = int.tryParse(zapDigits);
+    zapDigits = '';
+    notifyListeners();
+    final n = now;
+    if (typed == null || n == null || n.queue.isEmpty) return;
+    final target = n.queue.where((c) => c.chno == typed).firstOrNull ??
+        (typed >= 1 && typed <= n.queue.length ? n.queue[typed - 1] : null);
+    if (target != null && target.id != n.item.id) await play(target, n.kind, queue: n.queue, view: view);
   }
 
   /// Leaves a catch-up replay for the channel's live stream.
@@ -276,7 +341,8 @@ class PlayerController extends ChangeNotifier {
     _clearReconnect();
     await _saveProgress();
     await engine.stop();
-    await windowManager.setFullScreen(false);
+    // Leaving full screen is cosmetic: never let it keep the player running.
+    await windowManager.setFullScreen(false).catchError((_) {});
     _set(() {
       now = null;
       view = PlayerView.hidden;
@@ -316,6 +382,7 @@ class PlayerController extends ChangeNotifier {
     _progressTimer?.cancel();
     _stallTimer?.cancel();
     _retryTimer?.cancel();
+    _digitTimer?.cancel();
     position.dispose();
     super.dispose();
   }

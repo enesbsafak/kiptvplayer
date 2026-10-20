@@ -42,6 +42,7 @@ class Win32Window {
   // Test mode: create the window far off-screen, out of the taskbar, and never
   // let it take focus, so automated runs don't disturb whoever uses the PC.
   void SetOffscreen(bool offscreen) { offscreen_ = offscreen; }
+  bool offscreen() const { return offscreen_; }
 
   // Release OS resources associated with window.
   void Destroy();

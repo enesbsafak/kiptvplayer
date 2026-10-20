@@ -39,9 +39,12 @@ class _LiveScreenState extends State<LiveScreen> {
   String? _sourceId;
   int _version = -1;
 
+  PlayerController? _player;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _player ??= context.player..addListener(_followPlayer);
     final app = context.app;
     final sid = app.activeSource?.id;
     if (sid != _sourceId || app.catalogVersion != _version) {
@@ -51,8 +54,20 @@ class _LiveScreenState extends State<LiveScreen> {
     }
   }
 
+  /// The highlighted row follows the playing channel, however it was tuned.
+  void _followPlayer() {
+    final id = _player?.now?.item.id;
+    if (id == null) return;
+    final i = _items.indexWhere((c) => c.id == id);
+    if (i >= 0 && i != _selected) {
+      setState(() => _selected = i);
+      _ensureVisible(i);
+    }
+  }
+
   @override
   void dispose() {
+    _player?.removeListener(_followPlayer);
     _pager?.dispose();
     _scroll.dispose();
     _focus.dispose();
@@ -140,8 +155,14 @@ class _LiveScreenState extends State<LiveScreen> {
       _play((_selected + 10).clamp(0, n - 1));
     } else if (k == LogicalKeyboardKey.pageUp) {
       _play((_selected - 10).clamp(0, n - 1));
+    } else if (digitOf(k) case final d? when context.player.now?.isLive ?? false) {
+      context.player.typeDigit(d);
     } else if (k == LogicalKeyboardKey.enter || k == LogicalKeyboardKey.numpadEnter) {
-      _play(_selected < 0 ? 0 : _selected, full: true);
+      if (context.player.zapDigits.isNotEmpty) {
+        context.player.commitDigits();
+      } else {
+        _play(_selected < 0 ? 0 : _selected, full: true);
+      }
     } else {
       return KeyEventResult.ignored;
     }
@@ -445,6 +466,7 @@ class _PreviewPane extends StatelessWidget {
                                 onDoubleTap: () => player.setView(PlayerView.full),
                                 child: player.engine.surface(),
                               ),
+                              Positioned(top: 10, right: 10, child: ZapDigits(player: player)),
                               if (player.reconnecting)
                                 Center(child: ReconnectBanner(player: player, compact: true))
                               else if (player.opening || player.buffering)

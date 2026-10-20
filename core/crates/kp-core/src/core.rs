@@ -385,6 +385,15 @@ impl Core {
         Ok(self.store().channels_page(source_id, kind, category, after_sort, limit)?)
     }
 
+    /// Backup streams for a live channel that stopped playing.
+    pub fn alternates(&self, item_id: i64) -> Result<Vec<ChannelRow>> {
+        let item = self.item(item_id)?;
+        if item.kind != ContentKind::Live {
+            return Ok(Vec::new());
+        }
+        Ok(self.store().alternates(&item.source_id, item.uid)?)
+    }
+
     pub fn search(&self, query: &str, kind: Option<ContentKind>, limit: u32) -> Result<Vec<ChannelRow>> {
         Ok(self.store().search(query, kind, limit)?)
     }

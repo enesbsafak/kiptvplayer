@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../design/tokens.dart';
@@ -9,6 +10,31 @@ import 'player_controller.dart';
 
 /// Shown over the video while a dropped live stream is being reopened:
 /// why it dropped, which attempt, a countdown, and a way out.
+/// The channel number being typed (number-key zapping), top right.
+class ZapDigits extends StatelessWidget {
+  const ZapDigits({super.key, required this.player});
+
+  final PlayerController player;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = player.zapDigits;
+    if (d.isEmpty) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: KdColors.bg2.withValues(alpha: 0.92),
+        border: Border.all(color: KdColors.accentAlpha(0.45)),
+        borderRadius: BorderRadius.circular(KdRadius.card),
+      ),
+      child: Text(
+        d,
+        style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w700, color: KdColors.accent2, fontFeatures: [FontFeature.tabularFigures()]),
+      ),
+    );
+  }
+}
+
 class ReconnectBanner extends StatefulWidget {
   const ReconnectBanner({super.key, required this.player, this.compact = false});
 
@@ -71,6 +97,10 @@ class _ReconnectBannerState extends State<ReconnectBanner> {
             '${p.reconnectAttempt}. deneme · $status',
             style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
           ),
+          if (p.backupName case final b?) ...[
+            const SizedBox(height: 4),
+            Text('Yedek yayın deneniyor: $b', style: const TextStyle(fontSize: KdType.small, color: KdColors.accent2)),
+          ],
           const SizedBox(height: 10),
           const KdIndeterminate(),
           if (!widget.compact) ...[
@@ -89,3 +119,20 @@ class _ReconnectBannerState extends State<ReconnectBanner> {
     );
   }
 }
+
+/// 0-9 from the top row or the numpad.
+int? digitOf(LogicalKeyboardKey k) {
+  const top = [
+    LogicalKeyboardKey.digit0, LogicalKeyboardKey.digit1, LogicalKeyboardKey.digit2, LogicalKeyboardKey.digit3, LogicalKeyboardKey.digit4,
+    LogicalKeyboardKey.digit5, LogicalKeyboardKey.digit6, LogicalKeyboardKey.digit7, LogicalKeyboardKey.digit8, LogicalKeyboardKey.digit9,
+  ];
+  const pad = [
+    LogicalKeyboardKey.numpad0, LogicalKeyboardKey.numpad1, LogicalKeyboardKey.numpad2, LogicalKeyboardKey.numpad3, LogicalKeyboardKey.numpad4,
+    LogicalKeyboardKey.numpad5, LogicalKeyboardKey.numpad6, LogicalKeyboardKey.numpad7, LogicalKeyboardKey.numpad8, LogicalKeyboardKey.numpad9,
+  ];
+  final i = top.indexOf(k);
+  if (i >= 0) return i;
+  final j = pad.indexOf(k);
+  return j >= 0 ? j : null;
+}
+

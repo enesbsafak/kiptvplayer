@@ -123,6 +123,11 @@ class FakeLibrary implements LibraryApi {
   Future<List<Item>> recentlyAdded(String sourceId, Kind kind, int limit) async =>
       (items[kind] ?? const []).take(limit).toList();
 
+  final Map<int, List<Item>> backups = {};
+
+  @override
+  Future<List<Item>> alternates(int itemId) async => backups[itemId] ?? const [];
+
   @override
   Future<List<Item>> favorites(String sourceId, Kind kind) async =>
       (items[kind] ?? const []).where((i) => favs.contains(i.id)).toList();
@@ -220,8 +225,10 @@ class FakeEngine implements PlayerEngine {
   Stream<bool> get buffering => bufferingCtl.stream;
   @override
   Stream<bool> get completed => completedCtl.stream;
+  final playingCtl = StreamController<bool>.broadcast();
+  int toggles = 0;
   @override
-  Stream<bool> get playing => const Stream.empty();
+  Stream<bool> get playing => playingCtl.stream;
   @override
   Stream<Duration> get position => const Stream.empty();
   @override
@@ -248,7 +255,7 @@ class FakeEngine implements PlayerEngine {
   @override
   Future<void> stop() async {}
   @override
-  Future<void> togglePause() async {}
+  Future<void> togglePause() async => toggles++;
   @override
   Future<void> seek(Duration to) async {}
   @override

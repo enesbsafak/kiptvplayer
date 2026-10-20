@@ -344,6 +344,11 @@ pub fn recently_added(source_id: String, kind: Kind, limit: u32) -> Result<Vec<I
     Ok(items(core()?.recently_added(&source_id, kind.into(), limit)?))
 }
 
+/// Backup streams of a live channel (same tvg-id or name), for failover.
+pub fn alternates(item_id: i64) -> Result<Vec<Item>> {
+    Ok(items(core()?.alternates(item_id)?))
+}
+
 pub fn favorites(source_id: String, kind: Kind) -> Result<Vec<Item>> {
     Ok(items(core()?.favorites(&source_id, kind.into())?))
 }

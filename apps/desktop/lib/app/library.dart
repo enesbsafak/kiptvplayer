@@ -57,6 +57,9 @@ abstract interface class LibraryApi {
   Future<List<rust.Item>> search(String query, {rust.Kind? kind, int limit});
   Future<List<rust.Item>> recentlyAdded(String sourceId, rust.Kind kind, int limit);
   Future<List<rust.Item>> favorites(String sourceId, rust.Kind kind);
+
+  /// Backup streams of a live channel (same tvg-id or name).
+  Future<List<rust.Item>> alternates(int itemId);
   Future<List<rust.Item>> recent(String sourceId, rust.Kind kind, int limit);
   Future<List<rust.ContinueItem>> continueWatching(String sourceId, int limit);
   Future<void> setFavorite(int itemId, bool on);
@@ -131,6 +134,8 @@ class RustLibrary implements LibraryApi {
     rust.Kind kind,
     int limit,
   ) => rust.recentlyAdded(sourceId: sourceId, kind: kind, limit: limit);
+  @override
+  Future<List<rust.Item>> alternates(int itemId) => rust.alternates(itemId: itemId);
   @override
   Future<List<rust.Item>> favorites(String sourceId, rust.Kind kind) =>
       rust.favorites(sourceId: sourceId, kind: kind);

@@ -101,4 +101,62 @@ void main() {
       expect(h.engine.opened, hasLength(1));
     });
   });
+
+  test('after two failed reopens the backup streams are tried, then the original', () {
+    fakeAsync((clock) {
+      final trtBackup = FakeLibrary.item(20, 'TRT 1 Yedek');
+      final lib = FakeLibrary()..backups[10] = [trtBackup];
+      final h = TestHarness(lib);
+      h.engine.failNextOpens = 3; // the original and its first two reopens
+      h.player.play(trt, Kind.live, queue: [trt, kanalD], view: PlayerView.full);
+      clock.flushMicrotasks();
+      // Waits of 1 and 2 s: reopens 1 and 2 retry the chosen stream.
+      clock.elapse(const Duration(seconds: 3));
+      clock.flushMicrotasks();
+      expect(h.engine.opened, List.filled(3, 'http://127.0.0.1/10.ts'));
+      expect(h.player.backupName, isNull);
+
+      clock.elapse(const Duration(seconds: 4)); // reopen 3: the backup
+      clock.flushMicrotasks();
+      expect(h.engine.opened.last, 'http://127.0.0.1/20.ts');
+      expect(h.player.reconnecting, isFalse, reason: 'the backup plays');
+      expect(h.player.backupName, 'TRT 1 Yedek');
+      expect(h.player.now!.queue.map((c) => c.id), [10, 11], reason: 'zapping still uses the list');
+    });
+  });
+
+  test('a channel without backups keeps retrying itself', () {
+    fakeAsync((clock) {
+      final h = TestHarness(FakeLibrary());
+      h.engine.failNextOpens = 4;
+      h.player.play(trt, Kind.live, queue: [trt], view: PlayerView.full);
+      clock.elapse(const Duration(seconds: 20));
+      clock.flushMicrotasks();
+      expect(h.engine.opened.toSet(), {'http://127.0.0.1/10.ts'});
+    });
+  });
+
+  test('typed digits tune to that channel number after a pause', () {
+    fakeAsync((clock) {
+      final h = TestHarness(FakeLibrary());
+      final list = [for (var i = 1; i <= 15; i++) FakeLibrary.item(100 + i, 'Kanal $i')];
+      h.player.play(list[0], Kind.live, queue: list, view: PlayerView.full);
+      clock.flushMicrotasks();
+      h.player.typeDigit(1);
+      h.player.typeDigit(2);
+      expect(h.player.zapDigits, '12');
+      clock.elapse(const Duration(milliseconds: 1000));
+      expect(h.player.now!.item.id, 101, reason: 'still waiting for more digits');
+      clock.elapse(const Duration(milliseconds: 600));
+      clock.flushMicrotasks();
+      expect(h.player.now!.item.id, 112);
+      expect(h.player.zapDigits, isEmpty);
+
+      h.player.typeDigit(9);
+      h.player.typeDigit(9);
+      h.player.commitDigits(); // Enter: no waiting; 99 is past the list
+      clock.flushMicrotasks();
+      expect(h.player.now!.item.id, 112);
+    });
+  });
 }

@@ -85,6 +85,10 @@ Future<List<Item>> recentlyAdded({
   limit: limit,
 );
 
+/// Backup streams of a live channel (same tvg-id or name), for failover.
+Future<List<Item>> alternates({required PlatformInt64 itemId}) =>
+    RustLib.instance.api.crateApiLibraryAlternates(itemId: itemId);
+
 Future<List<Item>> favorites({required String sourceId, required Kind kind}) =>
     RustLib.instance.api.crateApiLibraryFavorites(
       sourceId: sourceId,
