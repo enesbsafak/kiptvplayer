@@ -205,6 +205,8 @@ pub struct ItemRow {
     pub container: Option<String>,
     pub rating: Option<f32>,
     pub year: Option<i32>,
+    /// Hours to move guide times by (M3U `tvg-shift`).
+    pub tvg_shift: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -229,7 +231,7 @@ pub struct EpgRow {
 
 const CHANNEL_ROW_COLS: &str = "id, uid, name, logo, chno, adult, order_key, rating, year, catchup IS NOT NULL";
 const ITEM_COLS: &str = "id, source_id, uid, kind, name, logo, url, tvg_id, catchup, catchup_days, catchup_source, \
-     user_agent, referrer, ext_id, container, rating, year";
+     user_agent, referrer, ext_id, container, rating, year, tvg_shift";
 
 pub struct Store {
     conn: Connection,
@@ -767,6 +769,15 @@ impl Store {
         Ok((out, fetched))
     }
 
+    /// A source's live channels, for matching against its XMLTV guide.
+    pub fn guide_channels(&self, source_id: &str) -> Result<Vec<crate::guide::GuideChannel>> {
+        let mut stmt = self.conn.prepare("SELECT uid, tvg_id, name FROM channel WHERE source_id = ?1 AND kind = 0")?;
+        let rows = stmt.query_map([source_id], |r| {
+            Ok(crate::guide::GuideChannel { uid: r.get(0)?, tvg_id: r.get(1)?, name: r.get(2)? })
+        })?;
+        Ok(rows.collect::<std::result::Result<_, _>>()?)
+    }
+
     /// A cached web response no older than [max_age] seconds.
     pub fn cache_get(&self, key: &str, max_age: i64, now: i64) -> Result<Option<String>> {
         Ok(self
@@ -872,6 +883,7 @@ fn item_row(r: &Row<'_>) -> rusqlite::Result<ItemRow> {
         container: r.get(14)?,
         rating: r.get(15)?,
         year: r.get(16)?,
+        tvg_shift: r.get(17)?,
     })
 }
 

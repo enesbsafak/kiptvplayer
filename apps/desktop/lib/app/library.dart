@@ -7,6 +7,7 @@ export '../src/rust/api/library.dart'
         Category,
         ContinueItem,
         EpisodeInfo,
+        GuideInfo,
         Item,
         ItemDetail,
         Kind,
@@ -40,6 +41,10 @@ abstract interface class LibraryApi {
   Future<List<rust.SourceInfo>> sources();
   Stream<rust.SyncEvent> addSource(rust.NewSourceInput input);
   Stream<rust.SyncEvent> syncSource(String sourceId);
+
+  /// Downloads an M3U source's XMLTV guide again; the result's `guide`
+  /// tells how it went.
+  Future<rust.SourceInfo> refreshGuide(String sourceId);
   Future<void> removeSource(String sourceId);
   Future<List<rust.Category>> categories(String sourceId, rust.Kind kind);
   Future<List<rust.Item>> page(
@@ -92,6 +97,8 @@ class RustLibrary implements LibraryApi {
   @override
   Stream<rust.SyncEvent> syncSource(String sourceId) =>
       rust.syncSource(sourceId: sourceId);
+  @override
+  Future<rust.SourceInfo> refreshGuide(String sourceId) => rust.refreshGuide(sourceId: sourceId);
   @override
   Future<void> removeSource(String sourceId) =>
       rust.removeSource(sourceId: sourceId);

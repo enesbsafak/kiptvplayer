@@ -85,6 +85,20 @@ pub struct SourceInfo {
     pub live_count: u64,
     pub movie_count: u64,
     pub series_count: u64,
+    /// XMLTV guide URL (M3U), from the playlist header or the user.
+    pub epg_url: Option<String>,
+    pub guide: Option<GuideInfo>,
+}
+
+/// The last XMLTV guide download of an M3U source.
+#[derive(Debug, Clone)]
+pub struct GuideInfo {
+    pub ok: bool,
+    pub programmes: u64,
+    pub matched: u64,
+    pub channels: u64,
+    pub error: Option<String>,
+    pub at: i64,
 }
 
 #[derive(Debug, Clone)]
@@ -96,6 +110,8 @@ pub struct NewSourceInput {
     pub password: Option<String>,
     pub user_agent: Option<String>,
     pub insecure_tls: bool,
+    /// M3U only: an XMLTV guide URL, when the playlist announces none.
+    pub epg_url: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -213,7 +229,17 @@ fn items(rows: Vec<ChannelRow>) -> Vec<Item> {
 }
 
 fn source_info(core: &Core, s: SourceRow) -> Result<SourceInfo> {
+    let guide = core.guide_status(&s.id)?.map(|g| GuideInfo {
+        ok: g.ok,
+        programmes: g.programmes,
+        matched: g.matched,
+        channels: g.channels,
+        error: g.error,
+        at: g.at,
+    });
     Ok(SourceInfo {
+        epg_url: s.epg_url.clone(),
+        guide,
         live_count: core.count(&s.id, ContentKind::Live)?,
         movie_count: core.count(&s.id, ContentKind::Movie)?,
         series_count: core.count(&s.id, ContentKind::Series)?,
@@ -254,7 +280,7 @@ pub fn add_source(input: NewSourceInput, sink: StreamSink<SyncEvent>) -> Result<
         url: input.url,
         username: input.username,
         password: input.password,
-        epg_url: None,
+        epg_url: input.epg_url.filter(|u| !u.trim().is_empty()),
         user_agent: input.user_agent,
         insecure_tls: input.insecure_tls,
     };
@@ -266,6 +292,15 @@ pub fn add_source(input: NewSourceInput, sink: StreamSink<SyncEvent>) -> Result<
         Err(e) => sink.add(SyncEvent::Failed { message: e.to_string() }),
     };
     Ok(())
+}
+
+/// Downloads the source's XMLTV guide again. Errors are also kept in the
+/// returned source's `guide`.
+pub fn refresh_guide(source_id: String) -> Result<SourceInfo> {
+    let core = core()?;
+    let _ = core.refresh_guide(&source_id);
+    let s = core.sources()?.into_iter().find(|s| s.id == source_id).ok_or_else(|| anyhow!("Kaynak bulunamadı"))?;
+    source_info(core, s)
 }
 
 pub fn sync_source(source_id: String, sink: StreamSink<SyncEvent>) -> Result<()> {

@@ -65,6 +65,13 @@ Future<void> main(List<String> args) async {
   }
   final player = PlayerController(engine, library, perf);
   final epg = EpgCache(library);
+  var guideVersion = state.guideVersion;
+  state.addListener(() {
+    if (state.guideVersion != guideVersion) {
+      guideVersion = state.guideVersion;
+      epg.clear();
+    }
+  });
 
   final boundary = GlobalKey();
   runApp(

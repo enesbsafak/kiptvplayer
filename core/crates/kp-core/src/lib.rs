@@ -7,12 +7,14 @@ pub mod adult;
 pub mod catalog;
 pub mod catchup;
 pub mod core;
+pub mod guide;
 pub mod m3u;
 pub mod region;
 pub mod secret;
 pub mod store;
 pub mod text;
 pub mod tmdb;
+pub mod xmltv;
 pub mod xtream;
 
 pub use catalog::{Catalog, CategoryRecord, ChannelRecord, ContentKind, XtreamLists};

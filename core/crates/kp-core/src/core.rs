@@ -4,13 +4,15 @@
 //! the UI thread. Network work happens in `add_source` / `sync` / detail
 //! fetches; every list call reads SQLite only, so screens paint instantly.
 
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde_json::Value;
 
 use crate::catalog::{Catalog, ContentKind, XtreamLists};
+use crate::guide::{Guide, GuideError};
 use crate::secret::{password_key, SecretStore};
 use crate::tmdb::{Media, Tmdb, TmdbDetail, TmdbEpisode, TmdbError};
 use crate::store::{CategoryRow, ChannelRow, EpgRow, ItemRow, ProgressRow, SourceRow, Store, StoreError};
@@ -24,6 +26,8 @@ pub enum CoreError {
     Store(#[from] StoreError),
     #[error("{0}")]
     Tmdb(#[from] TmdbError),
+    #[error("{0}")]
+    Guide(#[from] GuideError),
     #[error("{0}")]
     Message(String),
 }
@@ -135,6 +139,21 @@ const EPG_TTL_SECS: i64 = 30 * 60;
 pub struct Core {
     store: Mutex<Store>,
     secrets: Box<dyn SecretStore>,
+    /// Where XMLTV guides live (`guide-<source>.sqlite`), beside the library.
+    dir: PathBuf,
+    /// Open guides by source id.
+    guides: Mutex<HashMap<String, Option<Guide>>>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct GuideStatus {
+    pub ok: bool,
+    /// Programmes stored, or the error.
+    pub programmes: u64,
+    pub matched: u64,
+    pub channels: u64,
+    pub error: Option<String>,
+    pub at: i64,
 }
 
 pub fn now() -> i64 {
@@ -143,11 +162,17 @@ pub fn now() -> i64 {
 
 impl Core {
     pub fn open(db_path: impl AsRef<Path>, secrets: Box<dyn SecretStore>) -> Result<Self> {
-        Ok(Core { store: Mutex::new(Store::open(db_path)?), secrets })
+        let db_path = db_path.as_ref();
+        let dir = db_path.parent().map(Path::to_path_buf).unwrap_or_else(|| PathBuf::from("."));
+        Ok(Core { store: Mutex::new(Store::open(db_path)?), secrets, dir, guides: Mutex::default() })
     }
 
+    /// Tests: the library in memory, guides in a fresh temp folder.
     pub fn open_in_memory(secrets: Box<dyn SecretStore>) -> Result<Self> {
-        Ok(Core { store: Mutex::new(Store::open_in_memory()?), secrets })
+        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+        let dir = std::env::temp_dir().join(format!("kp-core-{}-{nanos}", std::process::id()));
+        std::fs::create_dir_all(&dir).map_err(|e| msg(e.to_string()))?;
+        Ok(Core { store: Mutex::new(Store::open_in_memory()?), secrets, dir, guides: Mutex::default() })
     }
 
     fn store(&self) -> std::sync::MutexGuard<'_, Store> {
@@ -216,7 +241,62 @@ impl Core {
     pub fn delete_source(&self, id: &str) -> Result<()> {
         self.store().delete_source(id)?;
         self.secrets.delete(&password_key(id));
+        let mut guides = self.guides.lock().unwrap_or_else(|p| p.into_inner());
+        guides.remove(id);
+        let _ = std::fs::remove_file(self.guide_path(id));
         Ok(())
+    }
+
+    // ---- XMLTV guide ------------------------------------------------------
+
+    fn guide_path(&self, source_id: &str) -> PathBuf {
+        self.dir.join(format!("guide-{source_id}.sqlite"))
+    }
+
+    /// Downloads the source's XMLTV guide (`url-tvg` or the URL the user
+    /// gave) and swaps it in. The library is never locked meanwhile.
+    pub fn refresh_guide(&self, source_id: &str) -> Result<GuideStatus> {
+        let source = self.store().source(source_id)?.ok_or_else(|| msg("Kaynak bulunamadı"))?;
+        let Some(url) = source.epg_url.clone().filter(|u| !u.trim().is_empty()) else {
+            return Err(msg("Bu kaynak için yayın akışı adresi yok"));
+        };
+        let t = now();
+        let result = (|| -> Result<crate::guide::BuildStats> {
+            let input = open_guide(&url, &source)?;
+            let channels = self.store().guide_channels(source_id)?;
+            let path = self.guide_path(source_id);
+            let stats = crate::guide::build(&path, input, &channels, t)?;
+            let mut guides = self.guides.lock().unwrap_or_else(|p| p.into_inner());
+            guides.remove(source_id); // closes the old file so it can be replaced
+            crate::guide::install(&path)?;
+            Ok(stats)
+        })();
+        let status = match result {
+            Ok(s) => GuideStatus { ok: true, programmes: s.programmes, matched: s.matched, channels: s.channels, error: None, at: t },
+            Err(e) => GuideStatus { ok: false, programmes: 0, matched: 0, channels: 0, error: Some(e.to_string()), at: t },
+        };
+        self.store().set_setting(&format!("guide:{source_id}"), &encode_guide_status(&status))?;
+        if let Some(e) = &status.error {
+            return Err(msg(e.clone()));
+        }
+        Ok(status)
+    }
+
+    /// The last guide download's outcome; None if there never was one.
+    pub fn guide_status(&self, source_id: &str) -> Result<Option<GuideStatus>> {
+        Ok(self.store().setting(&format!("guide:{source_id}"))?.and_then(|s| decode_guide_status(&s)))
+    }
+
+    /// Guide programmes for [item] overlapping [from]..[to], with its tvg-shift.
+    fn guide_programmes(&self, item: &ItemRow, from: i64, to: i64, limit: u32) -> Result<Vec<EpgRow>> {
+        let mut guides = self.guides.lock().unwrap_or_else(|p| p.into_inner());
+        if !guides.contains_key(&item.source_id) {
+            let g = Guide::open(&self.guide_path(&item.source_id))?;
+            guides.insert(item.source_id.clone(), g);
+        }
+        let Some(Some(guide)) = guides.get(&item.source_id) else { return Ok(Vec::new()) };
+        let shift = (item.tvg_shift.unwrap_or(0.0) * 3600.0).round() as i64;
+        Ok(guide.programmes(item.uid, from, to, shift, limit)?)
     }
 
     /// Downloads the source's catalog and swaps it in atomically. Readers
@@ -227,16 +307,26 @@ impl Core {
         match result {
             Ok((catalog, account)) => {
                 on_stage(SyncStage::Saving);
-                let mut store = self.store();
-                store.replace_catalog(source_id, &catalog, now())?;
-                if let Some(a) = account {
-                    store.set_source_status(source_id, None, a.expires_at, a.max_connections, a.server_timezone.as_deref())?;
+                let summary = {
+                    let mut store = self.store();
+                    store.replace_catalog(source_id, &catalog, now())?;
+                    if let Some(a) = account {
+                        store.set_source_status(source_id, None, a.expires_at, a.max_connections, a.server_timezone.as_deref())?;
+                    }
+                    SyncSummary {
+                        live: store.count_by_kind(source_id, ContentKind::Live)?,
+                        movies: store.count_by_kind(source_id, ContentKind::Movie)?,
+                        series: store.count_by_kind(source_id, ContentKind::Series)?,
+                    }
+                };
+                // M3U guides come from XMLTV. A guide failure is recorded in
+                // its status but never fails the source: channels still play.
+                let has_guide = self.store().source(source_id)?.is_some_and(|s| s.kind != "xtream" && s.epg_url.is_some());
+                if has_guide {
+                    on_stage(SyncStage::Downloading { what: "Yayın akışı".into() });
+                    let _ = self.refresh_guide(source_id);
                 }
-                Ok(SyncSummary {
-                    live: store.count_by_kind(source_id, ContentKind::Live)?,
-                    movies: store.count_by_kind(source_id, ContentKind::Movie)?,
-                    series: store.count_by_kind(source_id, ContentKind::Series)?,
-                })
+                Ok(summary)
             }
             Err(e) => {
                 self.store().set_source_status(source_id, Some(&e.to_string()), None, None, None)?;
@@ -596,7 +686,15 @@ impl Core {
                 self.store().replace_epg_short(&item.source_id, item.uid, &epg_rows(table), t, true)?;
             }
         }
-        let rows = self.store().epg_past(&item.source_id, item.uid, t - i64::from(days) * 86_400, t)?;
+        let from = t - i64::from(days) * 86_400;
+        let rows = if xtream {
+            self.store().epg_past(&item.source_id, item.uid, from, t)?
+        } else {
+            // M3U: the XMLTV guide; the archive covers the whole window.
+            let mut past: Vec<EpgRow> = self.guide_programmes(&item, from, t, 5000)?.into_iter().filter(|r| r.stop <= t).collect();
+            past.reverse();
+            past
+        };
         Ok(rows
             .into_iter()
             // Xtream says per programme; M3U archives cover the whole window.
@@ -632,6 +730,9 @@ impl Core {
     pub fn epg(&self, item_id: i64) -> Result<Vec<Programme>> {
         let item = self.item(item_id)?;
         let t = now();
+        if !item.url.starts_with("xtream:") {
+            return Ok(self.guide_programmes(&item, t, t + 2 * 86_400, 8)?.into_iter().map(programme).collect());
+        }
         let (cached, fetched) = self.store().epg_short(&item.source_id, item.uid, t)?;
         let fresh = fetched.map(|f| t - f < EPG_TTL_SECS).unwrap_or(false);
         if fresh || !item.url.starts_with("xtream:live:") {
@@ -646,6 +747,58 @@ impl Core {
         let mut store = self.store();
         store.replace_epg_short(&item.source_id, item.uid, &epg_rows(entries), t, false)?;
         Ok(store.epg_short(&item.source_id, item.uid, t)?.0.into_iter().map(programme).collect())
+    }
+}
+
+/// A guide download as a decompressed byte stream: a local file or a URL.
+fn open_guide(url: &str, source: &SourceRow) -> Result<Box<dyn std::io::BufRead>> {
+    let url = url.trim();
+    let io = |e: std::io::Error| msg(format!("Yayın akışı okunamadı: {e}"));
+    if !(url.starts_with("http://") || url.starts_with("https://")) {
+        return crate::xmltv::decompressing(std::fs::File::open(url).map_err(io)?).map_err(io);
+    }
+    let http = reqwest::blocking::Client::builder()
+        // Big guides on slow panels: generous, but not endless.
+        .timeout(Duration::from_secs(600))
+        .connect_timeout(Duration::from_secs(15))
+        .user_agent(source.user_agent.as_deref().unwrap_or(crate::DEFAULT_USER_AGENT))
+        .danger_accept_invalid_certs(source.insecure_tls)
+        .build()
+        .map_err(|e| msg(e.to_string()))?;
+    let resp = http.get(url).send().map_err(|e| msg(format!("Yayın akışı indirilemedi: {}", strip_query(&e.to_string()))))?;
+    if !resp.status().is_success() {
+        return Err(msg(format!("Yayın akışı indirilemedi: HTTP {}", resp.status().as_u16())));
+    }
+    crate::xmltv::decompressing(resp).map_err(io)
+}
+
+fn encode_guide_status(s: &GuideStatus) -> String {
+    match &s.error {
+        None => format!("ok|{}|{}|{}|{}", s.programmes, s.matched, s.channels, s.at),
+        Some(e) => format!("err|{}|{}", s.at, e.replace('|', "/")),
+    }
+}
+
+fn decode_guide_status(s: &str) -> Option<GuideStatus> {
+    let parts: Vec<&str> = s.splitn(5, '|').collect();
+    match parts.as_slice() {
+        ["ok", p, m, c, at] => Some(GuideStatus {
+            ok: true,
+            programmes: p.parse().ok()?,
+            matched: m.parse().ok()?,
+            channels: c.parse().ok()?,
+            error: None,
+            at: at.parse().ok()?,
+        }),
+        ["err", at, rest @ ..] => Some(GuideStatus {
+            ok: false,
+            programmes: 0,
+            matched: 0,
+            channels: 0,
+            error: Some(rest.join("|")),
+            at: at.parse().ok()?,
+        }),
+        _ => None,
     }
 }
 

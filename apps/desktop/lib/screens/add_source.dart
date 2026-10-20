@@ -29,6 +29,7 @@ class _AddSourceFormState extends State<AddSourceForm> {
   final _user = TextEditingController();
   final _pass = TextEditingController();
   final _agent = TextEditingController();
+  final _epg = TextEditingController();
   bool _insecure = false;
   bool _advanced = false;
 
@@ -42,7 +43,7 @@ class _AddSourceFormState extends State<AddSourceForm> {
   @override
   void dispose() {
     _sub?.cancel();
-    for (final c in [_name, _url, _user, _pass, _agent]) {
+    for (final c in [_name, _url, _user, _pass, _agent, _epg]) {
       c.dispose();
     }
     super.dispose();
@@ -75,6 +76,7 @@ class _AddSourceFormState extends State<AddSourceForm> {
       password: _type == _Type.xtream ? _pass.text : null,
       userAgent: _agent.text.trim().isEmpty ? null : _agent.text.trim(),
       insecureTls: _insecure,
+      epgUrl: _type != _Type.xtream && _epg.text.trim().isNotEmpty ? _epg.text.trim() : null,
     );
     setState(() {
       _error = null;
@@ -180,6 +182,11 @@ class _AddSourceFormState extends State<AddSourceForm> {
         ),
         if (_advanced) ...[
           _Row(label: 'User-Agent', child: KdInput(controller: _agent, hint: 'Sağlayıcı isterse', mono: true)),
+          if (_type != _Type.xtream)
+            _Row(
+              label: 'Yayın akışı (XMLTV)',
+              child: KdInput(controller: _epg, hint: 'Liste bildirmiyorsa: https://…/epg.xml.gz', mono: true),
+            ),
           _Row(
             label: '',
             child: KdCheck(

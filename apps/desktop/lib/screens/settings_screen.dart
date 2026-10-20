@@ -142,6 +142,14 @@ class _SourceRowState extends State<_SourceRow> {
   String? _stage;
   StreamSubscription<SyncEvent>? _sub;
 
+  Future<void> _refreshGuide() async {
+    setState(() => _stage = 'Yayın akışı indiriliyor…');
+    await context.library.refreshGuide(widget.source.id).catchError((_) => widget.source);
+    if (!mounted) return;
+    setState(() => _stage = null);
+    await context.app.guideUpdated(); // also shows a failed attempt
+  }
+
   @override
   void dispose() {
     _sub?.cancel();
@@ -238,9 +246,14 @@ class _SourceRowState extends State<_SourceRow> {
                   const SizedBox(height: 4),
                   Text(s.lastError!, style: const TextStyle(fontSize: KdType.chip, color: KdColors.err)),
                 ],
+                if (!s.isXtream && _stage == null) ...[const SizedBox(height: 4), _GuideLine(source: s)],
               ],
             ),
           ),
+          if (!s.isXtream && s.epgUrl != null) ...[
+            KdButton(label: 'Yayın akışı', icon: LucideIcons.calendarSync, onPressed: _stage == null ? _refreshGuide : null),
+            const SizedBox(width: 6),
+          ],
           if (!widget.active) KdButton(label: 'Etkinleştir', onPressed: () => context.app.selectSource(s.id)),
           const SizedBox(width: 6),
           KdButton(label: 'Eşitle', icon: LucideIcons.refreshCw, onPressed: _stage == null ? _sync : null),
@@ -250,6 +263,38 @@ class _SourceRowState extends State<_SourceRow> {
       ),
     );
   }
+}
+
+/// How an M3U source's XMLTV guide is doing, in one line.
+class _GuideLine extends StatelessWidget {
+  const _GuideLine({required this.source});
+
+  final SourceInfo source;
+
+  @override
+  Widget build(BuildContext context) {
+    final g = source.guide;
+    final (text, color) = switch ((source.epgUrl, g)) {
+      (null, _) => ('Yayın akışı yok: liste bir XMLTV adresi bildirmiyor.', KdColors.muted),
+      (_, null) => ('Yayın akışı henüz indirilmedi.', KdColors.muted),
+      (_, final g?) when !g.ok => ('Yayın akışı alınamadı: ${g.error ?? ''}', KdColors.err),
+      (_, final g?) => (
+          'Yayın akışı: ${g.matched}/${g.channels} kanal eşleşti · ${_count(g.programmes.toInt())} program · ${_ago(g.at)}',
+          g.matched == BigInt.zero ? KdColors.warn : KdColors.muted,
+        ),
+    };
+    return Text(text, style: TextStyle(fontSize: KdType.chip, color: color));
+  }
+}
+
+String _count(int n) => n >= 1000 ? '${(n / 1000).toStringAsFixed(n >= 10000 ? 0 : 1).replaceAll('.', ',')} bin' : '$n';
+
+String _ago(int unixSecs) {
+  final d = DateTime.now().difference(DateTime.fromMillisecondsSinceEpoch(unixSecs * 1000));
+  if (d.inMinutes < 1) return 'az önce';
+  if (d.inHours < 1) return '${d.inMinutes} dk önce';
+  if (d.inDays < 1) return '${d.inHours} sa önce';
+  return '${d.inDays} gün önce';
 }
 
 String _host(String url) {

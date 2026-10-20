@@ -113,6 +113,13 @@ class EpgCache extends ChangeNotifier {
     _pump();
   }
 
+  /// Drops everything: a new guide was installed.
+  void clear() {
+    _data.clear();
+    _withArchive.clear();
+    notifyListeners();
+  }
+
   /// Forces a refetch (e.g. the programme just ended).
   void refresh(int itemId) {
     final archive = _withArchive.remove(itemId);

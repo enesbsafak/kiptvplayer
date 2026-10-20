@@ -129,3 +129,50 @@ fn tmdb_enriches_films_and_series() {
     assert!(core.tmdb_for(movie.id).unwrap().is_some());
     assert!(t.elapsed().as_millis() < 50, "served from cache");
 }
+
+#[test]
+#[ignore = "needs tools/mock-iptv running"]
+fn m3u_with_xmltv_guide_and_catchup() {
+    let core = Core::open_in_memory(Box::new(MemorySecrets::default())).unwrap();
+    let t = Instant::now();
+    let (source, summary) = core
+        .add_source(
+            NewSource {
+                kind: SourceKind::M3u,
+                name: "M3U".into(),
+                url: format!("{}/playlist.m3u?n=120", mock_url()),
+                username: None,
+                password: None,
+                epg_url: None, // announced by the playlist's url-tvg header
+                user_agent: None,
+                insecure_tls: false,
+            },
+            &|s| println!("stage: {s:?}"),
+        )
+        .unwrap();
+    println!("m3u add + guide: {} ms", t.elapsed().as_millis());
+    assert_eq!(summary.live, 120);
+    let status = core.guide_status(&source.id).unwrap().expect("guide downloaded during sync");
+    assert!(status.ok, "{status:?}");
+    assert_eq!((status.matched, status.channels), (120, 120), "tvg-id and name matches");
+    assert!(status.programmes > 120 * 100);
+
+    let channels = core.page(&source.id, ContentKind::Live, None, None, 200).unwrap();
+    let by_name = |n: &str| channels.iter().find(|c| c.name == n).unwrap().id;
+    let now_next = core.epg(by_name("Kanal 1")).unwrap();
+    let t = kp_core::core::now();
+    assert!(now_next[0].start <= t && now_next[0].stop > t, "current programme first");
+    assert!(!core.epg(by_name("Kanal 9")).unwrap().is_empty(), "no tvg-id: matched by name");
+
+    // Kanal 0 has a 3-day append-style archive.
+    let past = core.archive(by_name("Kanal 0")).unwrap();
+    assert!(past.len() > 48, "{}", past.len());
+    let replay = core.catchup(by_name("Kanal 0"), past[0].start, past[0].stop).unwrap();
+    assert!(replay.url.contains(&format!("?utc={}&lutc=", past[0].start)), "{}", replay.url);
+    assert!(core.archive(by_name("Kanal 1")).unwrap().is_empty(), "no archive without catchup");
+
+    // A refresh swaps the guide while it is open.
+    core.refresh_guide(&source.id).unwrap();
+    assert!(!core.epg(by_name("Kanal 1")).unwrap().is_empty());
+    core.delete_source(&source.id).unwrap();
+}

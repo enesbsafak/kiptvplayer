@@ -81,3 +81,57 @@ fn ingest_and_search_150k() {
     assert!(parse_ms < 1500, "parse budget exceeded: {parse_ms} ms");
     assert!(search_us.iter().all(|(_, us, _)| *us < 50_000), "search budget exceeded");
 }
+
+/// M3 budget: a ~200 MB XMLTV guide ingests in < 20 s (peak memory is
+/// checked from outside: tools/measure-guide.ps1).
+#[test]
+#[ignore = "writes a 200 MB file; run with --ignored --nocapture"]
+fn xmltv_200mb_ingest() {
+    use std::io::Write;
+    let dir = tempfile::tempdir().unwrap();
+    let xml = dir.path().join("big.xml");
+    let now = kp_core::core::now();
+    let fmt = |s: i64| chrono::DateTime::from_timestamp(s, 0).unwrap().format("%Y%m%d%H%M%S +0300").to_string();
+    {
+        let mut w = std::io::BufWriter::new(std::fs::File::create(&xml).unwrap());
+        writeln!(w, "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<tv>").unwrap();
+        for c in 0..2000 {
+            writeln!(w, "<channel id=\"ch{c}.tr\"><display-name>Kanal {c}</display-name></channel>").unwrap();
+        }
+        let start = now - 7 * 86_400;
+        for c in 0..2000 {
+            for k in 0..(10 * 48) {
+                let s = start + k * 1800;
+                writeln!(
+                    w,
+                    "<programme start=\"{}\" stop=\"{}\" channel=\"ch{c}.tr\"><title lang=\"tr\">Program {k} &amp; Haber</title>\
+                     <desc lang=\"tr\">Kanal {c} için {k}. programın uzunca bir açıklaması; yayın akışı testleri için.</desc></programme>",
+                    fmt(s),
+                    fmt(s + 1800)
+                )
+                .unwrap();
+            }
+        }
+        writeln!(w, "</tv>").unwrap();
+    }
+    let size = std::fs::metadata(&xml).unwrap().len();
+    let channels: Vec<_> = (0..2000)
+        .map(|c| kp_core::guide::GuideChannel { uid: c, tvg_id: Some(format!("ch{c}.tr")), name: format!("Kanal {c}") })
+        .collect();
+    let path = dir.path().join("guide-s.sqlite");
+    let t = Instant::now();
+    let input = kp_core::xmltv::decompressing(std::fs::File::open(&xml).unwrap()).unwrap();
+    let stats = kp_core::guide::build(&path, input, &channels, now).unwrap();
+    kp_core::guide::install(&path).unwrap();
+    let took = t.elapsed();
+    println!(
+        "xmltv: {} MB, {} programmes, {} matched, ingest {} ms, guide file {} MB",
+        size / 1_000_000,
+        stats.programmes,
+        stats.matched,
+        took.as_millis(),
+        std::fs::metadata(&path).unwrap().len() / 1_000_000
+    );
+    assert!(size > 150_000_000);
+    assert!(took.as_secs() < 20, "budget: < 20 s");
+}

@@ -113,6 +113,17 @@ class Automation {
         await shot('series-detail', wait: const Duration(milliseconds: 2500));
       }
     }
+    // An M3U source with an XMLTV guide: its EPG grid and status line.
+    if (mock != null) {
+      final m3u = NewSourceInput(isXtream: false, name: 'M3U listesi', url: '$mock/playlist.m3u?n=60', insecureTls: false);
+      await for (final e in app.library.addSource(m3u)) {
+        if (e is SyncEvent_Done) await app.sourceChanged(e.source);
+      }
+      app.go(Section.guide);
+      await shot('guide-m3u', wait: const Duration(milliseconds: 2500));
+      app.go(Section.settings);
+      await shot('settings-m3u', wait: const Duration(milliseconds: 1500));
+    }
     await windowManager.destroy();
   }
 

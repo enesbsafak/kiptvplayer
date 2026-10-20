@@ -10,7 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
@@ -31,6 +31,11 @@ Future<List<SourceInfo>> listSources() =>
 /// always ends with `Done` or `Failed`.
 Stream<SyncEvent> addSource({required NewSourceInput input}) =>
     RustLib.instance.api.crateApiLibraryAddSource(input: input);
+
+/// Downloads the source's XMLTV guide again. Errors are also kept in the
+/// returned source's `guide`.
+Future<SourceInfo> refreshGuide({required String sourceId}) =>
+    RustLib.instance.api.crateApiLibraryRefreshGuide(sourceId: sourceId);
 
 Stream<SyncEvent> syncSource({required String sourceId}) =>
     RustLib.instance.api.crateApiLibrarySyncSource(sourceId: sourceId);
@@ -306,6 +311,46 @@ class EpisodeInfo {
           progressMs == other.progressMs;
 }
 
+/// The last XMLTV guide download of an M3U source.
+class GuideInfo {
+  final bool ok;
+  final BigInt programmes;
+  final BigInt matched;
+  final BigInt channels;
+  final String? error;
+  final PlatformInt64 at;
+
+  const GuideInfo({
+    required this.ok,
+    required this.programmes,
+    required this.matched,
+    required this.channels,
+    this.error,
+    required this.at,
+  });
+
+  @override
+  int get hashCode =>
+      ok.hashCode ^
+      programmes.hashCode ^
+      matched.hashCode ^
+      channels.hashCode ^
+      error.hashCode ^
+      at.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GuideInfo &&
+          runtimeType == other.runtimeType &&
+          ok == other.ok &&
+          programmes == other.programmes &&
+          matched == other.matched &&
+          channels == other.channels &&
+          error == other.error &&
+          at == other.at;
+}
+
 class Item {
   final PlatformInt64 id;
   final PlatformInt64 uid;
@@ -453,6 +498,9 @@ class NewSourceInput {
   final String? userAgent;
   final bool insecureTls;
 
+  /// M3U only: an XMLTV guide URL, when the playlist announces none.
+  final String? epgUrl;
+
   const NewSourceInput({
     required this.isXtream,
     required this.name,
@@ -461,6 +509,7 @@ class NewSourceInput {
     this.password,
     this.userAgent,
     required this.insecureTls,
+    this.epgUrl,
   });
 
   @override
@@ -471,7 +520,8 @@ class NewSourceInput {
       username.hashCode ^
       password.hashCode ^
       userAgent.hashCode ^
-      insecureTls.hashCode;
+      insecureTls.hashCode ^
+      epgUrl.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -484,7 +534,8 @@ class NewSourceInput {
           username == other.username &&
           password == other.password &&
           userAgent == other.userAgent &&
-          insecureTls == other.insecureTls;
+          insecureTls == other.insecureTls &&
+          epgUrl == other.epgUrl;
 }
 
 class Playback {
@@ -614,6 +665,10 @@ class SourceInfo {
   final BigInt movieCount;
   final BigInt seriesCount;
 
+  /// XMLTV guide URL (M3U), from the playlist header or the user.
+  final String? epgUrl;
+  final GuideInfo? guide;
+
   const SourceInfo({
     required this.id,
     required this.isXtream,
@@ -627,6 +682,8 @@ class SourceInfo {
     required this.liveCount,
     required this.movieCount,
     required this.seriesCount,
+    this.epgUrl,
+    this.guide,
   });
 
   @override
@@ -642,7 +699,9 @@ class SourceInfo {
       maxConnections.hashCode ^
       liveCount.hashCode ^
       movieCount.hashCode ^
-      seriesCount.hashCode;
+      seriesCount.hashCode ^
+      epgUrl.hashCode ^
+      guide.hashCode;
 
   @override
   bool operator ==(Object other) =>
@@ -660,7 +719,9 @@ class SourceInfo {
           maxConnections == other.maxConnections &&
           liveCount == other.liveCount &&
           movieCount == other.movieCount &&
-          seriesCount == other.seriesCount;
+          seriesCount == other.seriesCount &&
+          epgUrl == other.epgUrl &&
+          guide == other.guide;
 }
 
 @freezed

@@ -35,9 +35,11 @@ class FakeLibrary implements LibraryApi {
   final Map<int, TmdbInfo> tmdb = {};
   final Map<int, List<TmdbEpisodeInfo>> tmdbEpisodes = {};
 
-  static SourceInfo source({String id = 's1', String name = 'Demo', String? error}) => SourceInfo(
+  static SourceInfo source({String id = 's1', String name = 'Demo', String? error, bool m3u = false, GuideInfo? guide}) => SourceInfo(
     id: id,
-    isXtream: true,
+    isXtream: !m3u,
+    epgUrl: m3u ? 'http://127.0.0.1:8089/xmltv.xml.gz' : null,
+    guide: guide,
     name: name,
     url: 'http://127.0.0.1:8089',
     username: 'demo',
@@ -71,6 +73,32 @@ class FakeLibrary implements LibraryApi {
   @override
   Stream<SyncEvent> syncSource(String sourceId) async* {
     yield SyncEvent.done(source: _sources.firstWhere((s) => s.id == sourceId));
+  }
+
+  /// What the next guide refresh reports.
+  GuideInfo? nextGuide;
+  final List<String> guideRefreshes = [];
+
+  @override
+  Future<SourceInfo> refreshGuide(String sourceId) async {
+    guideRefreshes.add(sourceId);
+    final i = _sources.indexWhere((s) => s.id == sourceId);
+    final s = _sources[i];
+    final updated = SourceInfo(
+      id: s.id,
+      isXtream: s.isXtream,
+      name: s.name,
+      url: s.url,
+      username: s.username,
+      lastError: s.lastError,
+      liveCount: s.liveCount,
+      movieCount: s.movieCount,
+      seriesCount: s.seriesCount,
+      epgUrl: s.epgUrl,
+      guide: nextGuide,
+    );
+    _sources[i] = updated;
+    return updated;
   }
 
   @override

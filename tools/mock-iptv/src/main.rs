@@ -82,6 +82,8 @@ async fn main() {
         .route("/timeshift/{user}/{pass}/{minutes}/{start}/{file}", get(timeshift_stream))
         .route("/spike/channels.json", get(spike_channels))
         .route("/playlist.m3u", get(playlist))
+        .route("/xmltv.xml", get(xmltv))
+        .route("/xmltv.xml.gz", get(xmltv_gz))
         // TMDB stand-in: the real API's shapes for the titles above.
         .route("/3/authentication", get(tmdb_auth))
         .route("/3/search/{media}", get(tmdb_search))
@@ -380,14 +382,19 @@ async fn spike_channels(State(s): State<AppState>) -> impl IntoResponse {
 async fn playlist(State(s): State<AppState>, Query(q): Query<HashMap<String, String>>) -> impl IntoResponse {
     const GROUPS: &[&str] = &["Ulusal", "Spor", "Haber", "Belgesel", "Çocuk", "Müzik", "Dünya"];
     let n = q.get("n").and_then(|n| n.parse::<usize>().ok()).unwrap_or(1000).min(500_000);
-    let mut body = String::with_capacity(n * 160);
-    body.push_str("#EXTM3U\n");
+    let mut body = String::with_capacity(n * 200);
+    // The guide is announced in the header, as real playlists do.
+    let _ = writeln!(body, "#EXTM3U url-tvg=\"{}/xmltv.xml.gz?n={n}\"", s.base);
     for i in 0..n {
         let (file, _) = STREAMS[i % STREAMS.len()];
         let group = GROUPS[i % GROUPS.len()];
+        // Every third channel has a 3-day archive, M3U style (append).
+        let catchup = if i % 3 == 0 { " catchup=\"append\" catchup-days=\"3\" catchup-source=\"?utc={utc}&lutc={lutc}\"" } else { "" };
+        // Some channels carry no tvg-id: the guide must match them by name.
+        let id = if i % 10 == 9 { String::new() } else { format!(" tvg-id=\"ch{i}.tr\"") };
         let _ = writeln!(
             body,
-            "#EXTINF:-1 tvg-id=\"ch{i}.tr\" tvg-logo=\"{}/media/logos/{}.png\" group-title=\"{group}\",Kanal {i}\n{}/media/{file}",
+            "#EXTINF:-1{id} tvg-logo=\"{}/media/logos/{}.png\" group-title=\"{group}\"{catchup},Kanal {i}\n{}/media/{file}",
             s.base,
             i % 12,
             s.base
@@ -544,4 +551,63 @@ async fn tmdb_image(State(s): State<AppState>, Path((_size, file)): Path<(String
         _ => return StatusCode::NOT_FOUND.into_response(),
     };
     serve(&s, &path, req).await
+}
+
+// ---- XMLTV --------------------------------------------------------------
+
+/// The playlist's guide: three days back to a day ahead, from the same
+/// schedule the Xtream API serves.
+fn xmltv_body(n: usize) -> String {
+    let t = now();
+    let fmt = |s: i64| {
+        let (y, m, d) = civil_from_days(s.div_euclid(86_400));
+        let secs = s.rem_euclid(86_400);
+        format!("{y:04}{m:02}{d:02}{:02}{:02}{:02} +0000", secs / 3600, secs / 60 % 60, secs % 60)
+    };
+    let mut out = String::with_capacity(n * 4096);
+    out.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<tv generator-info-name=\"mock-iptv\">\n");
+    for i in 0..n {
+        let _ = writeln!(out, "  <channel id=\"ch{i}.tr\"><display-name>Kanal {i}</display-name></channel>");
+    }
+    for i in 0..n {
+        for p in schedule(1000 + i, t - 3 * 86_400, t + 86_400) {
+            let _ = writeln!(
+                out,
+                "  <programme start=\"{}\" stop=\"{}\" channel=\"ch{i}.tr\"><title lang=\"tr\">{}</title><desc lang=\"tr\">{} programının açıklaması.</desc></programme>",
+                fmt(p.start),
+                fmt(p.stop),
+                p.show,
+                p.show
+            );
+        }
+    }
+    out.push_str("</tv>\n");
+    out
+}
+
+/// Days since 1970-01-01 to (year, month, day), proleptic Gregorian.
+fn civil_from_days(z: i64) -> (i64, u32, u32) {
+    let z = z + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z.rem_euclid(146_097);
+    let yoe = (doe - doe / 1460 + doe / 36_524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = (doy - (153 * mp + 2) / 5 + 1) as u32;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 } as u32;
+    (yoe + era * 400 + i64::from(m <= 2), m, d)
+}
+
+async fn xmltv(Query(q): Query<HashMap<String, String>>) -> impl IntoResponse {
+    let n = q.get("n").and_then(|n| n.parse::<usize>().ok()).unwrap_or(1000).min(20_000);
+    ([(header::CONTENT_TYPE, "application/xml; charset=utf-8")], xmltv_body(n))
+}
+
+async fn xmltv_gz(Query(q): Query<HashMap<String, String>>) -> impl IntoResponse {
+    use std::io::Write as _;
+    let n = q.get("n").and_then(|n| n.parse::<usize>().ok()).unwrap_or(1000).min(20_000);
+    let mut gz = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());
+    let _ = gz.write_all(xmltv_body(n).as_bytes());
+    // Served as a file, not Content-Encoding: the client must spot the gzip.
+    ([(header::CONTENT_TYPE, "application/gzip")], gz.finish().unwrap_or_default())
 }

@@ -20,6 +20,8 @@ keyring = { version = "3", features = ["windows-native", "apple-native"] }
 percent-encoding = "2"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 chrono-tz = "0.10"
+quick-xml = "0.37"
+flate2 = "1"
 
 [dev-dependencies]
 tempfile = "3"

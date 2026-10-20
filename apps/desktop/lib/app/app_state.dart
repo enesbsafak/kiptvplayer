@@ -20,6 +20,12 @@ class AppState extends ChangeNotifier {
   /// Bumped after a sync so screens reload their lists.
   int catalogVersion = 0;
 
+  /// Bumped when an XMLTV guide was replaced: cached now/next is stale.
+  int guideVersion = 0;
+
+  /// Guides older than this are fetched again in the background at start.
+  static const guideMaxAge = Duration(hours: 12);
+
   SourceInfo? get activeSource {
     for (final s in sources) {
       if (s.id == activeSourceId) return s;
@@ -42,6 +48,32 @@ class AppState extends ChangeNotifier {
     sources = await library.sources();
     activeSourceId ??= sources.isEmpty ? null : sources.first.id;
     loaded = true;
+    notifyListeners();
+    _refreshStaleGuides();
+  }
+
+  /// One M3U source at a time, quietly: the old guide serves meanwhile.
+  Future<void> _refreshStaleGuides() async {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    for (final s in sources) {
+      final g = s.guide;
+      final stale = g == null || now - g.at > guideMaxAge.inSeconds;
+      if (s.isXtream || s.epgUrl == null || !stale) continue;
+      try {
+        await library.refreshGuide(s.id);
+        await guideUpdated();
+      } catch (_) {
+        // Recorded in the source's guide status; the next start retries.
+      }
+    }
+  }
+
+  /// A guide was replaced (refresh button or background): reload sources
+  /// and let screens fetch now/next again, without switching sources.
+  Future<void> guideUpdated() async {
+    sources = await library.sources();
+    guideVersion++;
+    catalogVersion++;
     notifyListeners();
   }
 
