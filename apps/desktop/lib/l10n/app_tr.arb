@@ -693,5 +693,38 @@
   "pinWrong": "PIN yanlış",
   "pinMismatch": "PIN'ler aynı değil",
   "pinTooShort": "En az 4 rakam",
-  "pinLockedCategories": "Kilitli kategoriler"
+  "pinLockedCategories": "Kilitli kategoriler",
+  "editRename": "Yeniden adlandır…",
+  "editRenameChannel": "Kanalı yeniden adlandır",
+  "editRenameCategory": "Kategoriyi yeniden adlandır",
+  "editRenameGroup": "Grubu yeniden adlandır",
+  "editOriginalName": "Sağlayıcıdaki adı: {name}",
+  "@editOriginalName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editResetName": "Özgün ada dön",
+  "editMoveUp": "Yukarı taşı",
+  "editMoveDown": "Aşağı taşı",
+  "editHideCategory": "Kategoriyi gizle",
+  "editHideChannel": "Kanalı gizle",
+  "editDeleteGroup": "Grubu sil",
+  "editRemoveFromGroup": "Gruptan çıkar",
+  "editAddToGroup": "{name} grubuna ekle",
+  "@editAddToGroup": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editNewGroup": "Yeni gruba ekle…",
+  "editNewGroupTitle": "Yeni grup",
+  "editShow": "Göster",
+  "editHiddenTitle": "Gizlenen kanallar ve kategoriler",
+  "editHiddenNone": "Gizlenen bir şey yok. Kanal veya kategori listesinde sağ tıklayarak gizleyebilir, yeniden adlandırabilir ya da kendi gruplarınızı kurabilirsiniz; eşitlemeden sonra da kalırlar.",
+  "editHiddenBody": "Bunlar listelerde ve aramada görünmez; eşitlemeden sonra da gizli kalır."
 }

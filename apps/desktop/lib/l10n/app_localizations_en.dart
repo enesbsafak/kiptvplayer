@@ -1226,4 +1226,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pinLockedCategories => 'Locked categories';
+
+  @override
+  String get editRename => 'Rename…';
+
+  @override
+  String get editRenameChannel => 'Rename channel';
+
+  @override
+  String get editRenameCategory => 'Rename category';
+
+  @override
+  String get editRenameGroup => 'Rename group';
+
+  @override
+  String editOriginalName(String name) {
+    return 'Provider name: $name';
+  }
+
+  @override
+  String get editResetName => 'Use the original name';
+
+  @override
+  String get editMoveUp => 'Move up';
+
+  @override
+  String get editMoveDown => 'Move down';
+
+  @override
+  String get editHideCategory => 'Hide category';
+
+  @override
+  String get editHideChannel => 'Hide channel';
+
+  @override
+  String get editDeleteGroup => 'Delete group';
+
+  @override
+  String get editRemoveFromGroup => 'Remove from group';
+
+  @override
+  String editAddToGroup(String name) {
+    return 'Add to $name';
+  }
+
+  @override
+  String get editNewGroup => 'Add to a new group…';
+
+  @override
+  String get editNewGroupTitle => 'New group';
+
+  @override
+  String get editShow => 'Show';
+
+  @override
+  String get editHiddenTitle => 'Hidden channels and categories';
+
+  @override
+  String get editHiddenNone =>
+      'Nothing is hidden. Right-click a channel or category to hide or rename it, or to build your own groups; they stay after a sync.';
+
+  @override
+  String get editHiddenBody =>
+      'These stay out of lists and search, also after a sync.';
 }

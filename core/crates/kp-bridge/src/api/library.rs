@@ -374,6 +374,87 @@ pub fn categories(source_id: String, kind: Kind) -> Result<Vec<Category>> {
         .collect())
 }
 
+fn cats(rows: Vec<CategoryRow>) -> Vec<Category> {
+    rows.into_iter().map(|c| Category { uid: c.uid, name: c.name, adult: c.adult, count: c.count }).collect()
+}
+
+// ---- the user's edits: hidden, renamed, ordered, custom groups --------
+
+pub fn hide_channel(item_id: i64, hidden: bool) -> Result<()> {
+    Ok(core()?.hide_channel(item_id, hidden)?)
+}
+
+/// None (or blank) gives the channel its provider name back.
+pub fn rename_channel(item_id: i64, name: Option<String>) -> Result<()> {
+    Ok(core()?.rename_channel(item_id, name.as_deref())?)
+}
+
+pub fn hide_category(source_id: String, uid: i64, hidden: bool) -> Result<()> {
+    Ok(core()?.hide_category(&source_id, uid, hidden)?)
+}
+
+pub fn rename_category(source_id: String, uid: i64, name: Option<String>) -> Result<()> {
+    Ok(core()?.rename_category(&source_id, uid, name.as_deref())?)
+}
+
+pub fn move_category(source_id: String, kind: Kind, uid: i64, delta: i32) -> Result<()> {
+    Ok(core()?.move_category(&source_id, kind.into(), uid, delta)?)
+}
+
+/// What the user hid, to bring back.
+#[derive(Debug, Clone)]
+pub struct HiddenItems {
+    pub categories: Vec<Category>,
+    pub channels: Vec<Item>,
+}
+
+pub fn hidden_items(source_id: String) -> Result<HiddenItems> {
+    let (c, ch) = core()?.hidden(&source_id)?;
+    Ok(HiddenItems { categories: cats(c), channels: items(ch) })
+}
+
+/// The provider's name of a renamed channel (or category).
+pub fn original_name(source_id: String, uid: i64, category: bool) -> Result<Option<String>> {
+    Ok(core()?.original_name(&source_id, uid, category)?)
+}
+
+/// Custom groups; `uid` is the group id.
+pub fn user_groups(source_id: String, kind: Kind) -> Result<Vec<Category>> {
+    Ok(cats(core()?.user_groups(&source_id, kind.into())?))
+}
+
+pub fn create_group(source_id: String, kind: Kind, name: String) -> Result<i64> {
+    Ok(core()?.create_group(&source_id, kind.into(), &name)?)
+}
+
+pub fn rename_group(group_id: i64, name: String) -> Result<()> {
+    Ok(core()?.rename_group(group_id, &name)?)
+}
+
+pub fn delete_group(group_id: i64) -> Result<()> {
+    Ok(core()?.delete_group(group_id)?)
+}
+
+pub fn move_group(group_id: i64, delta: i32) -> Result<()> {
+    Ok(core()?.move_group(group_id, delta)?)
+}
+
+pub fn add_to_group(group_id: i64, item_id: i64) -> Result<()> {
+    Ok(core()?.add_to_group(group_id, item_id)?)
+}
+
+pub fn remove_from_group(group_id: i64, item_id: i64) -> Result<()> {
+    Ok(core()?.remove_from_group(group_id, item_id)?)
+}
+
+pub fn move_in_group(group_id: i64, item_id: i64, delta: i32) -> Result<()> {
+    Ok(core()?.move_in_group(group_id, item_id, delta)?)
+}
+
+pub fn group_items(group_id: i64) -> Result<Vec<Item>> {
+    Ok(items(core()?.group_items(group_id)?))
+}
+
 pub fn items_page(source_id: String, kind: Kind, category_uid: Option<i64>, after_sort: Option<u32>, limit: u32) -> Result<Vec<Item>> {
     Ok(items(core()?.page(&source_id, kind.into(), category_uid, after_sort, limit)?))
 }

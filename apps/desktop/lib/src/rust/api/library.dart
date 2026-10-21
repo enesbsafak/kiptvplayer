@@ -9,8 +9,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These functions are ignored because they are not marked as `pub`: `cats`, `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
@@ -54,6 +54,132 @@ Future<List<Category>> categories({
   sourceId: sourceId,
   kind: kind,
 );
+
+Future<void> hideChannel({
+  required PlatformInt64 itemId,
+  required bool hidden,
+}) => RustLib.instance.api.crateApiLibraryHideChannel(
+  itemId: itemId,
+  hidden: hidden,
+);
+
+/// None (or blank) gives the channel its provider name back.
+Future<void> renameChannel({required PlatformInt64 itemId, String? name}) =>
+    RustLib.instance.api.crateApiLibraryRenameChannel(
+      itemId: itemId,
+      name: name,
+    );
+
+Future<void> hideCategory({
+  required String sourceId,
+  required PlatformInt64 uid,
+  required bool hidden,
+}) => RustLib.instance.api.crateApiLibraryHideCategory(
+  sourceId: sourceId,
+  uid: uid,
+  hidden: hidden,
+);
+
+Future<void> renameCategory({
+  required String sourceId,
+  required PlatformInt64 uid,
+  String? name,
+}) => RustLib.instance.api.crateApiLibraryRenameCategory(
+  sourceId: sourceId,
+  uid: uid,
+  name: name,
+);
+
+Future<void> moveCategory({
+  required String sourceId,
+  required Kind kind,
+  required PlatformInt64 uid,
+  required int delta,
+}) => RustLib.instance.api.crateApiLibraryMoveCategory(
+  sourceId: sourceId,
+  kind: kind,
+  uid: uid,
+  delta: delta,
+);
+
+Future<HiddenItems> hiddenItems({required String sourceId}) =>
+    RustLib.instance.api.crateApiLibraryHiddenItems(sourceId: sourceId);
+
+/// The provider's name of a renamed channel (or category).
+Future<String?> originalName({
+  required String sourceId,
+  required PlatformInt64 uid,
+  required bool category,
+}) => RustLib.instance.api.crateApiLibraryOriginalName(
+  sourceId: sourceId,
+  uid: uid,
+  category: category,
+);
+
+/// Custom groups; `uid` is the group id.
+Future<List<Category>> userGroups({
+  required String sourceId,
+  required Kind kind,
+}) => RustLib.instance.api.crateApiLibraryUserGroups(
+  sourceId: sourceId,
+  kind: kind,
+);
+
+Future<PlatformInt64> createGroup({
+  required String sourceId,
+  required Kind kind,
+  required String name,
+}) => RustLib.instance.api.crateApiLibraryCreateGroup(
+  sourceId: sourceId,
+  kind: kind,
+  name: name,
+);
+
+Future<void> renameGroup({
+  required PlatformInt64 groupId,
+  required String name,
+}) => RustLib.instance.api.crateApiLibraryRenameGroup(
+  groupId: groupId,
+  name: name,
+);
+
+Future<void> deleteGroup({required PlatformInt64 groupId}) =>
+    RustLib.instance.api.crateApiLibraryDeleteGroup(groupId: groupId);
+
+Future<void> moveGroup({required PlatformInt64 groupId, required int delta}) =>
+    RustLib.instance.api.crateApiLibraryMoveGroup(
+      groupId: groupId,
+      delta: delta,
+    );
+
+Future<void> addToGroup({
+  required PlatformInt64 groupId,
+  required PlatformInt64 itemId,
+}) => RustLib.instance.api.crateApiLibraryAddToGroup(
+  groupId: groupId,
+  itemId: itemId,
+);
+
+Future<void> removeFromGroup({
+  required PlatformInt64 groupId,
+  required PlatformInt64 itemId,
+}) => RustLib.instance.api.crateApiLibraryRemoveFromGroup(
+  groupId: groupId,
+  itemId: itemId,
+);
+
+Future<void> moveInGroup({
+  required PlatformInt64 groupId,
+  required PlatformInt64 itemId,
+  required int delta,
+}) => RustLib.instance.api.crateApiLibraryMoveInGroup(
+  groupId: groupId,
+  itemId: itemId,
+  delta: delta,
+);
+
+Future<List<Item>> groupItems({required PlatformInt64 groupId}) =>
+    RustLib.instance.api.crateApiLibraryGroupItems(groupId: groupId);
 
 Future<List<Item>> itemsPage({
   required String sourceId,
@@ -429,6 +555,25 @@ class GuideInfo {
           channels == other.channels &&
           error == other.error &&
           at == other.at;
+}
+
+/// What the user hid, to bring back.
+class HiddenItems {
+  final List<Category> categories;
+  final List<Item> channels;
+
+  const HiddenItems({required this.categories, required this.channels});
+
+  @override
+  int get hashCode => categories.hashCode ^ channels.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is HiddenItems &&
+          runtimeType == other.runtimeType &&
+          categories == other.categories &&
+          channels == other.channels;
 }
 
 class Item {

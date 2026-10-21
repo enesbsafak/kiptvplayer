@@ -194,6 +194,23 @@ class Automation {
       app.go(Section.settings);
       await shot('settings-m3u', wait: const Duration(milliseconds: 1500));
     }
+
+    // The user's own list through the real core: a custom group, a renamed
+    // and a hidden channel, then the live rail and list.
+    if (app.activeSource?.id case final esid?) {
+      final live = await app.library.page(esid, Kind.live, limit: 6);
+      if (live.length >= 6) {
+        final group = await app.library.createGroup(esid, Kind.live, 'Akşam kanallarım');
+        for (final c in live.take(3)) {
+          await app.library.addToGroup(group, c.id);
+        }
+        await app.library.renameChannel(live[0].id, '${live[0].name} (benim)');
+        await app.library.hideChannel(live[1].id, hidden: true);
+        app.editsChanged();
+        app.go(Section.live);
+        await shot('live-edited', wait: const Duration(milliseconds: 1500));
+      }
+    }
     await quit();
   }
 

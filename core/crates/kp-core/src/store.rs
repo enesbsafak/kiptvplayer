@@ -23,7 +23,48 @@ pub enum StoreError {
 
 pub type Result<T> = std::result::Result<T, StoreError>;
 
-const SCHEMA_VERSION: i64 = 5;
+const SCHEMA_VERSION: i64 = 6;
+
+/// v6: the user's own edits. Hidden and renamed channels and categories,
+/// category order and custom groups live in their own tables keyed by
+/// stable uids; after every sync they are applied onto the fresh catalog
+/// (`hidden`, `orig_name`, `user_sort`), so lists and search stay plain
+/// queries and nothing is lost when the provider list is replaced.
+const SCHEMA_V6: &str = "
+ALTER TABLE channel ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE channel ADD COLUMN orig_name TEXT;
+ALTER TABLE category ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE category ADD COLUMN orig_name TEXT;
+ALTER TABLE category ADD COLUMN user_sort INTEGER;
+CREATE TABLE IF NOT EXISTS channel_edit (
+    source_id   TEXT NOT NULL REFERENCES source(id) ON DELETE CASCADE,
+    uid         INTEGER NOT NULL,
+    hidden      INTEGER NOT NULL DEFAULT 0,
+    name        TEXT,
+    PRIMARY KEY (source_id, uid)
+);
+CREATE TABLE IF NOT EXISTS category_edit (
+    source_id   TEXT NOT NULL REFERENCES source(id) ON DELETE CASCADE,
+    uid         INTEGER NOT NULL,
+    hidden      INTEGER NOT NULL DEFAULT 0,
+    name        TEXT,
+    user_sort   INTEGER,
+    PRIMARY KEY (source_id, uid)
+);
+CREATE TABLE IF NOT EXISTS user_group (
+    id          INTEGER PRIMARY KEY,
+    source_id   TEXT NOT NULL REFERENCES source(id) ON DELETE CASCADE,
+    kind        INTEGER NOT NULL,
+    name        TEXT NOT NULL,
+    sort        INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS user_group_item (
+    group_id    INTEGER NOT NULL REFERENCES user_group(id) ON DELETE CASCADE,
+    uid         INTEGER NOT NULL,
+    pos         INTEGER NOT NULL,
+    PRIMARY KEY (group_id, uid)
+);
+";
 
 /// v5: programme reminders, keyed by the channel's stable uid so a resync
 /// keeps them.
@@ -321,6 +362,12 @@ impl Store {
             tx.pragma_update(None, "user_version", 5)?;
             tx.commit()?;
         }
+        if version < 6 {
+            let tx = self.conn.transaction()?;
+            tx.execute_batch(SCHEMA_V6)?;
+            tx.pragma_update(None, "user_version", 6)?;
+            tx.commit()?;
+        }
         Ok(())
     }
 
@@ -446,9 +493,10 @@ impl Store {
         self.hide_adult
     }
 
-    /// " AND <col> = 0" while adult content is locked away.
-    fn adult_filter(&self, col: &str) -> String {
-        if self.hide_adult { format!(" AND {col} = 0") } else { String::new() }
+    /// What lists may show of a channel or category row (prefix "c." etc.):
+    /// never what the user hid, and no adult content while locked.
+    fn visible(&self, p: &str) -> String {
+        if self.hide_adult { format!(" AND {p}hidden = 0 AND {p}adult = 0") } else { format!(" AND {p}hidden = 0") }
     }
 
     /// Adult categories of a kind (what the lock hides).
@@ -543,6 +591,7 @@ impl Store {
                 ])?;
             }
         }
+        Self::apply_edits(&tx, source_id)?;
         tx.execute("INSERT INTO channel_fts (channel_fts) VALUES ('rebuild')", [])?;
         Self::reorder(&tx, Some(source_id), self.region_pref.as_deref())?;
         tx.execute(
@@ -552,6 +601,274 @@ impl Store {
         )?;
         tx.commit()?;
         Ok(())
+    }
+
+    // ---- the user's edits ---------------------------------------------
+
+    /// Lays the stored edits onto a freshly written catalog (no FTS work:
+    /// the caller rebuilds it).
+    fn apply_edits(tx: &Connection, source_id: &str) -> Result<()> {
+        let renames: Vec<(i64, String)> = tx
+            .prepare("SELECT uid, name FROM channel_edit WHERE source_id = ?1 AND name IS NOT NULL")?
+            .query_map([source_id], |r| Ok((r.get(0)?, r.get(1)?)))?
+            .collect::<std::result::Result<_, _>>()?;
+        for (uid, name) in renames {
+            tx.execute(
+                "UPDATE channel SET orig_name = coalesce(orig_name, name), name = ?3, name_fold = ?4 WHERE source_id = ?1 AND uid = ?2",
+                params![source_id, uid, name, fold(&name)],
+            )?;
+        }
+        tx.execute(
+            "UPDATE category SET orig_name = coalesce(category.orig_name, category.name), name = e.name
+             FROM category_edit e WHERE e.source_id = category.source_id AND e.uid = category.uid
+               AND category.source_id = ?1 AND e.name IS NOT NULL",
+            [source_id],
+        )?;
+        tx.execute(
+            "UPDATE category SET hidden = e.hidden, user_sort = e.user_sort
+             FROM category_edit e WHERE e.source_id = category.source_id AND e.uid = category.uid AND category.source_id = ?1",
+            [source_id],
+        )?;
+        Self::apply_hidden(tx, source_id)
+    }
+
+    /// A channel is hidden on its own or with its category.
+    fn apply_hidden(tx: &Connection, source_id: &str) -> Result<()> {
+        tx.execute(
+            "UPDATE channel SET hidden = (
+                 EXISTS (SELECT 1 FROM channel_edit e WHERE e.source_id = channel.source_id AND e.uid = channel.uid AND e.hidden = 1)
+                 OR EXISTS (SELECT 1 FROM category c WHERE c.source_id = channel.source_id AND c.uid = channel.category_uid AND c.hidden = 1))
+             WHERE source_id = ?1",
+            [source_id],
+        )?;
+        Ok(())
+    }
+
+    fn channel_uid(&self, item_id: i64) -> Result<Option<(String, i64)>> {
+        Ok(self
+            .conn
+            .query_row("SELECT source_id, uid FROM channel WHERE id = ?1", [item_id], |r| Ok((r.get(0)?, r.get(1)?)))
+            .optional()?)
+    }
+
+    pub fn hide_channel(&mut self, item_id: i64, hidden: bool) -> Result<()> {
+        let Some((source_id, uid)) = self.channel_uid(item_id)? else { return Ok(()) };
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "INSERT INTO channel_edit (source_id, uid, hidden) VALUES (?1, ?2, ?3)
+             ON CONFLICT (source_id, uid) DO UPDATE SET hidden = excluded.hidden",
+            params![source_id, uid, hidden],
+        )?;
+        tx.execute("DELETE FROM channel_edit WHERE hidden = 0 AND name IS NULL", [])?;
+        Self::apply_hidden(&tx, &source_id)?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// A new name, or with None the provider's again.
+    pub fn rename_channel(&mut self, item_id: i64, name: Option<&str>) -> Result<()> {
+        let Some((source_id, uid)) = self.channel_uid(item_id)? else { return Ok(()) };
+        let name = name.map(str::trim).filter(|n| !n.is_empty());
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "INSERT INTO channel_edit (source_id, uid, name) VALUES (?1, ?2, ?3)
+             ON CONFLICT (source_id, uid) DO UPDATE SET name = excluded.name",
+            params![source_id, uid, name],
+        )?;
+        tx.execute("DELETE FROM channel_edit WHERE hidden = 0 AND name IS NULL", [])?;
+        let (old_fold, orig): (String, Option<String>) =
+            tx.query_row("SELECT name_fold, orig_name FROM channel WHERE id = ?1", [item_id], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let shown = match (name, &orig) {
+            (Some(n), _) => n.to_string(),
+            (None, Some(o)) => o.clone(),
+            (None, None) => return tx.commit().map_err(Into::into),
+        };
+        let new_fold = fold(&shown);
+        tx.execute(
+            "UPDATE channel SET orig_name = CASE WHEN ?2 THEN coalesce(orig_name, name) ELSE NULL END, name = ?3, name_fold = ?4 WHERE id = ?1",
+            params![item_id, name.is_some(), shown, new_fold],
+        )?;
+        // The search index follows the name (external-content FTS: out, in).
+        tx.execute("INSERT INTO channel_fts (channel_fts, rowid, name_fold) VALUES ('delete', ?1, ?2)", params![item_id, old_fold])?;
+        tx.execute("INSERT INTO channel_fts (rowid, name_fold) VALUES (?1, ?2)", params![item_id, new_fold])?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn hide_category(&mut self, source_id: &str, uid: i64, hidden: bool) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "INSERT INTO category_edit (source_id, uid, hidden) VALUES (?1, ?2, ?3)
+             ON CONFLICT (source_id, uid) DO UPDATE SET hidden = excluded.hidden",
+            params![source_id, uid, hidden],
+        )?;
+        tx.execute("UPDATE category SET hidden = ?3 WHERE source_id = ?1 AND uid = ?2", params![source_id, uid, hidden])?;
+        Self::apply_hidden(&tx, source_id)?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    pub fn rename_category(&mut self, source_id: &str, uid: i64, name: Option<&str>) -> Result<()> {
+        let name = name.map(str::trim).filter(|n| !n.is_empty());
+        let tx = self.conn.transaction()?;
+        tx.execute(
+            "INSERT INTO category_edit (source_id, uid, name) VALUES (?1, ?2, ?3)
+             ON CONFLICT (source_id, uid) DO UPDATE SET name = excluded.name",
+            params![source_id, uid, name],
+        )?;
+        tx.execute(
+            "UPDATE category SET orig_name = CASE WHEN ?3 IS NULL THEN NULL ELSE coalesce(orig_name, name) END,
+                 name = coalesce(?3, orig_name, name) WHERE source_id = ?1 AND uid = ?2",
+            params![source_id, uid, name],
+        )?;
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// Moves a category [delta] places in its list; the whole list then
+    /// keeps the user's order (new provider categories go after it).
+    pub fn move_category(&mut self, source_id: &str, kind: ContentKind, uid: i64, delta: i32) -> Result<()> {
+        let mut order: Vec<i64> = self.categories(source_id, kind)?.into_iter().map(|c| c.uid).collect();
+        let Some(at) = order.iter().position(|u| *u == uid) else { return Ok(()) };
+        let to = (at as i64 + i64::from(delta)).clamp(0, order.len() as i64 - 1) as usize;
+        let moved = order.remove(at);
+        order.insert(to, moved);
+        let tx = self.conn.transaction()?;
+        for (i, u) in order.iter().enumerate() {
+            tx.execute(
+                "INSERT INTO category_edit (source_id, uid, user_sort) VALUES (?1, ?2, ?3)
+                 ON CONFLICT (source_id, uid) DO UPDATE SET user_sort = excluded.user_sort",
+                params![source_id, u, i as i64],
+            )?;
+            tx.execute("UPDATE category SET user_sort = ?3 WHERE source_id = ?1 AND uid = ?2", params![source_id, u, i as i64])?;
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// What the user hid, to bring back: categories, then channels.
+    pub fn hidden(&self, source_id: &str) -> Result<(Vec<CategoryRow>, Vec<ChannelRow>)> {
+        let mut stmt = self.conn.prepare_cached(
+            "SELECT uid, name, adult, 0 FROM category WHERE source_id = ?1 AND hidden = 1 ORDER BY name",
+        )?;
+        let cats = stmt
+            .query_map([source_id], |r| Ok(CategoryRow { uid: r.get(0)?, name: r.get(1)?, adult: r.get(2)?, count: r.get(3)? }))?
+            .collect::<std::result::Result<_, _>>()?;
+        let mut stmt = self.conn.prepare_cached(&format!(
+            "SELECT {} FROM channel_edit e JOIN channel c ON c.source_id = e.source_id AND c.uid = e.uid
+             WHERE e.source_id = ?1 AND e.hidden = 1 ORDER BY c.name",
+            CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", ")
+        ))?;
+        let channels = stmt.query_map([source_id], channel_row)?.collect::<std::result::Result<_, _>>()?;
+        Ok((cats, channels))
+    }
+
+    /// The provider's name of a renamed channel or category.
+    pub fn original_name(&self, source_id: &str, uid: i64, category: bool) -> Result<Option<String>> {
+        let sql = if category {
+            "SELECT orig_name FROM category WHERE source_id = ?1 AND uid = ?2"
+        } else {
+            "SELECT orig_name FROM channel WHERE source_id = ?1 AND uid = ?2"
+        };
+        Ok(self.conn.query_row(sql, params![source_id, uid], |r| r.get(0)).optional()?.flatten())
+    }
+
+    // ---- custom groups ------------------------------------------------
+
+    pub fn user_groups(&self, source_id: &str, kind: ContentKind) -> Result<Vec<CategoryRow>> {
+        let mut stmt = self.conn.prepare_cached(&format!(
+            "SELECT g.id, g.name, 0,
+                    (SELECT count(*) FROM user_group_item i JOIN channel c ON c.source_id = g.source_id AND c.uid = i.uid
+                      WHERE i.group_id = g.id{})
+             FROM user_group g WHERE g.source_id = ?1 AND g.kind = ?2 ORDER BY g.sort, g.id",
+            self.visible("c.")
+        ))?;
+        let rows = stmt.query_map(params![source_id, kind as u8], |r| {
+            Ok(CategoryRow { uid: r.get(0)?, name: r.get(1)?, adult: r.get(2)?, count: r.get(3)? })
+        })?;
+        Ok(rows.collect::<std::result::Result<_, _>>()?)
+    }
+
+    pub fn create_group(&self, source_id: &str, kind: ContentKind, name: &str) -> Result<i64> {
+        self.conn.execute(
+            "INSERT INTO user_group (source_id, kind, name, sort)
+             VALUES (?1, ?2, ?3, (SELECT coalesce(max(sort), 0) + 1 FROM user_group WHERE source_id = ?1))",
+            params![source_id, kind as u8, name.trim()],
+        )?;
+        Ok(self.conn.last_insert_rowid())
+    }
+
+    pub fn rename_group(&self, group_id: i64, name: &str) -> Result<()> {
+        self.conn.execute("UPDATE user_group SET name = ?2 WHERE id = ?1", params![group_id, name.trim()])?;
+        Ok(())
+    }
+
+    pub fn delete_group(&self, group_id: i64) -> Result<()> {
+        self.conn.execute("DELETE FROM user_group WHERE id = ?1", [group_id])?;
+        Ok(())
+    }
+
+    pub fn move_group(&mut self, group_id: i64, delta: i32) -> Result<()> {
+        let (source_id, kind): (String, u8) =
+            self.conn.query_row("SELECT source_id, kind FROM user_group WHERE id = ?1", [group_id], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let mut ids: Vec<i64> = self
+            .conn
+            .prepare("SELECT id FROM user_group WHERE source_id = ?1 AND kind = ?2 ORDER BY sort, id")?
+            .query_map(params![source_id, kind], |r| r.get(0))?
+            .collect::<std::result::Result<_, _>>()?;
+        reorder_ids(&mut ids, group_id, delta);
+        let tx = self.conn.transaction()?;
+        for (i, id) in ids.iter().enumerate() {
+            tx.execute("UPDATE user_group SET sort = ?2 WHERE id = ?1", params![id, i as i64])?;
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// Adds a channel at the end of a group (no-op when already there).
+    pub fn add_to_group(&self, group_id: i64, item_id: i64) -> Result<()> {
+        let Some((_, uid)) = self.channel_uid(item_id)? else { return Ok(()) };
+        self.conn.execute(
+            "INSERT OR IGNORE INTO user_group_item (group_id, uid, pos)
+             VALUES (?1, ?2, (SELECT coalesce(max(pos), 0) + 1 FROM user_group_item WHERE group_id = ?1))",
+            params![group_id, uid],
+        )?;
+        Ok(())
+    }
+
+    pub fn remove_from_group(&self, group_id: i64, item_id: i64) -> Result<()> {
+        let Some((_, uid)) = self.channel_uid(item_id)? else { return Ok(()) };
+        self.conn.execute("DELETE FROM user_group_item WHERE group_id = ?1 AND uid = ?2", params![group_id, uid])?;
+        Ok(())
+    }
+
+    pub fn move_in_group(&mut self, group_id: i64, item_id: i64, delta: i32) -> Result<()> {
+        let Some((_, uid)) = self.channel_uid(item_id)? else { return Ok(()) };
+        let mut uids: Vec<i64> = self
+            .conn
+            .prepare("SELECT uid FROM user_group_item WHERE group_id = ?1 ORDER BY pos")?
+            .query_map([group_id], |r| r.get(0))?
+            .collect::<std::result::Result<_, _>>()?;
+        reorder_ids(&mut uids, uid, delta);
+        let tx = self.conn.transaction()?;
+        for (i, u) in uids.iter().enumerate() {
+            tx.execute("UPDATE user_group_item SET pos = ?3 WHERE group_id = ?1 AND uid = ?2", params![group_id, u, i as i64])?;
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// A group's channels in the user's order.
+    pub fn group_items(&self, group_id: i64) -> Result<Vec<ChannelRow>> {
+        let mut stmt = self.conn.prepare_cached(&format!(
+            "SELECT {} FROM user_group_item i JOIN user_group g ON g.id = i.group_id
+             JOIN channel c ON c.source_id = g.source_id AND c.uid = i.uid
+             WHERE i.group_id = ?1{} ORDER BY i.pos",
+            CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", "),
+            self.visible("c.")
+        ))?;
+        let rows = stmt.query_map([group_id], channel_row)?;
+        Ok(rows.collect::<std::result::Result<_, _>>()?)
     }
 
     pub fn channel_count(&self, source_id: &str) -> Result<u64> {
@@ -574,9 +891,9 @@ impl Store {
                     (SELECT count(*) FROM channel ch WHERE ch.source_id = c.source_id AND ch.kind = c.kind
                         AND ch.category_uid = c.uid{})
              FROM category c WHERE c.source_id = ?1 AND c.kind = ?2{}
-             ORDER BY c.adult, (c.region IS ?3 AND ?3 IS NOT NULL) DESC, c.sort",
-            self.adult_filter("ch.adult"),
-            self.adult_filter("c.adult"),
+             ORDER BY c.user_sort IS NULL, c.user_sort, c.adult, (c.region IS ?3 AND ?3 IS NOT NULL) DESC, c.sort",
+            self.visible("ch."),
+            self.visible("c."),
         ))?;
         let rows = stmt.query_map(params![source_id, kind as u8, self.region_pref], |r| {
             Ok(CategoryRow { uid: r.get(0)?, name: r.get(1)?, adult: r.get(2)?, count: r.get(3)? })
@@ -604,7 +921,7 @@ impl Store {
                     "SELECT {CHANNEL_ROW_COLS} FROM channel
                      WHERE source_id = ?1 AND kind = ?2 AND category_uid = ?3 AND order_key > ?4{}
                      ORDER BY order_key LIMIT ?5",
-                    self.adult_filter("adult")
+                    self.visible("")
                 ))?;
                 let rows = stmt.query_map(params![source_id, kind as u8, cat, after, limit], channel_row)?;
                 rows.collect::<std::result::Result<Vec<_>, _>>()?
@@ -614,7 +931,7 @@ impl Store {
                     "SELECT {CHANNEL_ROW_COLS} FROM channel
                      WHERE source_id = ?1 AND kind = ?2 AND order_key > ?3{}
                      ORDER BY order_key LIMIT ?4",
-                    self.adult_filter("adult")
+                    self.visible("")
                 ))?;
                 let rows = stmt.query_map(params![source_id, kind as u8, after, limit], channel_row)?;
                 rows.collect::<std::result::Result<Vec<_>, _>>()?
@@ -628,7 +945,7 @@ impl Store {
     /// gone ("TR: TRT 1 HD", "TRT 1 FHD", "TRT1 Yedek"). Failover candidates,
     /// in display order.
     pub fn alternates(&self, source_id: &str, uid: i64) -> Result<Vec<ChannelRow>> {
-        let mut me = self.conn.prepare_cached("SELECT name, tvg_id FROM channel WHERE source_id = ?1 AND uid = ?2")?;
+        let mut me = self.conn.prepare_cached("SELECT coalesce(orig_name, name), tvg_id FROM channel WHERE source_id = ?1 AND uid = ?2")?;
         let Some((name, tvg)) = me
             .query_row(params![source_id, uid], |r| Ok((r.get::<_, String>(0)?, r.get::<_, Option<String>>(1)?)))
             .optional()?
@@ -638,16 +955,18 @@ impl Store {
         let key = crate::guide::match_name(&name);
         let tvg = tvg.map(|t| t.trim().to_lowercase()).filter(|t| !t.is_empty());
         let mut stmt = self.conn.prepare_cached(&format!(
-            "SELECT {CHANNEL_ROW_COLS}, tvg_id FROM channel WHERE source_id = ?1 AND kind = 0 AND uid != ?2{} ORDER BY order_key",
-            self.adult_filter("adult")
+            "SELECT {CHANNEL_ROW_COLS}, tvg_id, coalesce(orig_name, name) FROM channel WHERE source_id = ?1 AND kind = 0 AND uid != ?2{} ORDER BY order_key",
+            self.visible("")
         ))?;
         let mut out = Vec::new();
         let mut rows = stmt.query(params![source_id, uid])?;
         while let Some(r) = rows.next()? {
             let row = channel_row(r)?;
             let other_tvg: Option<String> = r.get(10)?;
+            // Matching goes by the provider's names: a user's rename is for display.
+            let provider_name: String = r.get(11)?;
             let same_id = matches!((&tvg, other_tvg), (Some(a), Some(b)) if *a == b.trim().to_lowercase());
-            if same_id || (!key.is_empty() && crate::guide::match_name(&row.name) == key) {
+            if same_id || (!key.is_empty() && crate::guide::match_name(&provider_name) == key) {
                 out.push(row);
             }
         }
@@ -657,7 +976,7 @@ impl Store {
     /// Newest additions, for the home screen.
     pub fn recently_added(&self, source_id: &str, kind: ContentKind, limit: u32) -> Result<Vec<ChannelRow>> {
         let mut stmt = self.conn.prepare_cached(&format!(
-            "SELECT {CHANNEL_ROW_COLS} FROM channel WHERE source_id = ?1 AND kind = ?2 AND adult = 0
+            "SELECT {CHANNEL_ROW_COLS} FROM channel WHERE source_id = ?1 AND kind = ?2 AND adult = 0 AND hidden = 0
              ORDER BY added DESC NULLS LAST, order_key LIMIT ?3"
         ))?;
         let rows = stmt.query_map(params![source_id, kind as u8, limit], channel_row)?;
@@ -681,7 +1000,7 @@ impl Store {
                  WHERE channel_fts MATCH ?1 AND (?2 IS NULL OR c.kind = ?2){}
                  ORDER BY c.order_key LIMIT ?3",
                 CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", "),
-                self.adult_filter("c.adult")
+                self.visible("c.")
             ))?;
             let rows = stmt.query_map(params![phrase, kind, limit], channel_row)?;
             rows.collect::<std::result::Result<Vec<_>, _>>()?
@@ -690,7 +1009,7 @@ impl Store {
                 "SELECT {CHANNEL_ROW_COLS} FROM channel
                  WHERE name_fold LIKE ?1 ESCAPE '\\' AND (?2 IS NULL OR kind = ?2){}
                  ORDER BY order_key LIMIT ?3",
-                self.adult_filter("adult")
+                self.visible("")
             ))?;
             let pattern = format!("{}%", q.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"));
             let rows = stmt.query_map(params![pattern, kind, limit], channel_row)?;
@@ -743,7 +1062,7 @@ impl Store {
             "SELECT {} FROM favorite f JOIN channel c ON c.source_id = f.source_id AND c.uid = f.uid
              WHERE f.source_id = ?1 AND c.kind = ?2{} ORDER BY f.added_at",
             CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", "),
-            self.adult_filter("c.adult")
+            self.visible("c.")
         ))?;
         let rows = stmt.query_map(params![source_id, kind as u8], channel_row)?;
         Ok(rows.collect::<std::result::Result<_, _>>()?)
@@ -778,7 +1097,7 @@ impl Store {
              JOIN channel c ON c.source_id = r.source_id AND c.uid = r.uid
              WHERE r.source_id = ?1{} ORDER BY r.start",
             CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", "),
-            self.adult_filter("c.adult")
+            self.visible("c.")
         ))?;
         let rows = stmt.query_map([source_id], |r| {
             Ok((channel_row(r)?, ReminderRow { start: r.get(10)?, stop: r.get(11)?, title: r.get(12)? }))
@@ -812,7 +1131,7 @@ impl Store {
             "SELECT {} FROM recent r JOIN channel c ON c.source_id = r.source_id AND c.uid = r.uid
              WHERE r.source_id = ?1 AND c.kind = ?2{} ORDER BY r.watched_at DESC LIMIT ?3",
             CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", "),
-            self.adult_filter("c.adult")
+            self.visible("c.")
         ))?;
         let rows = stmt.query_map(params![source_id, kind as u8, limit], channel_row)?;
         Ok(rows.collect::<std::result::Result<_, _>>()?)
@@ -909,7 +1228,7 @@ impl Store {
 
     /// A source's live channels, for matching against its XMLTV guide.
     pub fn guide_channels(&self, source_id: &str) -> Result<Vec<crate::guide::GuideChannel>> {
-        let mut stmt = self.conn.prepare("SELECT uid, tvg_id, name FROM channel WHERE source_id = ?1 AND kind = 0")?;
+        let mut stmt = self.conn.prepare("SELECT uid, tvg_id, coalesce(orig_name, name) FROM channel WHERE source_id = ?1 AND kind = 0")?;
         let rows = stmt.query_map([source_id], |r| {
             Ok(crate::guide::GuideChannel { uid: r.get(0)?, tvg_id: r.get(1)?, name: r.get(2)? })
         })?;
@@ -980,6 +1299,14 @@ fn source_row(r: &Row<'_>) -> rusqlite::Result<SourceRow> {
         max_connections: r.get(11)?,
         timezone: r.get(12)?,
     })
+}
+
+/// Moves [id] by [delta] places within [ids], clamped to the ends.
+fn reorder_ids(ids: &mut Vec<i64>, id: i64, delta: i32) {
+    let Some(at) = ids.iter().position(|x| *x == id) else { return };
+    let to = (at as i64 + i64::from(delta)).clamp(0, ids.len() as i64 - 1) as usize;
+    let moved = ids.remove(at);
+    ids.insert(to, moved);
 }
 
 fn channel_row(r: &Row<'_>) -> rusqlite::Result<ChannelRow> {
@@ -1173,6 +1500,78 @@ mod tests {
         let past = store.epg_past("src", uid, 0, t + 150).unwrap();
         assert_eq!(past.iter().map(|e| (e.title.as_str(), e.archive)).collect::<Vec<_>>(), vec![("Bitti", true)]);
         assert_eq!(store.epg_short("src", uid, t + 150).unwrap().0[0].title, "Sonra");
+    }
+
+    #[test]
+    fn edits_survive_resync() {
+        let mut store = store();
+        let page = store.channels_page("src", ContentKind::Live, None, None, 50).unwrap();
+        let trt = page.iter().find(|c| c.name == "TRT 1 HD").unwrap().clone();
+        let fox = page.iter().find(|c| c.name == "FOX Türk").unwrap().clone();
+        store.rename_channel(trt.id, Some("TRT 1")).unwrap();
+        store.hide_channel(fox.id, true).unwrap();
+        let cats = store.categories("src", ContentKind::Live).unwrap();
+        let first = cats[0].uid;
+        store.rename_category("src", first, Some("Benim kanallarım")).unwrap();
+        store.move_category("src", ContentKind::Live, cats.last().unwrap().uid, -10).unwrap();
+        let group = store.create_group("src", ContentKind::Live, "Akşam").unwrap();
+        store.add_to_group(group, trt.id).unwrap();
+
+        store.replace_catalog("src", &sample(), 9).unwrap();
+        let page = store.channels_page("src", ContentKind::Live, None, None, 50).unwrap();
+        assert!(page.iter().any(|c| c.name == "TRT 1"), "renamed after resync");
+        assert!(!page.iter().any(|c| c.uid == fox.uid), "still hidden");
+        assert_eq!(store.search("trt 1", None, 5).unwrap()[0].name, "TRT 1");
+        assert!(store.search("fox", None, 5).unwrap().is_empty());
+        let cats_after = store.categories("src", ContentKind::Live).unwrap();
+        assert_eq!(cats_after[0].uid, cats.last().unwrap().uid, "moved to the top");
+        assert!(cats_after.iter().any(|c| c.name == "Benim kanallarım"));
+        assert_eq!(store.group_items(group).unwrap()[0].name, "TRT 1");
+        assert_eq!(store.original_name("src", trt.uid, false).unwrap().as_deref(), Some("TRT 1 HD"));
+
+        let (_, hidden) = store.hidden("src").unwrap();
+        assert_eq!(hidden.len(), 1);
+        let fox_now = hidden[0].id;
+        store.hide_channel(fox_now, false).unwrap();
+        let trt_now = store.search("trt 1", None, 1).unwrap()[0].id;
+        store.rename_channel(trt_now, None).unwrap();
+        assert!(store.search("fox", None, 5).unwrap().len() == 1);
+        assert_eq!(store.search("trt 1", None, 1).unwrap()[0].name, "TRT 1 HD", "name back, index too");
+    }
+
+    #[test]
+    fn hiding_a_category_hides_its_channels() {
+        let mut store = store();
+        let cats = store.categories("src", ContentKind::Live).unwrap();
+        let before = store.channels_page("src", ContentKind::Live, None, None, 50).unwrap().len();
+        store.hide_category("src", cats[0].uid, true).unwrap();
+        assert!(store.categories("src", ContentKind::Live).unwrap().iter().all(|c| c.uid != cats[0].uid));
+        let after = store.channels_page("src", ContentKind::Live, None, None, 50).unwrap().len();
+        assert_eq!(after, before - cats[0].count as usize);
+        assert_eq!(store.hidden("src").unwrap().0.len(), 1);
+        store.hide_category("src", cats[0].uid, false).unwrap();
+        assert_eq!(store.channels_page("src", ContentKind::Live, None, None, 50).unwrap().len(), before);
+    }
+
+    #[test]
+    fn groups_keep_the_users_order() {
+        let mut store = store();
+        let page = store.channels_page("src", ContentKind::Live, None, None, 50).unwrap();
+        let g = store.create_group("src", ContentKind::Live, "Spor").unwrap();
+        for c in &page {
+            store.add_to_group(g, c.id).unwrap();
+        }
+        store.move_in_group(g, page.last().unwrap().id, -10).unwrap();
+        let items = store.group_items(g).unwrap();
+        assert_eq!(items[0].uid, page.last().unwrap().uid);
+        store.remove_from_group(g, page[0].id).unwrap();
+        assert_eq!(store.group_items(g).unwrap().len(), page.len() - 1);
+        let h = store.create_group("src", ContentKind::Live, "Haber").unwrap();
+        store.move_group(h, -1).unwrap();
+        let groups = store.user_groups("src", ContentKind::Live).unwrap();
+        assert_eq!(groups.iter().map(|x| x.name.as_str()).collect::<Vec<_>>(), ["Haber", "Spor"]);
+        store.delete_group(g).unwrap();
+        assert_eq!(store.user_groups("src", ContentKind::Live).unwrap().len(), 1);
     }
 
     #[test]

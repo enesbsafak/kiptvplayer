@@ -13,6 +13,7 @@ import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import 'parental.dart';
+import 'edits.dart';
 
 /// Movies or series: category rail + poster grid, detail on click.
 
@@ -119,6 +120,11 @@ class _VodScreenState extends State<VodScreen> {
             selected: _category ?? _allCategories,
             onSelect: (id) => _select(id == _allCategories ? null : id),
             footer: LockedCategoriesRow(kind: widget.kind),
+            onContext: (id, at) {
+              if (_categories.where((c) => c.uid == id).firstOrNull case final c?) {
+                showCategoryMenu(context, at: at, kind: widget.kind, category: c);
+              }
+            },
             entries: [
               KdRailEntry(
                 id: _allCategories,

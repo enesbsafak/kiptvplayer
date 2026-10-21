@@ -14,6 +14,7 @@ import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import '../player/reconnect_banner.dart';
 import 'parental.dart';
+import 'edits.dart';
 
 /// Live TV: categories · channel list · preview with now/next.
 /// Click previews in place, double-click or Enter goes full screen,
@@ -25,9 +26,11 @@ class LiveScreen extends StatefulWidget {
   State<LiveScreen> createState() => _LiveScreenState();
 }
 
-/// Sentinel category ids.
+/// Sentinel category ids; custom groups take ids at and below -1001.
 const _all = -1;
 const _favorites = -2;
+int _groupKey(int groupId) => -1000 - groupId;
+int? _groupOf(int key) => key <= -1001 ? -1000 - key : null;
 
 class _LiveScreenState extends State<LiveScreen> {
   static const _rowHeight = 50.0;
@@ -36,6 +39,8 @@ class _LiveScreenState extends State<LiveScreen> {
   int _category = _all;
   ItemPager? _pager;
   List<Item> _favoriteItems = const [];
+  List<Category> _groups = const [];
+  List<Item> _groupItems = const [];
   int _selected = -1;
   final _scroll = ScrollController();
   final _focus = FocusNode(debugLabel: 'channels');
@@ -85,11 +90,19 @@ class _LiveScreenState extends State<LiveScreen> {
     final lib = context.library;
     final cats = await lib.categories(sid, Kind.live);
     final favs = await lib.favorites(sid, Kind.live);
+    final groups = await lib.userGroups(sid, Kind.live);
     if (!mounted) return;
     setState(() {
       _categories = cats;
       _favoriteItems = favs;
+      _groups = groups;
     });
+    // A deleted group or hidden category falls back to all channels.
+    final group = _groupOf(_category);
+    if ((group != null && !groups.any((g) => g.uid == group)) ||
+        (_category >= 0 && !cats.any((c) => c.uid == _category))) {
+      _category = _all;
+    }
     _selectCategory(_category);
   }
 
@@ -102,7 +115,11 @@ class _LiveScreenState extends State<LiveScreen> {
       _category = uid;
       _selected = -1;
     });
-    if (uid != _favorites) {
+    if (_groupOf(uid) case final group?) {
+      context.library.groupItems(group).then((items) {
+        if (mounted && _category == uid) setState(() => _groupItems = items);
+      });
+    } else if (uid != _favorites) {
       final pager = ItemPager(
         library: context.library,
         sourceId: sid,
@@ -116,7 +133,11 @@ class _LiveScreenState extends State<LiveScreen> {
   }
 
   List<Item> get _items {
-    final base = _category == _favorites ? _favoriteItems : (_pager?.items ?? const <Item>[]);
+    final base = _category == _favorites
+        ? _favoriteItems
+        : _groupOf(_category) != null
+        ? _groupItems
+        : (_pager?.items ?? const <Item>[]);
     final q = foldText(_filter.text.trim());
     if (q.isEmpty) return base;
     return base.where((i) => foldText(i.name).contains(q)).toList();
@@ -197,9 +218,18 @@ class _LiveScreenState extends State<LiveScreen> {
       selected: _category,
       onSelect: _selectCategory,
       footer: const LockedCategoriesRow(kind: Kind.live),
+      onContext: (id, at) {
+        if (_groupOf(id) case final g?) {
+          final group = _groups.where((x) => x.uid == g).firstOrNull;
+          if (group != null) showGroupMenu(context, at: at, group: group);
+        } else if (_categories.where((c) => c.uid == id).firstOrNull case final c?) {
+          showCategoryMenu(context, at: at, kind: Kind.live, category: c);
+        }
+      },
       entries: [
         KdRailEntry(id: _all, name: l10n.liveAllChannels, count: total, icon: LucideIcons.tv, pinned: true),
         KdRailEntry(id: _favorites, name: l10n.navFavorites, count: _favoriteItems.length, icon: LucideIcons.star, pinned: true),
+        for (final g in _groups) KdRailEntry(id: _groupKey(g.uid), name: g.name, count: g.count, icon: LucideIcons.folderHeart, pinned: true),
         for (final c in _categories) KdRailEntry(id: c.uid, name: c.name, count: c.count),
       ],
     );
@@ -251,6 +281,7 @@ class _LiveScreenState extends State<LiveScreen> {
                           _play(i);
                         },
                         onDoubleTap: () => _play(i, full: true),
+                        onContext: (at) => showChannelMenu(context, at: at, item: items[i], groupId: _groupOf(_category)),
                       ),
                     ),
                   ),
@@ -262,13 +293,21 @@ class _LiveScreenState extends State<LiveScreen> {
 }
 
 class _ChannelRow extends StatefulWidget {
-  const _ChannelRow({required this.item, required this.index, required this.selected, required this.onTap, required this.onDoubleTap});
+  const _ChannelRow({
+    required this.item,
+    required this.index,
+    required this.selected,
+    required this.onTap,
+    required this.onDoubleTap,
+    required this.onContext,
+  });
 
   final Item item;
   final int index;
   final bool selected;
   final VoidCallback onTap;
   final VoidCallback onDoubleTap;
+  final ValueChanged<Offset> onContext;
 
   @override
   State<_ChannelRow> createState() => _ChannelRowState();
@@ -289,6 +328,7 @@ class _ChannelRowState extends State<_ChannelRow> {
       child: GestureDetector(
         onTap: widget.onTap,
         onDoubleTap: widget.onDoubleTap,
+        onSecondaryTapUp: (d) => widget.onContext(d.globalPosition),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 8),

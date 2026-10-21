@@ -486,6 +486,72 @@ impl Core {
         Ok(self.store().categories(source_id, kind)?)
     }
 
+    // ---- the user's edits (kept across syncs) -------------------------
+
+    pub fn hide_channel(&self, item_id: i64, hidden: bool) -> Result<()> {
+        Ok(self.store().hide_channel(item_id, hidden)?)
+    }
+
+    pub fn rename_channel(&self, item_id: i64, name: Option<&str>) -> Result<()> {
+        Ok(self.store().rename_channel(item_id, name)?)
+    }
+
+    pub fn hide_category(&self, source_id: &str, uid: i64, hidden: bool) -> Result<()> {
+        Ok(self.store().hide_category(source_id, uid, hidden)?)
+    }
+
+    pub fn rename_category(&self, source_id: &str, uid: i64, name: Option<&str>) -> Result<()> {
+        Ok(self.store().rename_category(source_id, uid, name)?)
+    }
+
+    pub fn move_category(&self, source_id: &str, kind: ContentKind, uid: i64, delta: i32) -> Result<()> {
+        Ok(self.store().move_category(source_id, kind, uid, delta)?)
+    }
+
+    pub fn hidden(&self, source_id: &str) -> Result<(Vec<CategoryRow>, Vec<ChannelRow>)> {
+        Ok(self.store().hidden(source_id)?)
+    }
+
+    pub fn original_name(&self, source_id: &str, uid: i64, category: bool) -> Result<Option<String>> {
+        Ok(self.store().original_name(source_id, uid, category)?)
+    }
+
+    pub fn user_groups(&self, source_id: &str, kind: ContentKind) -> Result<Vec<CategoryRow>> {
+        Ok(self.store().user_groups(source_id, kind)?)
+    }
+
+    pub fn create_group(&self, source_id: &str, kind: ContentKind, name: &str) -> Result<i64> {
+        Ok(self.store().create_group(source_id, kind, name)?)
+    }
+
+    pub fn rename_group(&self, group_id: i64, name: &str) -> Result<()> {
+        Ok(self.store().rename_group(group_id, name)?)
+    }
+
+    pub fn delete_group(&self, group_id: i64) -> Result<()> {
+        Ok(self.store().delete_group(group_id)?)
+    }
+
+    pub fn move_group(&self, group_id: i64, delta: i32) -> Result<()> {
+        Ok(self.store().move_group(group_id, delta)?)
+    }
+
+    pub fn add_to_group(&self, group_id: i64, item_id: i64) -> Result<()> {
+        Ok(self.store().add_to_group(group_id, item_id)?)
+    }
+
+    pub fn remove_from_group(&self, group_id: i64, item_id: i64) -> Result<()> {
+        Ok(self.store().remove_from_group(group_id, item_id)?)
+    }
+
+    pub fn move_in_group(&self, group_id: i64, item_id: i64, delta: i32) -> Result<()> {
+        Ok(self.store().move_in_group(group_id, item_id, delta)?)
+    }
+
+    pub fn group_items(&self, group_id: i64) -> Result<Vec<ChannelRow>> {
+        Ok(self.store().group_items(group_id)?)
+    }
+
     pub fn page(&self, source_id: &str, kind: ContentKind, category: Option<i64>, after_sort: Option<u32>, limit: u32) -> Result<Vec<ChannelRow>> {
         Ok(self.store().channels_page(source_id, kind, category, after_sort, limit)?)
     }

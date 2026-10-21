@@ -127,6 +127,12 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// The user hid, renamed or regrouped something: lists reload.
+  void editsChanged() {
+    catalogVersion++;
+    notifyListeners();
+  }
+
   /// Watch history was cleared: screens showing it reload.
   void historyCleared() {
     catalogVersion++;

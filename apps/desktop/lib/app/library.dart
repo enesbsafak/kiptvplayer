@@ -8,6 +8,7 @@ export '../src/rust/api/library.dart'
         ContinueItem,
         EpisodeInfo,
         GuideInfo,
+        HiddenItems,
         Item,
         ItemDetail,
         Kind,
@@ -49,6 +50,25 @@ abstract interface class LibraryApi {
   /// Downloads an M3U source's XMLTV guide again; the result's `guide`
   /// tells how it went.
   Future<rust.SourceInfo> refreshGuide(String sourceId);
+
+  /// The user's edits: hidden / renamed channels and categories, category
+  /// order, custom groups (uid = group id). Kept across syncs.
+  Future<void> hideChannel(int itemId, {required bool hidden});
+  Future<void> renameChannel(int itemId, String? name);
+  Future<void> hideCategory(String sourceId, int uid, {required bool hidden});
+  Future<void> renameCategory(String sourceId, int uid, String? name);
+  Future<void> moveCategory(String sourceId, rust.Kind kind, int uid, int delta);
+  Future<rust.HiddenItems> hiddenItems(String sourceId);
+  Future<String?> originalName(String sourceId, int uid, {required bool category});
+  Future<List<rust.Category>> userGroups(String sourceId, rust.Kind kind);
+  Future<int> createGroup(String sourceId, rust.Kind kind, String name);
+  Future<void> renameGroup(int groupId, String name);
+  Future<void> deleteGroup(int groupId);
+  Future<void> moveGroup(int groupId, int delta);
+  Future<void> addToGroup(int groupId, int itemId);
+  Future<void> removeFromGroup(int groupId, int itemId);
+  Future<void> moveInGroup(int groupId, int itemId, int delta);
+  Future<List<rust.Item>> groupItems(int groupId);
 
   /// Parental lock (PIN) state, and its changes.
   Future<rust.Parental> parental();
@@ -137,6 +157,41 @@ class RustLibrary implements LibraryApi {
   Future<rust.SourceHealth> checkSource(String sourceId) => rust.checkSource(sourceId: sourceId);
   @override
   Future<List<rust.Reminder>> reminders(String sourceId) => rust.reminders(sourceId: sourceId);
+  @override
+  Future<void> hideChannel(int itemId, {required bool hidden}) => rust.hideChannel(itemId: itemId, hidden: hidden);
+  @override
+  Future<void> renameChannel(int itemId, String? name) => rust.renameChannel(itemId: itemId, name: name);
+  @override
+  Future<void> hideCategory(String sourceId, int uid, {required bool hidden}) =>
+      rust.hideCategory(sourceId: sourceId, uid: uid, hidden: hidden);
+  @override
+  Future<void> renameCategory(String sourceId, int uid, String? name) => rust.renameCategory(sourceId: sourceId, uid: uid, name: name);
+  @override
+  Future<void> moveCategory(String sourceId, rust.Kind kind, int uid, int delta) =>
+      rust.moveCategory(sourceId: sourceId, kind: kind, uid: uid, delta: delta);
+  @override
+  Future<rust.HiddenItems> hiddenItems(String sourceId) => rust.hiddenItems(sourceId: sourceId);
+  @override
+  Future<String?> originalName(String sourceId, int uid, {required bool category}) =>
+      rust.originalName(sourceId: sourceId, uid: uid, category: category);
+  @override
+  Future<List<rust.Category>> userGroups(String sourceId, rust.Kind kind) => rust.userGroups(sourceId: sourceId, kind: kind);
+  @override
+  Future<int> createGroup(String sourceId, rust.Kind kind, String name) => rust.createGroup(sourceId: sourceId, kind: kind, name: name);
+  @override
+  Future<void> renameGroup(int groupId, String name) => rust.renameGroup(groupId: groupId, name: name);
+  @override
+  Future<void> deleteGroup(int groupId) => rust.deleteGroup(groupId: groupId);
+  @override
+  Future<void> moveGroup(int groupId, int delta) => rust.moveGroup(groupId: groupId, delta: delta);
+  @override
+  Future<void> addToGroup(int groupId, int itemId) => rust.addToGroup(groupId: groupId, itemId: itemId);
+  @override
+  Future<void> removeFromGroup(int groupId, int itemId) => rust.removeFromGroup(groupId: groupId, itemId: itemId);
+  @override
+  Future<void> moveInGroup(int groupId, int itemId, int delta) => rust.moveInGroup(groupId: groupId, itemId: itemId, delta: delta);
+  @override
+  Future<List<rust.Item>> groupItems(int groupId) => rust.groupItems(groupId: groupId);
   @override
   Future<rust.Parental> parental() => rust.parental();
   @override

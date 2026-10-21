@@ -82,6 +82,70 @@ class FakeLibrary implements LibraryApi {
   GuideInfo? nextGuide;
   final List<String> guideRefreshes = [];
 
+  // The user's edits, in memory: hidden ids, names, groups.
+  final hiddenIds = <int>{};
+  final hiddenCats = <int>{};
+  final names = <int, String>{};
+  final groups = <int, (String, List<int>)>{};
+  int _nextGroup = 1;
+
+  Item _named(Item i) => names.containsKey(i.id)
+      ? Item(id: i.id, uid: i.uid, name: names[i.id]!, logo: i.logo, chno: i.chno, adult: i.adult, sort: i.sort, hasCatchup: i.hasCatchup)
+      : i;
+  Item? _find(int id) => items.values.expand((l) => l).where((i) => i.id == id).firstOrNull;
+
+  @override
+  Future<void> hideChannel(int itemId, {required bool hidden}) async => hidden ? hiddenIds.add(itemId) : hiddenIds.remove(itemId);
+  @override
+  Future<void> renameChannel(int itemId, String? name) async => name == null ? names.remove(itemId) : names[itemId] = name;
+  @override
+  Future<void> hideCategory(String sourceId, int uid, {required bool hidden}) async => hidden ? hiddenCats.add(uid) : hiddenCats.remove(uid);
+  @override
+  Future<void> renameCategory(String sourceId, int uid, String? name) async {}
+  @override
+  Future<void> moveCategory(String sourceId, Kind kind, int uid, int delta) async {}
+  @override
+  Future<HiddenItems> hiddenItems(String sourceId) async => HiddenItems(
+    categories: [for (final c in cats.values.expand((l) => l)) if (hiddenCats.contains(c.uid)) c],
+    channels: [for (final id in hiddenIds) ?_find(id)],
+  );
+  @override
+  Future<String?> originalName(String sourceId, int uid, {required bool category}) async =>
+      names.containsKey(uid) ? _find(uid)?.name : null;
+  @override
+  Future<List<Category>> userGroups(String sourceId, Kind kind) async => [
+    for (final e in groups.entries) Category(uid: e.key, name: e.value.$1, adult: false, count: e.value.$2.length),
+  ];
+  @override
+  Future<int> createGroup(String sourceId, Kind kind, String name) async {
+    groups[_nextGroup] = (name, []);
+    return _nextGroup++;
+  }
+
+  @override
+  Future<void> renameGroup(int groupId, String name) async => groups[groupId] = (name, groups[groupId]!.$2);
+  @override
+  Future<void> deleteGroup(int groupId) async => groups.remove(groupId);
+  @override
+  Future<void> moveGroup(int groupId, int delta) async {}
+  @override
+  Future<void> addToGroup(int groupId, int itemId) async {
+    final ids = groups[groupId]!.$2;
+    if (!ids.contains(itemId)) ids.add(itemId);
+  }
+
+  @override
+  Future<void> removeFromGroup(int groupId, int itemId) async => groups[groupId]!.$2.remove(itemId);
+  @override
+  Future<void> moveInGroup(int groupId, int itemId, int delta) async {
+    final ids = groups[groupId]!.$2;
+    final at = ids.indexOf(itemId);
+    ids.insert((at + delta).clamp(0, ids.length - 1), ids.removeAt(at));
+  }
+
+  @override
+  Future<List<Item>> groupItems(int groupId) async => [for (final id in groups[groupId]!.$2) ?_find(id)].map(_named).toList();
+
   String? pin;
   bool locked = false;
   int adultCategories = 0;
@@ -162,7 +226,11 @@ class FakeLibrary implements LibraryApi {
   @override
   Future<List<Item>> page(String sourceId, Kind kind, {int? categoryUid, int? afterSort, int limit = 200}) async {
     final all = items[kind] ?? const <Item>[];
-    return all.where((i) => afterSort == null || i.sort > afterSort).take(limit).toList();
+    return all
+        .where((i) => !hiddenIds.contains(i.id) && (afterSort == null || i.sort > afterSort))
+        .map(_named)
+        .take(limit)
+        .toList();
   }
 
   @override

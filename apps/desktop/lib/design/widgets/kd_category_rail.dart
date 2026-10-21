@@ -35,6 +35,7 @@ class KdCategoryRail extends StatefulWidget {
     this.filterFrom = 12,
     this.autofocusFilter = false,
     this.footer,
+    this.onContext,
   });
 
   final String title;
@@ -48,6 +49,9 @@ class KdCategoryRail extends StatefulWidget {
 
   /// Below the categories (the parental lock's "locked categories" row).
   final Widget? footer;
+
+  /// Right-click on an entry, with the pointer's global position.
+  final void Function(int id, Offset at)? onContext;
 
   @override
   State<KdCategoryRail> createState() => _KdCategoryRailState();
@@ -74,6 +78,7 @@ class _KdCategoryRailState extends State<KdCategoryRail> {
       icon: e.icon,
       active: widget.selected == e.id,
       onTap: () => widget.onSelect(e.id),
+      onSecondaryTap: widget.onContext == null ? null : (at) => widget.onContext!(e.id, at),
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -113,13 +118,22 @@ class _KdCategoryRailState extends State<KdCategoryRail> {
 }
 
 class KdCategoryRow extends StatefulWidget {
-  const KdCategoryRow({super.key, required this.name, required this.count, required this.active, required this.onTap, this.icon});
+  const KdCategoryRow({
+    super.key,
+    required this.name,
+    required this.count,
+    required this.active,
+    required this.onTap,
+    this.icon,
+    this.onSecondaryTap,
+  });
 
   final String name;
   final int? count;
   final bool active;
   final VoidCallback onTap;
   final IconData? icon;
+  final ValueChanged<Offset>? onSecondaryTap;
 
   @override
   State<KdCategoryRow> createState() => _KdCategoryRowState();
@@ -137,6 +151,7 @@ class _KdCategoryRowState extends State<KdCategoryRow> {
       onExit: (_) => setState(() => _hover = false),
       child: GestureDetector(
         onTap: widget.onTap,
+        onSecondaryTapUp: widget.onSecondaryTap == null ? null : (d) => widget.onSecondaryTap!(d.globalPosition),
         child: Container(
           height: 32,
           margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),

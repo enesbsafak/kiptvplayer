@@ -2245,6 +2245,120 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kilitli kategoriler'**
   String get pinLockedCategories;
+
+  /// No description provided for @editRename.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeniden adlandır…'**
+  String get editRename;
+
+  /// No description provided for @editRenameChannel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kanalı yeniden adlandır'**
+  String get editRenameChannel;
+
+  /// No description provided for @editRenameCategory.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kategoriyi yeniden adlandır'**
+  String get editRenameCategory;
+
+  /// No description provided for @editRenameGroup.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grubu yeniden adlandır'**
+  String get editRenameGroup;
+
+  /// No description provided for @editOriginalName.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sağlayıcıdaki adı: {name}'**
+  String editOriginalName(String name);
+
+  /// No description provided for @editResetName.
+  ///
+  /// In tr, this message translates to:
+  /// **'Özgün ada dön'**
+  String get editResetName;
+
+  /// No description provided for @editMoveUp.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yukarı taşı'**
+  String get editMoveUp;
+
+  /// No description provided for @editMoveDown.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aşağı taşı'**
+  String get editMoveDown;
+
+  /// No description provided for @editHideCategory.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kategoriyi gizle'**
+  String get editHideCategory;
+
+  /// No description provided for @editHideChannel.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kanalı gizle'**
+  String get editHideChannel;
+
+  /// No description provided for @editDeleteGroup.
+  ///
+  /// In tr, this message translates to:
+  /// **'Grubu sil'**
+  String get editDeleteGroup;
+
+  /// No description provided for @editRemoveFromGroup.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gruptan çıkar'**
+  String get editRemoveFromGroup;
+
+  /// No description provided for @editAddToGroup.
+  ///
+  /// In tr, this message translates to:
+  /// **'{name} grubuna ekle'**
+  String editAddToGroup(String name);
+
+  /// No description provided for @editNewGroup.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni gruba ekle…'**
+  String get editNewGroup;
+
+  /// No description provided for @editNewGroupTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni grup'**
+  String get editNewGroupTitle;
+
+  /// No description provided for @editShow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Göster'**
+  String get editShow;
+
+  /// No description provided for @editHiddenTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gizlenen kanallar ve kategoriler'**
+  String get editHiddenTitle;
+
+  /// No description provided for @editHiddenNone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gizlenen bir şey yok. Kanal veya kategori listesinde sağ tıklayarak gizleyebilir, yeniden adlandırabilir ya da kendi gruplarınızı kurabilirsiniz; eşitlemeden sonra da kalırlar.'**
+  String get editHiddenNone;
+
+  /// No description provided for @editHiddenBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bunlar listelerde ve aramada görünmez; eşitlemeden sonra da gizli kalır.'**
+  String get editHiddenBody;
 }
 
 class _AppLocalizationsDelegate

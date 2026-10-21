@@ -1203,4 +1203,67 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get pinLockedCategories => 'Kilitli kategoriler';
+
+  @override
+  String get editRename => 'Yeniden adlandır…';
+
+  @override
+  String get editRenameChannel => 'Kanalı yeniden adlandır';
+
+  @override
+  String get editRenameCategory => 'Kategoriyi yeniden adlandır';
+
+  @override
+  String get editRenameGroup => 'Grubu yeniden adlandır';
+
+  @override
+  String editOriginalName(String name) {
+    return 'Sağlayıcıdaki adı: $name';
+  }
+
+  @override
+  String get editResetName => 'Özgün ada dön';
+
+  @override
+  String get editMoveUp => 'Yukarı taşı';
+
+  @override
+  String get editMoveDown => 'Aşağı taşı';
+
+  @override
+  String get editHideCategory => 'Kategoriyi gizle';
+
+  @override
+  String get editHideChannel => 'Kanalı gizle';
+
+  @override
+  String get editDeleteGroup => 'Grubu sil';
+
+  @override
+  String get editRemoveFromGroup => 'Gruptan çıkar';
+
+  @override
+  String editAddToGroup(String name) {
+    return '$name grubuna ekle';
+  }
+
+  @override
+  String get editNewGroup => 'Yeni gruba ekle…';
+
+  @override
+  String get editNewGroupTitle => 'Yeni grup';
+
+  @override
+  String get editShow => 'Göster';
+
+  @override
+  String get editHiddenTitle => 'Gizlenen kanallar ve kategoriler';
+
+  @override
+  String get editHiddenNone =>
+      'Gizlenen bir şey yok. Kanal veya kategori listesinde sağ tıklayarak gizleyebilir, yeniden adlandırabilir ya da kendi gruplarınızı kurabilirsiniz; eşitlemeden sonra da kalırlar.';
+
+  @override
+  String get editHiddenBody =>
+      'Bunlar listelerde ve aramada görünmez; eşitlemeden sonra da gizli kalır.';
 }

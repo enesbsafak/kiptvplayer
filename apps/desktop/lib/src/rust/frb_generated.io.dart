@@ -91,6 +91,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   GuideInfo dco_decode_guide_info(dynamic raw);
 
   @protected
+  HiddenItems dco_decode_hidden_items(dynamic raw);
+
+  @protected
   int dco_decode_i_32(dynamic raw);
 
   @protected
@@ -312,6 +315,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   GuideInfo sse_decode_guide_info(SseDeserializer deserializer);
+
+  @protected
+  HiddenItems sse_decode_hidden_items(SseDeserializer deserializer);
 
   @protected
   int sse_decode_i_32(SseDeserializer deserializer);
@@ -567,6 +573,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_guide_info(GuideInfo self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_hidden_items(HiddenItems self, SseSerializer serializer);
 
   @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
