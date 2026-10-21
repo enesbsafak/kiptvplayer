@@ -87,8 +87,13 @@ class _AppShellState extends State<AppShell> with WindowListener {
           child: CallbackShortcuts(
             bindings: _shortcuts(app),
             child: Focus(
-              autofocus: true,
-              child: isCompact(context) ? _compact(app, player) : _wide(app, player),
+              // On a TV the sidebar's current section takes the focus.
+              autofocus: !isTv,
+              // It holds the shortcuts; the arrows never move onto it.
+              skipTraversal: true,
+              // A TV keeps the sidebar: a remote moves along a left rail far
+              // better than along a bottom bar.
+              child: isCompact(context) && !isTv ? _compact(app, player) : _wide(app, player),
             ),
           ),
         );
@@ -96,13 +101,17 @@ class _AppShellState extends State<AppShell> with WindowListener {
     );
   }
 
-  /// Desktop (and tablets held sideways): titlebar, sidebar, content.
+  /// Desktop, tablets held sideways and TVs: sidebar and content (and the
+  /// titlebar on desktop).
   Widget _wide(AppState app, PlayerController player) {
     final full = player.view == PlayerView.full;
     final hideChrome = full && _osFullscreen;
+    // A window of our own (titlebar, frame); a TV, even previewed on a
+    // desktop with --kp-tv, is laid out like a tablet.
+    final desktop = isDesktopOs && !isTv;
     final body = Column(
       children: [
-        if (!hideChrome && isDesktopOs)
+        if (!hideChrome && desktop)
           KdTitlebar(
             actions: [
               if (app.sources.isNotEmpty)
@@ -128,14 +137,14 @@ class _AppShellState extends State<AppShell> with WindowListener {
                     ),
                     if (player.view == PlayerView.preview && app.section != Section.live)
                       const Positioned(right: 18, bottom: 18, child: _MiniPlayer()),
-                    if (full && isDesktopOs) const Positioned.fill(child: PlayerScreen()),
+                    if (full && desktop) const Positioned.fill(child: PlayerScreen()),
                     const Positioned(top: 14, right: 18, child: ReminderBanner()),
                   ],
                 ),
         ),
       ],
     );
-    if (isDesktopOs) {
+    if (desktop) {
       return DecoratedBox(
         decoration: BoxDecoration(border: hideChrome ? null : Border.all(color: KdColors.line)),
         child: body,

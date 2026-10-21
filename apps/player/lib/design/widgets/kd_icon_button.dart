@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../tokens.dart';
+import 'kd_focus.dart';
 
 /// `.icon-btn`: 32x30, 16 px stroke icon, muted until hovered.
 class KdIconButton extends StatefulWidget {
@@ -28,30 +29,26 @@ class KdIconButton extends StatefulWidget {
 }
 
 class _KdIconButtonState extends State<KdIconButton> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
-    Widget button = MouseRegion(
-      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onPressed,
+    Widget button = KdTappable(
+      onTap: widget.onPressed,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
         child: Opacity(
           opacity: enabled ? 1 : KdMotion.disabledOpacity,
           child: Container(
             width: widget.extent ?? KdSize.iconButtonW,
             height: widget.extent ?? KdSize.iconButtonH,
             decoration: BoxDecoration(
-              color: _hover && enabled ? KdColors.bg3 : Colors.transparent,
+              color: (hover || focus) && enabled ? KdColors.bg3 : Colors.transparent,
               borderRadius: BorderRadius.circular(KdRadius.control),
             ),
             child: Icon(
               widget.icon,
               size: KdSize.icon,
-              color: _hover && enabled ? KdColors.text : (widget.color ?? KdColors.muted),
+              color: (hover || focus) && enabled ? KdColors.text : (widget.color ?? KdColors.muted),
             ),
           ),
         ),

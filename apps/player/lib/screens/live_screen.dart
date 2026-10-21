@@ -16,6 +16,7 @@ import '../player/player_controller.dart';
 import '../player/reconnect_banner.dart';
 import 'parental.dart';
 import 'edits.dart';
+import '../design/widgets/kd_focus.dart';
 
 /// Live TV: categories · channel list · preview with now/next.
 /// Click previews in place, double-click or Enter goes full screen,
@@ -168,11 +169,32 @@ class _LiveScreenState extends State<LiveScreen> {
     }
   }
 
+  static final _moveKeys = {
+    LogicalKeyboardKey.arrowUp,
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.enter,
+    LogicalKeyboardKey.numpadEnter,
+    LogicalKeyboardKey.select,
+  };
+
+  /// A row (or the filter's TV frame) has the focus, not the list itself; the
+  /// filter's text field still hands the arrows to the list.
+  bool get _onRow {
+    final f = FocusManager.instance.primaryFocus;
+    if (f == null || f == _focus || !f.ancestors.contains(_focus)) return false;
+    return f.context?.findAncestorStateOfType<EditableTextState>() == null;
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {
     if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
     final k = e.logicalKey;
     final n = _items.length;
     if (n == 0) return KeyEventResult.ignored;
+    if ((isCompact(context) || _onRow) && _moveKeys.contains(k)) {
+      // One pane (a phone, a TV) or a row focused with Tab or a remote: the
+      // focus moves from row to row and OK plays the focused one.
+      return KeyEventResult.ignored;
+    }
     if (k == LogicalKeyboardKey.arrowDown) {
       _play((_selected + 1).clamp(0, n - 1));
     } else if (k == LogicalKeyboardKey.arrowUp) {
@@ -267,7 +289,10 @@ class _LiveScreenState extends State<LiveScreen> {
     final pager = _pager;
     return Focus(
       focusNode: _focus,
-      autofocus: true,
+      // One pane: the rows themselves take the focus (a remote moves along
+      // them); two panes: the list does and the arrows move the selection.
+      autofocus: !compact,
+      skipTraversal: true,
       onKeyEvent: _onKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -304,7 +329,7 @@ class _LiveScreenState extends State<LiveScreen> {
                         index: i,
                         selected: i == _selected,
                         onTap: () {
-                          _focus.requestFocus();
+                          if (!compact) _focus.requestFocus();
                           _play(i, full: compact);
                         },
                         onDoubleTap: () => _play(i, full: true),
@@ -341,27 +366,22 @@ class _ChannelRow extends StatefulWidget {
 }
 
 class _ChannelRowState extends State<_ChannelRow> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
     final epg = context.epg..want(item.id);
     final sel = widget.selected;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onDoubleTap: widget.onDoubleTap,
-        onSecondaryTapUp: (d) => widget.onContext(d.globalPosition),
-        onLongPressStart: (d) => widget.onContext(d.globalPosition),
+    return KdTappable(
+      onTap: widget.onTap,
+      onDoubleTap: widget.onDoubleTap,
+      onContext: (at) => widget.onContext(at),
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 8),
           decoration: BoxDecoration(
-            color: sel ? KdColors.accentAlpha(0.12) : (_hover ? KdColors.bg2 : Colors.transparent),
+            color: sel ? KdColors.accentAlpha(0.12) : (hover ? KdColors.bg2 : Colors.transparent),
             borderRadius: BorderRadius.circular(KdRadius.control),
           ),
           child: Row(
@@ -667,22 +687,18 @@ class _ArchiveRow extends StatefulWidget {
 }
 
 class _ArchiveRowState extends State<_ArchiveRow> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final p = widget.p;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
+    return KdTappable(
+      onTap: widget.onTap,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
         child: Container(
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            color: _hover ? KdColors.bg2 : Colors.transparent,
+            color: hover ? KdColors.bg2 : Colors.transparent,
             borderRadius: BorderRadius.circular(KdRadius.control),
           ),
           child: Row(
@@ -699,13 +715,13 @@ class _ArchiveRowState extends State<_ArchiveRow> {
                   p.title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: _hover ? KdColors.accent2 : KdColors.text),
+                  style: TextStyle(color: hover ? KdColors.accent2 : KdColors.text),
                 ),
               ),
               const SizedBox(width: 10),
               Text(kdDuration(p.stop - p.start), style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
               const SizedBox(width: 10),
-              Icon(LucideIcons.play, size: 13, color: _hover ? KdColors.accent2 : KdColors.muted),
+              Icon(LucideIcons.play, size: 13, color: hover ? KdColors.accent2 : KdColors.muted),
             ],
           ),
         ),

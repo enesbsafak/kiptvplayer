@@ -16,6 +16,7 @@ import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import 'parental.dart';
+import '../design/widgets/kd_focus.dart';
 
 /// EPG grid: sticky channel column, time ruler, programme tiles, now line.
 /// Going back in time shows catch-up channels' archive; those tiles replay.
@@ -550,8 +551,6 @@ class _Tile extends StatefulWidget {
 }
 
 class _TileState extends State<_Tile> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     return Positioned(
@@ -559,17 +558,15 @@ class _TileState extends State<_Tile> {
       top: 4,
       bottom: 4,
       width: widget.width,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hover = true),
-        onExit: (_) => setState(() => _hover = false),
-        child: GestureDetector(
-          onTap: widget.onTap,
+      child: KdTappable(
+        onTap: widget.onTap,
+        builder: (context, hover, focus) => KdFocusRing(
+          focused: focus,
           child: Container(
             padding: const EdgeInsets.fromLTRB(9, 6, 9, 5),
             decoration: BoxDecoration(
-              color: widget.live ? KdColors.accentAlpha(0.08) : (_hover ? KdColors.bg3 : KdColors.bg2),
-              border: Border.all(color: widget.live ? KdColors.accentAlpha(0.45) : (_hover ? KdColors.buttonHoverBorder : KdColors.line)),
+              color: widget.live ? KdColors.accentAlpha(0.08) : (hover ? KdColors.bg3 : KdColors.bg2),
+              border: Border.all(color: widget.live ? KdColors.accentAlpha(0.45) : (hover ? KdColors.buttonHoverBorder : KdColors.line)),
               borderRadius: BorderRadius.circular(KdRadius.control),
             ),
             child: Column(
@@ -578,7 +575,7 @@ class _TileState extends State<_Tile> {
                 Row(
                   children: [
                     if (widget.replay && widget.width > 60) ...[
-                      Icon(LucideIcons.history, size: 11, color: _hover ? KdColors.accent2 : KdColors.muted),
+                      Icon(LucideIcons.history, size: 11, color: hover ? KdColors.accent2 : KdColors.muted),
                       const SizedBox(width: 4),
                     ],
                     if (widget.reminded && widget.width > 40) ...[

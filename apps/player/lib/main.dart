@@ -26,6 +26,7 @@ import 'player/media_session.dart';
 import 'player/player_controller.dart';
 import 'player/player_engine.dart';
 import 'shell/app_shell.dart';
+import 'shell/tv.dart';
 import 'shell/command_palette.dart' show rootNavigator;
 import 'src/rust/api/library.dart' as rust;
 import 'src/rust/frb_generated.dart';
@@ -74,6 +75,7 @@ Future<void> main(List<String> args) async {
   unawaited(engine.ready.then((_) => perf.record('player_warm_up', warmUp.elapsedMilliseconds)));
 
   final dataDir = _arg(args, 'kp-data-dir') ?? (await getApplicationSupportDirectory()).path;
+  isTv = args.contains('--kp-tv') || await detectTv();
   final library = RustLibrary();
   final state = AppState(library);
   state.reminders.onDue = (_) => flashTaskbar();
@@ -138,7 +140,8 @@ Future<void> main(List<String> args) async {
 /// out at a phone's size inside the desktop window, so tools/shots.ps1 -Phone
 /// captures the compact layout with real fonts and data.
 Size? _phoneSize(List<String> args) {
-  final v = _arg(args, 'kp-phone');
+  // --kp-tv alone: a 1080p TV's 960x540 dp.
+  final v = _arg(args, 'kp-phone') ?? (args.contains('--kp-tv') ? '960x540' : null);
   if (v == null || !args.contains('--kp-offscreen')) return null;
   final parts = v.split('x').map(double.tryParse).toList();
   if (parts.length != 2 || parts.contains(null)) return null;
@@ -184,10 +187,11 @@ class _KaradelikPlayerAppState extends State<KaradelikPlayerApp> {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         // Around the navigator, so captures include dialogs and menus.
         builder: (context, child) {
+          final app = isTv ? TvFrame(child: child!) : child;
           final phone = widget.phone;
-          if (phone == null) return RepaintBoundary(key: widget.boundaryKey, child: child);
+          if (phone == null) return RepaintBoundary(key: widget.boundaryKey, child: app);
           // A status bar and a home indicator, as on a real phone.
-          const insets = EdgeInsets.only(top: 24, bottom: 16);
+          final insets = isTv ? EdgeInsets.zero : const EdgeInsets.only(top: 24, bottom: 16);
           return OverflowBox(
             alignment: Alignment.topLeft,
             minWidth: phone.width,
@@ -198,7 +202,7 @@ class _KaradelikPlayerAppState extends State<KaradelikPlayerApp> {
               key: widget.boundaryKey,
               child: MediaQuery(
                 data: MediaQuery.of(context).copyWith(size: phone, padding: insets, viewPadding: insets),
-                child: ColoredBox(color: KdColors.bg, child: child),
+                child: ColoredBox(color: KdColors.bg, child: app),
               ),
             ),
           );

@@ -1,6 +1,9 @@
 package dev.karadelik.player
 
+import android.app.UiModeManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -29,6 +32,19 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "karadelik/device").setMethodCallHandler { call, result ->
+            when (call.method) {
+                "isTv" -> result.success(isTv())
+                else -> result.notImplemented()
+            }
+        }
+    }
+
+    /** Android TV / Google TV: the remote layout (lib/shell/tv.dart). */
+    private fun isTv(): Boolean {
+        val uiMode = getSystemService(Context.UI_MODE_SERVICE) as? UiModeManager
+        return uiMode?.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION ||
+            packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)
     }
 }
 

@@ -7,13 +7,14 @@ app-icon-foreground-1024.png (transparent).
 Android: launcher PNGs and an adaptive icon (the foreground inside the safe
 zone on the app's background). iOS: opaque squares, the system rounds them.
 macOS: a rounded square on Apple's icon grid. Windows: app_icon.ico. The app:
-assets/brand/logo.png.
+assets/brand/logo.png. Android TV: the 320x180 launcher banner with the name
+(Segoe UI, so it is generated on Windows).
 """
 
 import json
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
 APP = ROOT / 'apps' / 'player'
@@ -66,6 +67,25 @@ def android() -> None:
     )
 
 
+def tv_banner() -> None:
+    """Android TV's launcher row shows a 16:9 banner, not the icon: the mark
+    on the app's background with the name beside it (320x180 at xhdpi)."""
+    w, h, s = 320, 180, 4
+    img = Image.new('RGBA', (w * s, h * s), (11, 11, 16, 255))
+    glow = Image.new('L', img.size, 0)
+    ImageDraw.Draw(glow).ellipse((-40 * s, 10 * s, 140 * s, 190 * s), fill=46)
+    img.paste((255, 138, 31, 255), (0, 0), glow.filter(ImageFilter.GaussianBlur(40 * s)))
+    mark = FOREGROUND.resize((140 * s, 140 * s), Image.LANCZOS)
+    img.alpha_composite(mark, (-2 * s, 20 * s))
+    draw = ImageDraw.Draw(img)
+    fonts = Path('C:/Windows/Fonts')
+    draw.text((136 * s, 92 * s), 'Karadelik', font=ImageFont.truetype(str(fonts / 'seguisb.ttf'), 34 * s), fill=(233, 231, 239), anchor='ls')
+    draw.text((137 * s, 118 * s), 'Player', font=ImageFont.truetype(str(fonts / 'segoeui.ttf'), 22 * s), fill=(141, 138, 156), anchor='ls')
+    folder = APP / 'android' / 'app' / 'src' / 'main' / 'res' / 'drawable-xhdpi'
+    folder.mkdir(parents=True, exist_ok=True)
+    img.resize((w, h), Image.LANCZOS).convert('RGB').save(folder / 'tv_banner.png', optimize=True)
+
+
 def apple(contents: Path, mac: bool) -> None:
     spec = json.loads(contents.read_text(encoding='utf-8'))
     for image in spec['images']:
@@ -87,6 +107,7 @@ def windows() -> None:
 
 if __name__ == '__main__':
     android()
+    tv_banner()
     apple(APP / 'ios' / 'Runner' / 'Assets.xcassets' / 'AppIcon.appiconset' / 'Contents.json', mac=False)
     apple(APP / 'macos' / 'Runner' / 'Assets.xcassets' / 'AppIcon.appiconset' / 'Contents.json', mac=True)
     windows()

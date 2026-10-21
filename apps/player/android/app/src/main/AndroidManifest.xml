@@ -3,6 +3,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <!--
+      Android TV and Google TV: the same app, laid out for a remote when the
+      device is a TV (lib/shell/tv.dart). Neither a touchscreen nor leanback is
+      required, so one listing serves phones, tablets and TVs.
+    -->
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+
+    <!--
       usesCleartextTraffic: most IPTV panels serve plain http, and the user
       chooses the provider; Dart and Android refuse http without it.
       allowBackup off: saved passwords are sealed with a key that stays in this
@@ -13,6 +21,7 @@
         android:label="Karadelik"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/tv_banner"
         android:usesCleartextTraffic="true"
         android:allowBackup="false"
         android:fullBackupContent="false"
@@ -37,6 +46,8 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
+                <!-- The TV home screen's app row. -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

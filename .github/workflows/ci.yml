@@ -139,6 +139,25 @@ jobs:
           name: android-smoke
           path: android-smoke
           retention-days: 14
+      # Android TV / Google TV: the same APK on a TV emulator (x86_64 TV
+      # images exist from API 36), driven with remote keys.
+      - name: Start the app on an Android TV emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          TV: 1
+          OUT: android-tv-smoke
+        with:
+          api-level: 36
+          arch: x86_64
+          target: android-tv
+          disable-animations: true
+          script: bash tools/android-smoke.sh apps/player/build/app/outputs/flutter-apk/app-x86_64-release.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-tv-smoke
+          path: android-tv-smoke
+          retention-days: 14
 
   ios:
     runs-on: macos-latest

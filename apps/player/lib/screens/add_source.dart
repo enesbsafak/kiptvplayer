@@ -11,6 +11,7 @@ import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../l10n/l10n.dart';
+import '../design/widgets/kd_focus.dart';
 
 enum _Type { xtream, m3uUrl, m3uFile, stalker }
 
@@ -196,13 +197,19 @@ class _AddSourceFormState extends State<AddSourceForm> {
           ),
         Padding(
           padding: EdgeInsets.only(left: compact ? 0 : 150, top: 2, bottom: 6),
-          child: GestureDetector(
-            onTap: () => setState(() => _advanced = !_advanced),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Text(
-                _advanced ? l10n.addAdvancedHide : l10n.addAdvanced,
-                style: const TextStyle(fontSize: KdType.small, color: KdColors.accent2),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: KdTappable(
+              onTap: () => setState(() => _advanced = !_advanced),
+              builder: (context, hover, focus) => KdFocusRing(
+                focused: focus,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  child: Text(
+                    _advanced ? l10n.addAdvancedHide : l10n.addAdvanced,
+                    style: TextStyle(fontSize: KdType.small, color: KdColors.accent2, decoration: hover ? TextDecoration.underline : null),
+                  ),
+                ),
               ),
             ),
           ),
@@ -329,22 +336,18 @@ class _TypeCard extends StatefulWidget {
 }
 
 class _TypeCardState extends State<_TypeCard> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final sel = widget.selected;
     return Expanded(
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hover = true),
-        onExit: (_) => setState(() => _hover = false),
-        child: GestureDetector(
-          onTap: widget.onTap,
+      child: KdTappable(
+        onTap: widget.onTap,
+        builder: (context, hover, focus) => KdFocusRing(
+          focused: focus,
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: sel ? KdColors.accentAlpha(0.08) : (_hover ? KdColors.buttonHoverBg : KdColors.bg2),
+              color: sel ? KdColors.accentAlpha(0.08) : (hover ? KdColors.buttonHoverBg : KdColors.bg2),
               border: Border.all(color: sel ? KdColors.accentAlpha(0.45) : KdColors.line),
               borderRadius: BorderRadius.circular(KdRadius.card),
             ),

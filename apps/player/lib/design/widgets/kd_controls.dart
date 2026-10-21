@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../app/platform.dart';
 import '../../l10n/l10n.dart';
 import '../tokens.dart';
+import 'kd_focus.dart';
 import 'kd_widgets.dart' show kdUpper;
 
 enum KdButtonKind { neutral, primary, cta, danger, ghost }
@@ -84,12 +87,16 @@ class _KdButtonState extends State<KdButton> {
           Icon(widget.icon, size: widget.large ? 16 : 14, color: fg),
           const SizedBox(width: 6),
         ],
-        Text(
-          widget.label,
-          style: TextStyle(
-            color: fg,
-            fontSize: widget.large ? KdType.body : KdType.small,
-            fontWeight: strong ? FontWeight.w600 : FontWeight.w500,
+        Flexible(
+          child: Text(
+            widget.label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: fg,
+              fontSize: widget.large ? KdType.body : KdType.small,
+              fontWeight: strong ? FontWeight.w600 : FontWeight.w500,
+            ),
           ),
         ),
       ],
@@ -136,7 +143,11 @@ class _KdButtonState extends State<KdButton> {
 }
 
 /// Text field in KaradelikDev style: `--bg-2` fill, 1 px line, accent focus.
-class KdInput extends StatelessWidget {
+///
+/// On a TV the remote moves onto the field without typing in it (a focused
+/// text field would bring up the on-screen keyboard at every pass); OK starts
+/// typing, the keyboard's done or the up and down arrows end it.
+class KdInput extends StatefulWidget {
   const KdInput({
     super.key,
     this.controller,
@@ -161,18 +172,83 @@ class KdInput extends StatelessWidget {
   final bool mono;
 
   @override
+  State<KdInput> createState() => _KdInputState();
+}
+
+class _KdInputState extends State<KdInput> {
+  /// TV only: the frame the remote lands on, and the field's own node when
+  /// the caller gave none.
+  FocusNode? _frame;
+  FocusNode? _own;
+
+  FocusNode get _field => widget.focusNode ?? (_own ??= FocusNode(debugLabel: 'input'));
+
+  @override
+  void initState() {
+    super.initState();
+    if (isTv) {
+      _frame = FocusNode(debugLabel: 'input-frame')..addListener(_changed);
+      // Explicit focus requests (a dialog's first field) still type at once.
+      _field.skipTraversal = true;
+    }
+  }
+
+  void _changed() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _frame?.dispose();
+    _own?.dispose();
+    super.dispose();
+  }
+
+  static const _leave = <ShortcutActivator, Intent>{
+    SingleActivator(LogicalKeyboardKey.arrowUp): DirectionalFocusIntent(TraversalDirection.up, ignoreTextFields: false),
+    SingleActivator(LogicalKeyboardKey.arrowDown): DirectionalFocusIntent(TraversalDirection.down, ignoreTextFields: false),
+  };
+
+  @override
   Widget build(BuildContext context) {
+    final field = _textField();
+    final frame = _frame;
+    if (frame == null) return field;
+    return Focus(
+      focusNode: frame,
+      onKeyEvent: (node, e) {
+        final k = e.logicalKey;
+        if (e is KeyDownEvent &&
+            node.hasPrimaryFocus &&
+            (k == LogicalKeyboardKey.select || k == LogicalKeyboardKey.enter || k == LogicalKeyboardKey.numpadEnter)) {
+          _field.requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Shortcuts(
+        shortcuts: _leave,
+        child: KdFocusRing(focused: frame.hasPrimaryFocus, child: field),
+      ),
+    );
+  }
+
+  Widget _textField() {
     OutlineInputBorder border(Color c) => OutlineInputBorder(
       borderRadius: BorderRadius.circular(KdRadius.control),
       borderSide: BorderSide(color: c),
     );
+    final mono = widget.mono;
+    final prefix = widget.prefix;
     return TextField(
-      controller: controller,
-      focusNode: focusNode,
-      obscureText: obscure,
-      autofocus: autofocus,
-      onSubmitted: onSubmitted,
-      onChanged: onChanged,
+      controller: widget.controller,
+      focusNode: _frame == null ? widget.focusNode : _field,
+      obscureText: widget.obscure,
+      autofocus: widget.autofocus,
+      onSubmitted: widget.onSubmitted,
+      // TV: done on the on-screen keyboard hands the remote back to the frame.
+      onEditingComplete: _frame == null ? null : () => _frame!.requestFocus(),
+      onChanged: widget.onChanged,
       cursorColor: KdColors.accent,
       cursorWidth: 1.5,
       style: TextStyle(
@@ -183,7 +259,7 @@ class KdInput extends StatelessWidget {
       ),
       decoration: InputDecoration(
         isDense: true,
-        hintText: hint,
+        hintText: widget.hint,
         hintStyle: const TextStyle(color: KdColors.muted, fontSize: KdType.body),
         filled: true,
         fillColor: KdColors.bg2,
@@ -218,23 +294,20 @@ class KdPill extends StatefulWidget {
 }
 
 class _KdPillState extends State<KdPill> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final sel = widget.selected;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
+    return KdTappable(
+      onTap: widget.onTap,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
+        radius: KdRadius.pill,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
           decoration: BoxDecoration(
             color: sel
                 ? KdColors.accentAlpha(0.12)
-                : _hover
+                : hover
                     ? KdColors.bg3
                     : KdColors.bg2,
             border: Border.all(color: sel ? KdColors.accentAlpha(0.45) : KdColors.line),
@@ -281,11 +354,10 @@ class KdCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return KdTappable(
       onTap: () => onChanged(!value),
-      behavior: HitTestBehavior.opaque,
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

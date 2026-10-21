@@ -21,6 +21,7 @@ import '../player/player_controller.dart';
 import '../player/reconnect_banner.dart';
 import '../player/stats_panel.dart';
 import 'subtitle_search.dart';
+import '../design/widgets/kd_focus.dart';
 
 enum _Panel { none, tracks, channels }
 
@@ -34,6 +35,14 @@ class PlayerScreen extends StatefulWidget {
 
 class _PlayerScreenState extends State<PlayerScreen> {
   final _focus = FocusNode(debugLabel: 'player');
+
+  /// The play button: where a remote's OK lands when it brings the
+  /// controls up.
+  final _playFocus = FocusNode(debugLabel: 'player-play');
+
+  /// The audio and subtitles panel's own scope, so opening it can hand it
+  /// the focus.
+  final _tracksScope = FocusScopeNode(debugLabel: 'player-tracks');
   bool _osd = true;
   Timer? _hide;
   _Panel _panel = _Panel.none;
@@ -56,6 +65,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void initState() {
     super.initState();
+    // Keys and the remote go to the player while it is open, whatever had
+    // the focus before (autofocus only applies when nothing has).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focus.requestFocus();
+    });
     _poke();
   }
 
@@ -64,6 +78,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _hide?.cancel();
     _flashTimer?.cancel();
     _focus.dispose();
+    _playFocus.dispose();
+    _tracksScope.dispose();
     // Back to the usual place for the preview and the next video.
     _player?.engine.setSubtitlePosition(100);
     _player?.tracksPanelRequest.removeListener(_openTracksOnRequest);
@@ -134,19 +150,66 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _setOsd(true);
     // Paused, the controls stay: where it stopped, how far behind live.
     _hide = Timer(const Duration(seconds: 3), () {
-      if (mounted && _panel == _Panel.none && (_player?.playing ?? true)) _setOsd(false);
+      if (mounted && _panel == _Panel.none && (_player?.playing ?? true)) {
+        // No invisible button keeps the focus.
+        if (_onControl) _focus.requestFocus();
+        _setOsd(false);
+      }
     });
   }
 
   void _togglePanel(_Panel p) {
-    setState(() => _panel = _panel == p ? _Panel.none : p);
+    final closing = _panel == p;
+    setState(() => _panel = closing ? _Panel.none : p);
+    if (closing) {
+      _focus.requestFocus();
+    } else if (p == _Panel.tracks) {
+      // Its first row, once built (the channel list focuses its current row
+      // itself).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _panel == p && !_tracksScope.hasFocus) _tracksScope.nextFocus();
+      });
+    }
     _poke();
+  }
+
+  /// A control (an OSD button, a panel row) has the keyboard or remote
+  /// focus rather than the video itself.
+  bool get _onControl {
+    final f = FocusManager.instance.primaryFocus;
+    return f != null && f != _focus && f.ancestors.contains(_focus);
+  }
+
+  static final _traversalKeys = {
+    LogicalKeyboardKey.arrowUp,
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.arrowLeft,
+    LogicalKeyboardKey.arrowRight,
+    LogicalKeyboardKey.select,
+    LogicalKeyboardKey.enter,
+    LogicalKeyboardKey.numpadEnter,
+  };
+
+  /// OK on a remote with nothing focused: the controls come up with the play
+  /// button focused, so the arrows move between the buttons from there. The
+  /// controls are always built (faded out, not removed), so it is there.
+  void _focusControls() {
+    _poke();
+    _playFocus.requestFocus();
   }
 
   void _exit() {
     final player = context.player;
     if (_panel != _Panel.none) {
       setState(() => _panel = _Panel.none);
+      _focus.requestFocus();
+      return;
+    }
+    if (_onControl) {
+      // Back from the buttons hides them first, as on a TV's own player.
+      _focus.requestFocus();
+      _hide?.cancel();
+      _setOsd(false);
       return;
     }
     if (isCompact(context)) {
@@ -169,6 +232,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
     final live = p.now?.isLive ?? false;
     final k = e.logicalKey;
     _poke();
+    if (_onControl && _traversalKeys.contains(k)) {
+      // The focused button or row takes them: arrows move, OK activates.
+      return KeyEventResult.ignored;
+    }
     if (k == LogicalKeyboardKey.escape) {
       _exit();
     } else if (k == LogicalKeyboardKey.space) {
@@ -183,6 +250,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
       p.typeDigit(digitOf(k)!);
     } else if (live && p.zapDigits.isNotEmpty && (k == LogicalKeyboardKey.enter || k == LogicalKeyboardKey.numpadEnter)) {
       p.commitDigits();
+    } else if (k == LogicalKeyboardKey.select || k == LogicalKeyboardKey.enter || k == LogicalKeyboardKey.numpadEnter) {
+      _focusControls();
+    } else if (live && (k == LogicalKeyboardKey.channelUp || k == LogicalKeyboardKey.channelDown)) {
+      p.zap(k == LogicalKeyboardKey.channelUp ? -1 : 1);
+    } else if (k == LogicalKeyboardKey.mediaPlayPause) {
+      p.togglePause();
+    } else if (k == LogicalKeyboardKey.mediaPlay || k == LogicalKeyboardKey.mediaPause) {
+      if (p.playing != (k == LogicalKeyboardKey.mediaPlay)) p.togglePause();
+    } else if ((!live || p.canTimeshift) && (k == LogicalKeyboardKey.mediaRewind || k == LogicalKeyboardKey.mediaFastForward)) {
+      p.seekBy(Duration(seconds: k == LogicalKeyboardKey.mediaRewind ? -10 : 10));
+    } else if (k == LogicalKeyboardKey.contextMenu || k == LogicalKeyboardKey.info) {
+      _togglePanel(_Panel.tracks);
     } else if (k == LogicalKeyboardKey.keyZ || k == LogicalKeyboardKey.keyX) {
       p.nudgeSubtitleDelay(k == LogicalKeyboardKey.keyZ ? -0.1 : 0.1).then((_) {
         if (mounted) _note(l10n.adjSubtitleDelayNote(seconds(p.subtitleDelay)));
@@ -220,6 +299,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       child: Focus(
         focusNode: _focus,
         autofocus: true,
+        // The video itself: arrows on the controls move between them only.
+        skipTraversal: true,
         onKeyEvent: _onKey,
         child: MouseRegion(
           cursor: _osd ? SystemMouseCursors.basic : SystemMouseCursors.none,
@@ -228,6 +309,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
             listenable: player,
             builder: (context, _) {
               final now = player.now;
+              // A phone's cutout, a TV's overscan: overlays keep inside it.
+              final safe = MediaQuery.paddingOf(context);
               return Stack(
                 fit: StackFit.expand,
                 children: [
@@ -265,8 +348,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
                     child: AnimatedOpacity(
                       opacity: _osd ? 1 : 0,
                       duration: const Duration(milliseconds: 160),
-                      // Clear of camera cutouts and rounded corners on phones.
-                      child: SafeArea(child: Stack(
+                      // The shades reach the screen's edges; the controls in
+                      // them keep clear of camera cutouts, rounded corners and
+                      // a TV's overscan (the bars add the safe padding).
+                      child: Stack(
                         fit: StackFit.expand,
                         children: [
                           Align(alignment: Alignment.topCenter, child: _TopBar(now: now, player: player, onBack: _exit)),
@@ -274,20 +359,21 @@ class _PlayerScreenState extends State<PlayerScreen> {
                             alignment: Alignment.bottomCenter,
                             child: _BottomBar(
                               player: player,
+                              playFocus: _playFocus,
                               onTracks: () => _togglePanel(_Panel.tracks),
                               onStats: () => setState(() => _stats = !_stats),
                               onChannels: () => _togglePanel(_Panel.channels),
                             ),
                           ),
                         ],
-                      )),
+                      ),
                     ),
                   ),
-                  Positioned(top: 70, right: 24, child: ZapDigits(player: player)),
+                  Positioned(top: 70 + safe.top, right: 24 + safe.right, child: ZapDigits(player: player)),
                   if (_stats && now != null)
                     Positioned(
-                      top: 70,
-                      left: 20,
+                      top: 70 + safe.top,
+                      left: 20 + safe.left,
                       child: StatsPanel(player: player, onClose: () => setState(() => _stats = false)),
                     ),
                   if (_flash case final f?)
@@ -307,15 +393,20 @@ class _PlayerScreenState extends State<PlayerScreen> {
                         ),
                       ),
                     ),
+                  // Each panel is its own focus scope: opened, it takes the
+                  // focus (the first track, the current channel) so a remote
+                  // works in it at once (_togglePanel).
                   if (_panel == _Panel.tracks)
-                    Positioned(right: 20, bottom: 110, child: _TracksPanel(player: player)),
+                    Positioned(right: 20 + safe.right, bottom: 110 + safe.bottom, child: FocusScope(node: _tracksScope, child: _TracksPanel(player: player))),
                   if (_panel == _Panel.channels && now != null)
                     Positioned(
                       left: 0,
                       top: 0,
                       bottom: 0,
                       width: 340,
-                      child: _ChannelSheet(now: now, onPick: (item) => player.play(item, Kind.live, queue: now.queue, view: PlayerView.full)),
+                      child: FocusScope(
+                        child: _ChannelSheet(now: now, onPick: (item) => player.play(item, Kind.live, queue: now.queue, view: PlayerView.full)),
+                      ),
                     ),
                 ],
               );
@@ -344,7 +435,7 @@ class _TopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final n = now;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 36),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 36) + MediaQuery.paddingOf(context).copyWith(bottom: 0),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -396,9 +487,10 @@ class _TopBar extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.player, required this.onTracks, required this.onStats, required this.onChannels});
+  const _BottomBar({required this.player, required this.onTracks, required this.onStats, required this.onChannels, this.playFocus});
 
   final PlayerController player;
+  final FocusNode? playFocus;
   final VoidCallback onTracks;
   final VoidCallback onStats;
   final VoidCallback onChannels;
@@ -409,7 +501,7 @@ class _BottomBar extends StatelessWidget {
     final live = n?.isLive ?? false;
     final epg = context.epg;
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 40, 20, 18),
+      padding: const EdgeInsets.fromLTRB(20, 40, 20, 18) + MediaQuery.paddingOf(context).copyWith(top: 0),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.bottomCenter,
@@ -456,7 +548,13 @@ class _BottomBar extends StatelessWidget {
                   tooltip: live ? l10n.tipPrevChannel : l10n.tipBack10,
                   onTap: () => live ? player.zap(-1) : player.seekBy(const Duration(seconds: -10)),
                 ),
-                _OsdButton(icon: player.playing ? LucideIcons.pause : LucideIcons.play, tooltip: l10n.tipPlayPauseSpace, big: true, onTap: player.togglePause),
+                _OsdButton(
+                  icon: player.playing ? LucideIcons.pause : LucideIcons.play,
+                  tooltip: l10n.tipPlayPauseSpace,
+                  big: true,
+                  focusNode: playFocus,
+                  onTap: player.togglePause,
+                ),
                 _OsdButton(
                   icon: live ? LucideIcons.skipForward : LucideIcons.fastForward,
                   tooltip: live ? l10n.tipNextChannel : l10n.tipForward10,
@@ -479,6 +577,7 @@ class _BottomBar extends StatelessWidget {
                 icon: player.playing ? LucideIcons.pause : LucideIcons.play,
                 tooltip: l10n.tipPlayPauseSpace,
                 big: true,
+                focusNode: playFocus,
                 onTap: player.togglePause,
               ),
               const SizedBox(width: 6),
@@ -822,9 +921,10 @@ class _Volume extends StatelessWidget {
 }
 
 class _OsdButton extends StatefulWidget {
-  const _OsdButton({required this.icon, required this.onTap, this.tooltip, this.big = false});
+  const _OsdButton({required this.icon, required this.onTap, this.tooltip, this.big = false, this.focusNode});
 
   final IconData icon;
+  final FocusNode? focusNode;
   final VoidCallback onTap;
   final String? tooltip;
   final bool big;
@@ -834,25 +934,23 @@ class _OsdButton extends StatefulWidget {
 }
 
 class _OsdButtonState extends State<_OsdButton> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final size = widget.big ? 44.0 : 34.0;
-    Widget b = MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
+    Widget b = KdTappable(
+      onTap: widget.onTap,
+      focusNode: widget.focusNode,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
+        radius: size / 2,
         child: Container(
           width: size,
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: widget.big
-                ? (_hover ? KdColors.accent2 : KdColors.accent)
-                : (_hover ? const Color(0x33FFFFFF) : const Color(0x1AFFFFFF)),
+                ? (hover ? KdColors.accent2 : KdColors.accent)
+                : (hover ? const Color(0x33FFFFFF) : const Color(0x1AFFFFFF)),
           ),
           child: Icon(widget.icon, size: widget.big ? 20 : 16, color: widget.big ? KdColors.accentInk : KdColors.text),
         ),
@@ -893,22 +991,27 @@ class _TracksPanel extends StatelessWidget {
     );
     return Container(
       padding: const EdgeInsets.all(16),
-      // Between the top bar and the bottom bar, whatever the window height.
-      constraints: BoxConstraints(maxHeight: (MediaQuery.sizeOf(context).height - 200).clamp(240, 520)),
+      // Between the top bar and the bottom bar, whatever the window height;
+      // never wider than the screen (a phone on its side, a TV): the columns
+      // wrap and the panel scrolls.
+      constraints: BoxConstraints(
+        maxHeight: (MediaQuery.sizeOf(context).height - 200).clamp(240, 520),
+        maxWidth: MediaQuery.sizeOf(context).width - 40 - MediaQuery.paddingOf(context).horizontal,
+      ),
       decoration: BoxDecoration(
         color: KdColors.bg2.withValues(alpha: 0.96),
         border: Border.all(color: KdColors.line),
         borderRadius: BorderRadius.circular(KdRadius.card),
       ),
       child: SingleChildScrollView(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Wrap(
+          spacing: 18,
+          runSpacing: 18,
           children: [
             column(l10n.tracksAudio, [
               for (final (i, t) in audios.indexed)
                 _TrackRow(label: audioLabels[i], selected: t.selected, onTap: () => player.setAudio(t)),
             ]),
-            const SizedBox(width: 18),
             column(l10n.tracksSubtitles, [
               if (subs.isNotEmpty)
                 _TrackRow(
@@ -933,7 +1036,6 @@ class _TracksPanel extends StatelessWidget {
                   onPressed: () => showSubtitleSearch(context, player),
                 ),
             ]),
-            const SizedBox(width: 18),
             _AdjustColumn(player: player),
           ],
         ),
@@ -1133,6 +1235,7 @@ class _ChannelSheetState extends State<_ChannelSheet> {
                 final current = c.id == widget.now.item.id;
                 epg.want(c.id);
                 return InkWell(
+                  autofocus: current,
                   onTap: () => widget.onPick(c),
                   child: Container(
                     color: current ? KdColors.accentAlpha(0.12) : null,

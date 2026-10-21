@@ -2,7 +2,7 @@
 # the window is created off-screen, never activated, with no audio device.
 # Requires tools/mock-iptv running (cargo run -p mock-iptv --release -- 8089).
 #
-#   tools\shots.ps1 [-Out <dir>] [-Mock http://127.0.0.1:8089] [-Phone 390x844]
+#   tools\shots.ps1 [-Out <dir>] [-Mock http://127.0.0.1:8089] [-Phone 390x844 | -Tv]
 param(
   [string]$Out = (Join-Path $env:TEMP 'karadelik-shots'),
   [string]$Mock = 'http://127.0.0.1:8089',
@@ -13,7 +13,10 @@ param(
   # The compact (phone) layout at this size, e.g. 390x844.
   [string]$Phone,
   # Pixels per layout pixel: -Phone 360x640 -Scale 3 gives 1080x1920.
-  [double]$Scale = 1
+  [double]$Scale = 1,
+  # The Android TV layout on a 1080p TV (960x540 dp); -Scale 2 gives the
+  # 1920x1080 captures Google Play asks for.
+  [switch]$Tv
 )
 $ErrorActionPreference = 'Stop'
 Add-Type @'
@@ -37,7 +40,7 @@ $env:KP_OPENSUBS_BASE = "$Mock/os/api/v1"
 
 $p = Start-Process (Join-Path $exeDir 'karadelik_player.exe') -WorkingDirectory $exeDir -WindowStyle Hidden -PassThru `
   -ArgumentList (@('--kp-offscreen', "--kp-data-dir=$data", "--kp-add-mock=$Mock", "--kp-shot=$Out", '--kp-tmdb-key=kp-mock-tmdb-key', "--kp-language=$Language") +
-    $(if ($Phone) { @("--kp-phone=$Phone") } else { @() }) + @("--kp-shot-scale=$Scale"))
+    $(if ($Phone) { @("--kp-phone=$Phone") } else { @() }) + $(if ($Tv) { @('--kp-tv') } else { @() }) + @("--kp-shot-scale=$Scale"))
 $stoleFocus = $false
 $sw = [Diagnostics.Stopwatch]::StartNew()
 while (-not $p.HasExited -and $sw.Elapsed.TotalSeconds -lt 180) {

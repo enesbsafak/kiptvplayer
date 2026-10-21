@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/app_state.dart';
+import '../app/platform.dart';
 import '../app/library.dart';
 import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
+import '../design/widgets/kd_focus.dart';
 
 class NavEntry {
   const NavEntry(this.section, this.icon, this.label, [this.shortcut]);
@@ -47,7 +49,13 @@ class Sidebar extends StatelessWidget {
             child: KdSectionLabel(l10n.navLibrary),
           ),
           for (final e in mainNav)
-            _NavItem(entry: e, active: app.section == e.section, onTap: () => app.go(e.section)),
+            _NavItem(
+              entry: e,
+              active: app.section == e.section,
+              // A remote needs a starting point: the open section.
+              autofocus: isTv && app.section == e.section,
+              onTap: () => app.go(e.section),
+            ),
           const Spacer(),
           _NavItem(
             entry: NavEntry(Section.search, LucideIcons.search, l10n.navSearch, 'Ctrl K'),
@@ -93,10 +101,11 @@ class CompactNavBar extends StatelessWidget {
                   child: Semantics(
                     button: true,
                     selected: app.section == e.section,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
+                    child: KdTappable(
                       onTap: () => app.go(e.section),
-                      child: Column(
+                      builder: (context, hover, focus) => KdFocusRing(
+                        focused: focus,
+                        child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(e.icon, size: 20, color: app.section == e.section ? KdColors.accent2 : KdColors.muted),
@@ -113,6 +122,7 @@ class CompactNavBar extends StatelessWidget {
                           ),
                         ],
                       ),
+                      ),
                     ),
                   ),
                 ),
@@ -125,36 +135,34 @@ class CompactNavBar extends StatelessWidget {
 }
 
 class _NavItem extends StatefulWidget {
-  const _NavItem({required this.entry, required this.active, required this.onTap});
+  const _NavItem({required this.entry, required this.active, required this.onTap, this.autofocus = false});
 
   final NavEntry entry;
   final bool active;
   final VoidCallback onTap;
+  final bool autofocus;
 
   @override
   State<_NavItem> createState() => _NavItemState();
 }
 
 class _NavItemState extends State<_NavItem> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final active = widget.active;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
+    return KdTappable(
+      onTap: widget.onTap,
+      autofocus: widget.autofocus,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
         child: Container(
           height: 34,
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             color: active
                 ? KdColors.accentAlpha(0.12)
-                : _hover
+                : hover
                     ? KdColors.bg2
                     : Colors.transparent,
             borderRadius: BorderRadius.circular(KdRadius.control),
@@ -164,7 +172,7 @@ class _NavItemState extends State<_NavItem> {
               Icon(
                 widget.entry.icon,
                 size: 16,
-                color: active ? KdColors.accent2 : (_hover ? KdColors.text : KdColors.muted),
+                color: active ? KdColors.accent2 : (hover ? KdColors.text : KdColors.muted),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -176,7 +184,7 @@ class _NavItemState extends State<_NavItem> {
                   ),
                 ),
               ),
-              if (_hover && widget.entry.shortcut != null) KdKbd(widget.entry.shortcut!),
+              if (hover && widget.entry.shortcut != null) KdKbd(widget.entry.shortcut!),
             ],
           ),
         ),
@@ -236,23 +244,19 @@ class _SourceCard extends StatefulWidget {
 }
 
 class _SourceCardState extends State<_SourceCard> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final s = widget.source;
     final healthy = s != null && s.lastError == null;
     final total = s == null ? 0 : (s.liveCount + s.movieCount + s.seriesCount).toInt();
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
+    return KdTappable(
+      onTap: widget.onTap,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
         child: Container(
           padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
           decoration: BoxDecoration(
-            color: _hover ? KdColors.bg3 : KdColors.bg2,
+            color: hover ? KdColors.bg3 : KdColors.bg2,
             border: Border.all(color: KdColors.line),
             borderRadius: BorderRadius.circular(KdRadius.card),
           ),

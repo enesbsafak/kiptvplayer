@@ -11,6 +11,7 @@ import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import 'vod_screen.dart';
+import '../design/widgets/kd_focus.dart';
 
 /// Search across live, movies and series as you type.
 class SearchScreen extends StatefulWidget {
@@ -142,22 +143,18 @@ class _ChannelChip extends StatefulWidget {
 }
 
 class _ChannelChipState extends State<_ChannelChip> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
+    return KdTappable(
+      onTap: widget.onTap,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
         child: Container(
           width: 230,
           padding: const EdgeInsets.all(7),
           decoration: BoxDecoration(
-            color: _hover ? KdColors.bg3 : KdColors.bg2,
-            border: Border.all(color: _hover ? KdColors.buttonHoverBorder : KdColors.line),
+            color: hover ? KdColors.bg3 : KdColors.bg2,
+            border: Border.all(color: hover ? KdColors.buttonHoverBorder : KdColors.line),
             borderRadius: BorderRadius.circular(KdRadius.card),
           ),
           child: Row(
@@ -165,7 +162,7 @@ class _ChannelChipState extends State<_ChannelChip> {
               KdArt(url: widget.item.logo, label: widget.item.name, width: 30, height: 30, contain: true),
               const SizedBox(width: 9),
               Expanded(child: Text(widget.item.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500))),
-              Icon(LucideIcons.play, size: 13, color: _hover ? KdColors.accent : KdColors.muted),
+              Icon(LucideIcons.play, size: 13, color: hover ? KdColors.accent : KdColors.muted),
             ],
           ),
         ),

@@ -1,10 +1,12 @@
 # Android and iOS
 
 The Flutter app in `apps/player` builds for Android and iOS from the same code
-as Windows. Every push builds both in CI (`.github/workflows/ci.yml`): Android
-APKs that are started on an emulator, an unsigned iOS device build and a
-simulator build that is started on an iPhone simulator. The screenshots and
-logs are kept as the `android-smoke` and `ios-smoke` artifacts.
+as Windows; the Android build is also the Android TV / Google TV app. Every
+push builds them in CI (`.github/workflows/ci.yml`): Android APKs that are
+started on a phone emulator and on an Android TV emulator (driven with remote
+keys), an unsigned iOS device build and a simulator build that is started on
+an iPhone simulator. The screenshots and logs are kept as the
+`android-smoke`, `android-tv-smoke` and `ios-smoke` artifacts.
 
 ## What is different on a phone
 
@@ -19,6 +21,36 @@ logs are kept as the `android-smoke` and `ios-smoke` artifacts.
 
 To see the phone layout without a phone: `tools\shots.ps1 -Phone 390x844`
 captures every screen at that size, off-screen, with the mock provider.
+`tools\shots.ps1 -Tv -Scale 2` does the same for the TV layout at 1920x1080.
+
+## Android TV and Google TV
+
+One APK and one Play listing serve phones and TVs. The manifest declares
+`android.software.leanback` and the touchscreen as not required, puts the app
+on the TV launcher (`LEANBACK_LAUNCHER`) and gives it the 320x180 banner
+(`res/drawable-xhdpi/tv_banner.png`, from `tools/make-icons.py`).
+
+On a TV (`MainActivity` reports `UI_MODE_TYPE_TELEVISION` or the leanback
+feature over the `karadelik/device` channel; `--kp-tv` on a desktop):
+
+- The app is drawn 1.2x larger and kept clear of the screen edges
+  (`lib/shell/tv.dart`), with the sidebar on the left and the one-pane
+  screens beside it.
+- Everything clickable is focusable (`KdTappable`, `lib/design/widgets/kd_focus.dart`)
+  and shows an orange ring when the remote is on it. The open section starts
+  with the focus.
+- Text fields take the remote's focus without typing; OK opens the on-screen
+  keyboard, up and down leave the field.
+- In the player: up and down (and channel up / down) zap, left and right seek
+  where possible, OK brings up the controls on the play button, the menu or
+  info key opens audio and subtitles, back hides the controls and then leaves.
+
+`test/tv_test.dart` drives all of this with key events at 960x540 dp.
+
+For Google Play: Release > Advanced settings > Form factors > Android TV
+(opt in), then TV screenshots (1920x1080) and the banner in the store
+listing; Google reviews TV apps separately against its TV app quality
+guidelines.
 
 ## Identity
 
@@ -45,8 +77,6 @@ Privacy policy: [privacy.md](privacy.md).
 4. Play Console: Play App Signing, a privacy policy URL, the Data safety form
    (no data collected or shared; credentials stay on the device), content
    rating, and the store listing (see "Store listings" below).
-5. Android TV (later): the UI needs D-pad focus handling and a leanback
-   banner before the manifest may declare `android.software.leanback`.
 
 ## Before publishing to the App Store
 

@@ -11,6 +11,20 @@ final bool isDesktopOs = Platform.isWindows || Platform.isMacOS || Platform.isLi
 /// Android and iOS: system bars, rotation, the store updates the app.
 final bool isMobileOs = Platform.isAndroid || Platform.isIOS;
 
+/// Android TV and Google TV: driven with a remote, seen from the sofa. Set
+/// once at startup ([detectTv], or `--kp-tv` to preview the layout on a
+/// desktop); the shell then lays the app out for a TV (shell/tv.dart).
+bool isTv = false;
+
+Future<bool> detectTv() async {
+  if (!Platform.isAndroid) return false;
+  try {
+    return await const MethodChannel('karadelik/device').invokeMethod<bool>('isTv') ?? false;
+  } on PlatformException {
+    return false;
+  }
+}
+
 /// The installer-based updater exists for Windows only; app stores update
 /// the phone apps. Tests switch it on wherever they run.
 bool hasAppUpdater = Platform.isWindows;

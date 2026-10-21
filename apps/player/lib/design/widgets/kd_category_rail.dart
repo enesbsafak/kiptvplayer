@@ -7,6 +7,7 @@ import '../../l10n/l10n.dart';
 import '../tokens.dart';
 import 'kd_controls.dart';
 import 'kd_widgets.dart';
+import 'kd_focus.dart';
 
 /// One row of a [KdCategoryRail]: a pinned entry ("All", "Favorites") or a
 /// provider category.
@@ -168,14 +169,14 @@ class KdCategoryPicker extends StatelessWidget {
     return Semantics(
       button: true,
       label: title,
-      child: GestureDetector(
+      child: KdTappable(
         onTap: () => _open(context),
-        child: Container(
+        builder: (context, hover, focus) => Container(
           height: 44,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: KdColors.bg2,
-            border: Border.all(color: KdColors.line),
+            border: Border.all(color: focus ? KdColors.accent : KdColors.line, width: focus ? 2 : 1),
             borderRadius: BorderRadius.circular(KdRadius.card),
           ),
           child: Row(
@@ -225,26 +226,20 @@ class KdCategoryRow extends StatefulWidget {
 }
 
 class _KdCategoryRowState extends State<KdCategoryRow> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final a = widget.active;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onSecondaryTapUp: widget.onSecondaryTap == null ? null : (d) => widget.onSecondaryTap!(d.globalPosition),
-        // Touch has no right button: a long press opens the same menu.
-        onLongPressStart: widget.onSecondaryTap == null ? null : (d) => widget.onSecondaryTap!(d.globalPosition),
+    return KdTappable(
+      onTap: widget.onTap,
+      onContext: widget.onSecondaryTap,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
         child: Container(
           height: 32,
-          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
           padding: const EdgeInsets.symmetric(horizontal: 9),
           decoration: BoxDecoration(
-            color: a ? KdColors.accentAlpha(0.12) : (_hover ? KdColors.bg2 : Colors.transparent),
+            color: a ? KdColors.accentAlpha(0.12) : (hover ? KdColors.bg2 : Colors.transparent),
             borderRadius: BorderRadius.circular(KdRadius.control),
           ),
           child: Row(

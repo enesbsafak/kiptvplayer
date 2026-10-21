@@ -15,6 +15,7 @@ import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import 'parental.dart';
 import 'edits.dart';
+import '../design/widgets/kd_focus.dart';
 
 /// Movies or series: category rail + poster grid, detail on click.
 
@@ -238,17 +239,13 @@ class PosterCard extends StatefulWidget {
 }
 
 class _PosterCardState extends State<PosterCard> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
+    return KdTappable(
+      onTap: widget.onTap,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
         child: SizedBox(
           width: widget.width,
           child: Column(
@@ -265,7 +262,7 @@ class _PosterCardState extends State<PosterCard> {
                         duration: const Duration(milliseconds: 120),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(KdRadius.card),
-                          border: Border.all(color: _hover ? KdColors.accent : KdColors.line, width: _hover ? 1.5 : 1),
+                          border: Border.all(color: hover ? KdColors.accent : KdColors.line, width: hover ? 1.5 : 1),
                         ),
                       ),
                       if (item.rating case final r? when r > 0)
@@ -291,7 +288,7 @@ class _PosterCardState extends State<PosterCard> {
                 item.name,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontWeight: FontWeight.w500, color: _hover ? KdColors.accent2 : KdColors.text),
+                style: TextStyle(fontWeight: FontWeight.w500, color: hover ? KdColors.accent2 : KdColors.text),
               ),
               if (item.year != null)
                 Text(
@@ -699,8 +696,6 @@ class _EpisodeRow extends StatefulWidget {
 }
 
 class _EpisodeRowState extends State<_EpisodeRow> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final e = widget.e;
@@ -710,18 +705,16 @@ class _EpisodeRowState extends State<_EpisodeRow> {
     final image = e.image ?? t?.still;
     final dur = e.durationSecs ?? (t?.runtimeMin != null ? t!.runtimeMin! * 60 : null);
     final progress = dur != null && dur > 0 && e.progressMs != null ? (e.progressMs! / 1000) / dur : null;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
+    return KdTappable(
+      onTap: widget.onTap,
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
+        margin: const EdgeInsets.only(bottom: 6),
         child: Container(
-          margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: _hover ? KdColors.bg2 : Colors.transparent,
-            border: Border.all(color: _hover ? KdColors.line : Colors.transparent),
+            color: hover ? KdColors.bg2 : Colors.transparent,
+            border: Border.all(color: hover ? KdColors.line : Colors.transparent),
             borderRadius: BorderRadius.circular(KdRadius.card),
           ),
           child: Row(
@@ -736,7 +729,7 @@ class _EpisodeRowState extends State<_EpisodeRow> {
               Stack(
                 children: [
                   KdArt(url: image, label: title, width: 160, height: 90),
-                  if (_hover)
+                  if (hover)
                     const Positioned.fill(
                       child: Center(child: Icon(LucideIcons.play, color: KdColors.text, size: 22)),
                     ),

@@ -15,6 +15,7 @@ import '../design/widgets/kd_controls.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import 'vod_screen.dart';
+import '../design/widgets/kd_focus.dart';
 
 /// Home: what to continue, what was watched, what is new.
 class HomeScreen extends StatefulWidget {
@@ -287,24 +288,20 @@ class _ChannelTile extends StatefulWidget {
 }
 
 class _ChannelTileState extends State<_ChannelTile> {
-  bool _hover = false;
-
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
     final epg = context.epg..want(item.id);
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: () => context.player.play(item, Kind.live, queue: widget.queue, view: PlayerView.full),
+    return KdTappable(
+      onTap: () => context.player.play(item, Kind.live, queue: widget.queue, view: PlayerView.full),
+      builder: (context, hover, focus) => KdFocusRing(
+        focused: focus,
         child: Container(
           width: 250,
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: _hover ? KdColors.bg3 : KdColors.bg2,
-            border: Border.all(color: _hover ? KdColors.buttonHoverBorder : KdColors.line),
+            color: hover ? KdColors.bg3 : KdColors.bg2,
+            border: Border.all(color: hover ? KdColors.buttonHoverBorder : KdColors.line),
             borderRadius: BorderRadius.circular(KdRadius.card),
           ),
           child: Row(
