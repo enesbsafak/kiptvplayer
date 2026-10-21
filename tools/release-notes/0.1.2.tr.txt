@@ -1,0 +1,3 @@
+Karadelik IPTV Player artık açık kaynak (MPL-2.0).
+- Güncellemeler ve indirmeler ana depodan: github.com/enesbsafak/kiptvplayer
+- Yeni Windows derleme araçlarıyla uyumluluk.

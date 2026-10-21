@@ -1,0 +1,3 @@
+Karadelik IPTV Player is now open source (MPL-2.0).
+- Updates and downloads come from the main repository: github.com/enesbsafak/kiptvplayer
+- Builds with the newer Windows toolchain.
