@@ -1,1 +1,3 @@
-Test sürümü: kurulum ve güncelleme denemesi.
+İlk herkese açık sürüm.
+- Yayın akışında üst üste binen programlar düzeltildi.
+- Canlı yayında tek zaman çizelgesi: program, kaydedilen bölüm ve canlıya dönüş.

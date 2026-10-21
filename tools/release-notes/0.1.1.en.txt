@@ -1,1 +1,3 @@
-Test build: installer and update check.
+First public release.
+- Guide: overlapping programmes fixed.
+- Live TV has one timeline: the programme, the buffer and the way back to live.
