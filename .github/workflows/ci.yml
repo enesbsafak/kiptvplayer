@@ -74,7 +74,6 @@ jobs:
           cache: true
       - name: Windows release build
         working-directory: apps/desktop
-        env:
         run: flutter build windows --release
       - uses: actions/upload-artifact@v4
         with:
