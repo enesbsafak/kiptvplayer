@@ -291,6 +291,14 @@ class _GuideScreenState extends State<GuideScreen> {
   /// A past programme with a recording replays; anything else tunes in live.
   void _play(List<Item> items, int i, [Programme? p]) {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    if (p != null && p.start > now) {
+      // Not on yet: what it is, a reminder, or the channel as it is now.
+      showDialog<void>(
+        context: context,
+        builder: (_) => ProgrammeDialog(item: items[i], programme: p, onWatch: () => _play(items, i)),
+      );
+      return;
+    }
     final replay = p != null && p.archive && p.stop <= now;
     context.player.play(items[i], Kind.live, queue: items, programme: replay ? p : null, view: PlayerView.full);
   }
@@ -298,6 +306,69 @@ class _GuideScreenState extends State<GuideScreen> {
   String _dayLabel() {
     final d = DateTime.fromMillisecondsSinceEpoch(_windowStart * 1000);
     return DateFormat('EEEE, d MMMM', languageCode).format(d);
+  }
+}
+
+/// An upcoming programme: when, what, and a reminder to set or clear.
+class ProgrammeDialog extends StatelessWidget {
+  const ProgrammeDialog({super.key, required this.item, required this.programme, required this.onWatch});
+
+  final Item item;
+  final Programme programme;
+  final VoidCallback onWatch;
+
+  @override
+  Widget build(BuildContext context) {
+    final p = programme;
+    final reminders = context.app.reminders;
+    final day = DateFormat('EEEE d MMMM', languageCode).format(DateTime.fromMillisecondsSinceEpoch(p.start * 1000));
+    return AlertDialog(
+      backgroundColor: KdColors.bg2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+      title: Text(p.title, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+      content: SizedBox(
+        width: 440,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${item.name} · $day · ${kdClock(p.start)} – ${kdClock(p.stop)}',
+              style: const TextStyle(color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()]),
+            ),
+            if (p.description.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(p.description.trim(), maxLines: 8, overflow: TextOverflow.ellipsis, style: const TextStyle(height: 1.5)),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        KdButton(
+          label: l10n.actionWatchChannelNow,
+          icon: LucideIcons.radio,
+          onPressed: () {
+            Navigator.pop(context);
+            onWatch();
+          },
+        ),
+        ListenableBuilder(
+          listenable: reminders,
+          builder: (context, _) {
+            final on = reminders.isSet(item, p);
+            return KdButton(
+              label: on ? l10n.reminderRemove : l10n.reminderSet,
+              icon: on ? LucideIcons.bellOff : LucideIcons.bellPlus,
+              kind: on ? KdButtonKind.neutral : KdButtonKind.cta,
+              onPressed: () async {
+                await reminders.toggle(item, p);
+                if (context.mounted) Navigator.pop(context);
+              },
+            );
+          },
+        ),
+      ],
+    );
   }
 }
 
@@ -382,10 +453,11 @@ class _Lane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final epg = context.epg..want(item.id, archive: archive);
+    final reminders = context.app.reminders;
     return Container(
       decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: KdColors.rowDivider))),
       child: ListenableBuilder(
-        listenable: epg,
+        listenable: Listenable.merge([epg, reminders]),
         builder: (context, _) {
           final list = epg.peek(item.id);
           if (list == null) return const SizedBox.shrink();
@@ -410,6 +482,7 @@ class _Lane extends StatelessWidget {
                     progress: p.start <= now && p.stop > now ? programmeProgress(p) : null,
                     replay: p.archive && p.stop <= now,
                     muted: p.stop <= now && !p.archive,
+                    reminded: p.start > now && reminders.isSet(item, p),
                     onTap: () => onTap(p),
                   ),
             ],
@@ -431,6 +504,7 @@ class _Tile extends StatefulWidget {
     this.progress,
     this.muted = false,
     this.replay = false,
+    this.reminded = false,
   });
 
   final String title;
@@ -443,6 +517,9 @@ class _Tile extends StatefulWidget {
 
   /// Past, with a recording: plays from the start.
   final bool replay;
+
+  /// Upcoming, with a reminder set.
+  final bool reminded;
   final VoidCallback onTap;
 
   @override
@@ -479,6 +556,10 @@ class _TileState extends State<_Tile> {
                   children: [
                     if (widget.replay && widget.width > 60) ...[
                       Icon(LucideIcons.history, size: 11, color: _hover ? KdColors.accent2 : KdColors.muted),
+                      const SizedBox(width: 4),
+                    ],
+                    if (widget.reminded && widget.width > 40) ...[
+                      const Icon(LucideIcons.bellRing, size: 11, color: KdColors.accent),
                       const SizedBox(width: 4),
                     ],
                     Expanded(

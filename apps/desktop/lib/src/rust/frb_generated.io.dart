@@ -130,6 +130,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<RegionCount> dco_decode_list_region_count(dynamic raw);
 
   @protected
+  List<Reminder> dco_decode_list_reminder(dynamic raw);
+
+  @protected
   List<SourceInfo> dco_decode_list_source_info(dynamic raw);
 
   @protected
@@ -187,6 +190,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RegionPreference dco_decode_region_preference(dynamic raw);
+
+  @protected
+  Reminder dco_decode_reminder(dynamic raw);
 
   @protected
   SourceHealth dco_decode_source_health(dynamic raw);
@@ -346,6 +352,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<RegionCount> sse_decode_list_region_count(SseDeserializer deserializer);
 
   @protected
+  List<Reminder> sse_decode_list_reminder(SseDeserializer deserializer);
+
+  @protected
   List<SourceInfo> sse_decode_list_source_info(SseDeserializer deserializer);
 
   @protected
@@ -411,6 +420,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RegionPreference sse_decode_region_preference(SseDeserializer deserializer);
+
+  @protected
+  Reminder sse_decode_reminder(SseDeserializer deserializer);
 
   @protected
   SourceHealth sse_decode_source_health(SseDeserializer deserializer);
@@ -605,6 +617,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_reminder(List<Reminder> self, SseSerializer serializer);
+
+  @protected
   void sse_encode_list_source_info(
     List<SourceInfo> self,
     SseSerializer serializer,
@@ -693,6 +708,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     RegionPreference self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_reminder(Reminder self, SseSerializer serializer);
 
   @protected
   void sse_encode_source_health(SourceHealth self, SseSerializer serializer);

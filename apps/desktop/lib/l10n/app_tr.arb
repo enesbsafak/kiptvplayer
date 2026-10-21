@@ -627,5 +627,19 @@
   "findFramesDropping": "Kareler atlanıyor: bilgisayar görüntüyü çözmeye yetişemiyor.",
   "findSoftwareDecoding": "Donanım çözme kullanılmıyor; ekran kartı sürücüsünü güncellemek yardımcı olabilir.",
   "findReconnected": "Yayın bu kanalda kesilip yeniden bağlandı.",
-  "findHealthy": "Şu an bir sorun görünmüyor."
+  "findHealthy": "Şu an bir sorun görünmüyor.",
+  "actionWatch": "İzle",
+  "actionDismiss": "Kapat",
+  "actionWatchChannelNow": "Kanalı şimdi aç",
+  "reminderSet": "Hatırlat",
+  "reminderRemove": "Hatırlatmayı kaldır",
+  "reminderStartsAt": "{time} başlıyor",
+  "@reminderStartsAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reminderStarted": "Başladı"
 }

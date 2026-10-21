@@ -1080,4 +1080,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get findHealthy => 'No problem visible right now.';
+
+  @override
+  String get actionWatch => 'Watch';
+
+  @override
+  String get actionDismiss => 'Dismiss';
+
+  @override
+  String get actionWatchChannelNow => 'Watch the channel now';
+
+  @override
+  String get reminderSet => 'Remind me';
+
+  @override
+  String get reminderRemove => 'Remove reminder';
+
+  @override
+  String reminderStartsAt(String time) {
+    return 'Starts at $time';
+  }
+
+  @override
+  String get reminderStarted => 'On now';
 }

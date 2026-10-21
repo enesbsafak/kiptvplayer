@@ -15,6 +15,7 @@ import 'app/scope.dart';
 import 'app/shutdown.dart';
 import 'app/updates.dart';
 import 'design/theme.dart';
+import 'design/widgets/kd_titlebar.dart' show flashTaskbar;
 import 'dev/automation.dart';
 import 'l10n/l10n.dart';
 import 'perf/perf.dart';
@@ -60,6 +61,7 @@ Future<void> main(List<String> args) async {
   final dataDir = _arg(args, 'kp-data-dir') ?? (await getApplicationSupportDirectory()).path;
   final library = RustLibrary();
   final state = AppState(library);
+  state.reminders.onDue = (_) => flashTaskbar();
   try {
     await RustLib.init();
     await rust.openLibrary(dataDir: dataDir, ephemeralSecrets: offscreen);

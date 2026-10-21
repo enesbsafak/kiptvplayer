@@ -1975,6 +1975,48 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Şu an bir sorun görünmüyor.'**
   String get findHealthy;
+
+  /// No description provided for @actionWatch.
+  ///
+  /// In tr, this message translates to:
+  /// **'İzle'**
+  String get actionWatch;
+
+  /// No description provided for @actionDismiss.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kapat'**
+  String get actionDismiss;
+
+  /// No description provided for @actionWatchChannelNow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kanalı şimdi aç'**
+  String get actionWatchChannelNow;
+
+  /// No description provided for @reminderSet.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hatırlat'**
+  String get reminderSet;
+
+  /// No description provided for @reminderRemove.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hatırlatmayı kaldır'**
+  String get reminderRemove;
+
+  /// No description provided for @reminderStartsAt.
+  ///
+  /// In tr, this message translates to:
+  /// **'{time} başlıyor'**
+  String reminderStartsAt(String time);
+
+  /// No description provided for @reminderStarted.
+  ///
+  /// In tr, this message translates to:
+  /// **'Başladı'**
+  String get reminderStarted;
 }
 
 class _AppLocalizationsDelegate

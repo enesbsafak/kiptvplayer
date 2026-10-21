@@ -1057,4 +1057,27 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get findHealthy => 'Şu an bir sorun görünmüyor.';
+
+  @override
+  String get actionWatch => 'İzle';
+
+  @override
+  String get actionDismiss => 'Kapat';
+
+  @override
+  String get actionWatchChannelNow => 'Kanalı şimdi aç';
+
+  @override
+  String get reminderSet => 'Hatırlat';
+
+  @override
+  String get reminderRemove => 'Hatırlatmayı kaldır';
+
+  @override
+  String reminderStartsAt(String time) {
+    return '$time başlıyor';
+  }
+
+  @override
+  String get reminderStarted => 'Başladı';
 }

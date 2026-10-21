@@ -312,5 +312,12 @@
   "findFramesDropping": "Frames are being dropped: the computer cannot decode the picture fast enough.",
   "findSoftwareDecoding": "Hardware decoding is not in use; updating the graphics driver may help.",
   "findReconnected": "The stream dropped and reconnected on this channel.",
-  "findHealthy": "No problem visible right now."
+  "findHealthy": "No problem visible right now.",
+  "actionWatch": "Watch",
+  "actionDismiss": "Dismiss",
+  "actionWatchChannelNow": "Watch the channel now",
+  "reminderSet": "Remind me",
+  "reminderRemove": "Remove reminder",
+  "reminderStartsAt": "Starts at {time}",
+  "reminderStarted": "On now"
 }

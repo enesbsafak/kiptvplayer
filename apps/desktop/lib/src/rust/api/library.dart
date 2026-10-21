@@ -10,7 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
@@ -98,6 +98,25 @@ Future<List<Item>> favorites({required String sourceId, required Kind kind}) =>
       sourceId: sourceId,
       kind: kind,
     );
+
+/// Sets or clears a reminder for a programme of a live channel.
+Future<void> setReminder({
+  required PlatformInt64 itemId,
+  required PlatformInt64 start,
+  required PlatformInt64 stop,
+  required String title,
+  required bool on_,
+}) => RustLib.instance.api.crateApiLibrarySetReminder(
+  itemId: itemId,
+  start: start,
+  stop: stop,
+  title: title,
+  on_: on_,
+);
+
+/// Reminders of programmes not over yet, soonest first.
+Future<List<Reminder>> reminders({required String sourceId}) =>
+    RustLib.instance.api.crateApiLibraryReminders(sourceId: sourceId);
 
 Future<List<Item>> recent({
   required String sourceId,
@@ -681,6 +700,35 @@ class RegionPreference {
           runtimeType == other.runtimeType &&
           chosen == other.chosen &&
           region == other.region;
+}
+
+/// A programme the user asked to be reminded of, with its channel.
+class Reminder {
+  final Item item;
+  final PlatformInt64 start;
+  final PlatformInt64 stop;
+  final String title;
+
+  const Reminder({
+    required this.item,
+    required this.start,
+    required this.stop,
+    required this.title,
+  });
+
+  @override
+  int get hashCode =>
+      item.hashCode ^ start.hashCode ^ stop.hashCode ^ title.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Reminder &&
+          runtimeType == other.runtimeType &&
+          item == other.item &&
+          start == other.start &&
+          stop == other.stop &&
+          title == other.title;
 }
 
 /// "Kaynağı kontrol et": the provider's answer time and account state.

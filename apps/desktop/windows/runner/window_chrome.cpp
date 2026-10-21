@@ -36,6 +36,14 @@ WindowChrome::WindowChrome(HWND top_level, HWND flutter_view, flutter::BinaryMes
                            static_cast<LONG>(ReadDouble(*args, "bottom") * scale)};
       }
       result->Success();
+    } else if (call.method_name() == "flash") {
+      // A reminder came due: flash the taskbar button until the window is
+      // brought forward, without taking the focus.
+      if (GetForegroundWindow() != top_level_) {
+        FLASHWINFO info{sizeof(info), top_level_, FLASHW_TRAY | FLASHW_TIMERNOFG, 0, 0};
+        FlashWindowEx(&info);
+      }
+      result->Success();
     } else {
       result->NotImplemented();
     }

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 
 import '../l10n/l10n.dart' as l10n;
 import 'library.dart';
+import 'reminders.dart';
 
 enum Section { home, live, guide, movies, series, search, favorites, settings }
 
@@ -12,6 +14,9 @@ class AppState extends ChangeNotifier {
   AppState(this.library);
 
   final LibraryApi library;
+
+  /// Programme reminders of the active source.
+  late final reminders = Reminders(library);
 
   List<SourceInfo> sources = const [];
   String? activeSourceId;
@@ -74,6 +79,7 @@ class AppState extends ChangeNotifier {
     activeSourceId ??= sources.isEmpty ? null : sources.first.id;
     loaded = true;
     notifyListeners();
+    unawaited(reminders.load(activeSource?.id));
     _refreshStaleGuides();
   }
 
@@ -149,6 +155,7 @@ class AppState extends ChangeNotifier {
     activeSourceId = source.id;
     catalogVersion++;
     notifyListeners();
+    unawaited(reminders.load(source.id));
   }
 
   Future<void> setRegion(String? value) async {

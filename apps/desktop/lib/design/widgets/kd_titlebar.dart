@@ -24,6 +24,9 @@ class KdTitlebar extends StatefulWidget {
 /// Windows 11 shows Snap Layouts, and sends hover / press back.
 const _chrome = MethodChannel('karadelik/window');
 
+/// Flashes the taskbar button while another window has the focus.
+Future<void> flashTaskbar() => _chrome.invokeMethod<void>('flash').catchError((_) {});
+
 class _KdTitlebarState extends State<KdTitlebar> with WindowListener {
   bool _maximized = false;
   final _maxKey = GlobalKey();

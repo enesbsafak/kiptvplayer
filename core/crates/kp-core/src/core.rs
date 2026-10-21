@@ -16,7 +16,7 @@ use crate::guide::{Guide, GuideError};
 use crate::lang::t;
 use crate::secret::{password_key, SecretStore};
 use crate::tmdb::{Media, Tmdb, TmdbDetail, TmdbEpisode, TmdbError};
-use crate::store::{CategoryRow, ChannelRow, EpgRow, ItemRow, ProgressRow, SourceRow, Store, StoreError};
+use crate::store::{CategoryRow, ChannelRow, EpgRow, ItemRow, ProgressRow, ReminderRow, SourceRow, Store, StoreError};
 use crate::xtream::{as_array, as_i64, as_string, XtreamClient, XtreamError};
 
 #[derive(Debug, thiserror::Error)]
@@ -541,6 +541,15 @@ impl Core {
     /// Regions present in a source, with how many items carry each.
     pub fn regions(&self, source_id: &str) -> Result<Vec<(String, u32)>> {
         Ok(self.store().regions(source_id)?)
+    }
+
+    pub fn set_reminder(&self, item_id: i64, reminder: &ReminderRow, on: bool) -> Result<()> {
+        let item = self.item(item_id)?;
+        Ok(self.store().set_reminder(&item.source_id, item.uid, reminder, on)?)
+    }
+
+    pub fn reminders(&self, source_id: &str) -> Result<Vec<(ChannelRow, ReminderRow)>> {
+        Ok(self.store().reminders(source_id, now())?)
     }
 
     pub fn set_favorite(&self, item_id: i64, on: bool) -> Result<()> {

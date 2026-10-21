@@ -19,6 +19,7 @@ import '../screens/guide_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/live_screen.dart';
 import '../screens/player_screen.dart';
+import 'reminder_banner.dart';
 import '../screens/search_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/vod_screen.dart';
@@ -110,6 +111,7 @@ class _AppShellState extends State<AppShell> with WindowListener {
                               if (player.view == PlayerView.preview && app.section != Section.live)
                                 const Positioned(right: 18, bottom: 18, child: _MiniPlayer()),
                               if (full) const Positioned.fill(child: PlayerScreen()),
+                              const Positioned(top: 14, right: 18, child: ReminderBanner()),
                             ],
                           ),
                   ),

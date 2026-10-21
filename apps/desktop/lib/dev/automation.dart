@@ -83,6 +83,23 @@ class Automation {
       await shot(s.name, wait: const Duration(milliseconds: 2500));
     }
 
+    // A reminder coming due, through the real storage, then its banner.
+    // No taskbar flash: captures never draw attention.
+    app.reminders.onDue = null;
+    if (app.activeSource?.id case final rsid?) {
+      final first = await app.library.page(rsid, Kind.live, limit: 1);
+      if (first.isNotEmpty) {
+        final at = DateTime.now().millisecondsSinceEpoch ~/ 1000 + 30;
+        await app.library.setReminder(first.first.id, at, at + 1800, 'Akşam Haberleri', on: true);
+        await app.reminders.load(rsid);
+        app.go(Section.home);
+        await shot('reminder', wait: const Duration(milliseconds: 1200));
+        app.reminders.dismiss();
+        await app.library.setReminder(first.first.id, at, at + 1800, '', on: false);
+        await app.reminders.load(rsid);
+      }
+    }
+
     // Live preview, then the full player with its OSD.
     app.go(Section.live);
     await Future<void>.delayed(const Duration(milliseconds: 800));

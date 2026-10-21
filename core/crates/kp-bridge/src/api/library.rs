@@ -395,6 +395,29 @@ pub fn favorites(source_id: String, kind: Kind) -> Result<Vec<Item>> {
     Ok(items(core()?.favorites(&source_id, kind.into())?))
 }
 
+/// A programme the user asked to be reminded of, with its channel.
+#[derive(Debug, Clone)]
+pub struct Reminder {
+    pub item: Item,
+    pub start: i64,
+    pub stop: i64,
+    pub title: String,
+}
+
+/// Sets or clears a reminder for a programme of a live channel.
+pub fn set_reminder(item_id: i64, start: i64, stop: i64, title: String, on: bool) -> Result<()> {
+    Ok(core()?.set_reminder(item_id, &kp_core::store::ReminderRow { start, stop, title }, on)?)
+}
+
+/// Reminders of programmes not over yet, soonest first.
+pub fn reminders(source_id: String) -> Result<Vec<Reminder>> {
+    Ok(core()?
+        .reminders(&source_id)?
+        .into_iter()
+        .map(|(c, r)| Reminder { item: item(c), start: r.start, stop: r.stop, title: r.title })
+        .collect())
+}
+
 pub fn recent(source_id: String, kind: Kind, limit: u32) -> Result<Vec<Item>> {
     Ok(items(core()?.recent(&source_id, kind.into(), limit)?))
 }

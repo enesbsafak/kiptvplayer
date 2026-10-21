@@ -16,6 +16,7 @@ export '../src/rust/api/library.dart'
         Programme,
         RegionCount,
         RegionPreference,
+        Reminder,
         SourceHealth,
         SourceInfo,
         SourceType,
@@ -47,6 +48,10 @@ abstract interface class LibraryApi {
   /// Downloads an M3U source's XMLTV guide again; the result's `guide`
   /// tells how it went.
   Future<rust.SourceInfo> refreshGuide(String sourceId);
+
+  /// Programme reminders not over yet, soonest first.
+  Future<List<rust.Reminder>> reminders(String sourceId);
+  Future<void> setReminder(int itemId, int start, int stop, String title, {required bool on});
 
   /// One light, timed request to the provider (never opens a stream).
   Future<rust.SourceHealth> checkSource(String sourceId);
@@ -118,6 +123,11 @@ class RustLibrary implements LibraryApi {
   Future<rust.SourceInfo> refreshGuide(String sourceId) => rust.refreshGuide(sourceId: sourceId);
   @override
   Future<rust.SourceHealth> checkSource(String sourceId) => rust.checkSource(sourceId: sourceId);
+  @override
+  Future<List<rust.Reminder>> reminders(String sourceId) => rust.reminders(sourceId: sourceId);
+  @override
+  Future<void> setReminder(int itemId, int start, int stop, String title, {required bool on}) =>
+      rust.setReminder(itemId: itemId, start: start, stop: stop, title: title, on_: on);
   @override
   Future<void> removeSource(String sourceId) =>
       rust.removeSource(sourceId: sourceId);

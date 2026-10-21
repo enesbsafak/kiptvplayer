@@ -81,6 +81,15 @@ class FakeLibrary implements LibraryApi {
   GuideInfo? nextGuide;
   final List<String> guideRefreshes = [];
 
+  List<Reminder> reminderList = [];
+  @override
+  Future<List<Reminder>> reminders(String sourceId) async => [...reminderList]..sort((a, b) => a.start.compareTo(b.start));
+  @override
+  Future<void> setReminder(int itemId, int start, int stop, String title, {required bool on}) async {
+    reminderList.removeWhere((r) => r.item.id == itemId && r.start == start);
+    if (on) reminderList.add(Reminder(item: item(itemId, 'Kanal $itemId'), start: start, stop: stop, title: title));
+  }
+
   SourceHealth health = const SourceHealth(ok: true, latencyMs: 120, maxConnections: 2, activeConnections: 1);
   final checked = <String>[];
   @override

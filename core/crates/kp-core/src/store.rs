@@ -23,7 +23,20 @@ pub enum StoreError {
 
 pub type Result<T> = std::result::Result<T, StoreError>;
 
-const SCHEMA_VERSION: i64 = 4;
+const SCHEMA_VERSION: i64 = 5;
+
+/// v5: programme reminders, keyed by the channel's stable uid so a resync
+/// keeps them.
+const SCHEMA_V5: &str = "
+CREATE TABLE IF NOT EXISTS reminder (
+    source_id   TEXT NOT NULL,
+    uid         INTEGER NOT NULL,
+    start       INTEGER NOT NULL,
+    stop        INTEGER NOT NULL,
+    title       TEXT NOT NULL,
+    PRIMARY KEY (source_id, uid, start)
+);
+";
 
 /// v4: TMDB responses and title matches, so details open offline and the
 /// API is asked once per title, not on every visit.
@@ -144,6 +157,14 @@ CREATE TABLE epg_short (
     PRIMARY KEY (source_id, uid, start)
 );
 ";
+
+/// A programme to be reminded of.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ReminderRow {
+    pub start: i64,
+    pub stop: i64,
+    pub title: String,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SourceRow {
@@ -289,6 +310,12 @@ impl Store {
             let tx = self.conn.transaction()?;
             tx.execute_batch(SCHEMA_V4)?;
             tx.pragma_update(None, "user_version", 4)?;
+            tx.commit()?;
+        }
+        if version < 5 {
+            let tx = self.conn.transaction()?;
+            tx.execute_batch(SCHEMA_V5)?;
+            tx.pragma_update(None, "user_version", 5)?;
             tx.commit()?;
         }
         Ok(())
@@ -697,6 +724,34 @@ impl Store {
             .is_some())
     }
 
+    pub fn set_reminder(&self, source_id: &str, uid: i64, r: &ReminderRow, on: bool) -> Result<()> {
+        if on {
+            self.conn.execute(
+                "INSERT OR REPLACE INTO reminder (source_id, uid, start, stop, title) VALUES (?1, ?2, ?3, ?4, ?5)",
+                params![source_id, uid, r.start, r.stop, r.title],
+            )?;
+        } else {
+            self.conn.execute("DELETE FROM reminder WHERE source_id = ?1 AND uid = ?2 AND start = ?3", params![source_id, uid, r.start])?;
+        }
+        Ok(())
+    }
+
+    /// Reminders of programmes not over yet, soonest first, with their
+    /// channel as it is now; ended ones are dropped on the way.
+    pub fn reminders(&self, source_id: &str, now: i64) -> Result<Vec<(ChannelRow, ReminderRow)>> {
+        self.conn.execute("DELETE FROM reminder WHERE stop <= ?1", [now])?;
+        let mut stmt = self.conn.prepare_cached(&format!(
+            "SELECT {}, r.start, r.stop, r.title FROM reminder r
+             JOIN channel c ON c.source_id = r.source_id AND c.uid = r.uid
+             WHERE r.source_id = ?1 ORDER BY r.start",
+            CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", ")
+        ))?;
+        let rows = stmt.query_map([source_id], |r| {
+            Ok((channel_row(r)?, ReminderRow { start: r.get(10)?, stop: r.get(11)?, title: r.get(12)? }))
+        })?;
+        Ok(rows.collect::<std::result::Result<_, _>>()?)
+    }
+
     /// Forgets what was watched: recent channels and/or resume points.
     /// Favorites are not history and stay.
     pub fn clear_history(&self, source_id: &str, recent: bool, progress: bool) -> Result<()> {
@@ -1077,6 +1132,24 @@ mod tests {
         let past = store.epg_past("src", uid, 0, t + 150).unwrap();
         assert_eq!(past.iter().map(|e| (e.title.as_str(), e.archive)).collect::<Vec<_>>(), vec![("Bitti", true)]);
         assert_eq!(store.epg_short("src", uid, t + 150).unwrap().0[0].title, "Sonra");
+    }
+
+    #[test]
+    fn reminders_survive_resync_and_drop_when_over() {
+        let mut store = store();
+        let trt = store.search("trt", None, 1).unwrap()[0].uid;
+        let show = ReminderRow { start: 1_000, stop: 2_000, title: "Haberler".into() };
+        store.set_reminder("src", trt, &show, true).unwrap();
+        store.set_reminder("src", trt, &ReminderRow { start: 3_000, stop: 4_000, title: "Film".into() }, true).unwrap();
+
+        store.replace_catalog("src", &sample(), 20).unwrap();
+        let list = store.reminders("src", 500).unwrap();
+        assert_eq!(list.iter().map(|(_, r)| r.title.as_str()).collect::<Vec<_>>(), ["Haberler", "Film"]);
+        assert_eq!(list[0].0.uid, trt, "same channel after resync");
+
+        assert_eq!(store.reminders("src", 2_500).unwrap().len(), 1, "an ended programme is dropped");
+        store.set_reminder("src", trt, &ReminderRow { start: 3_000, stop: 4_000, title: String::new() }, false).unwrap();
+        assert!(store.reminders("src", 2_500).unwrap().is_empty());
     }
 
     #[test]
