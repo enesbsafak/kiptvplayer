@@ -75,14 +75,18 @@ $setup = Join-Path $dist "KaradelikIPTVPlayer-Setup-$Version.exe"
 
 # 3. Update feed.
 $sha = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
-$feed = [ordered]@{
+$feed = [pscustomobject][ordered]@{
   version   = $Version
   url       = ($BaseUrl -f $Version) + "/KaradelikIPTVPlayer-Setup-$Version.exe"
   sha256    = $sha
-  notes     = [ordered]@{ tr = (Read-Notes 'tr'); en = (Read-Notes 'en') }
+  notes     = [pscustomobject][ordered]@{ tr = (Read-Notes 'tr'); en = (Read-Notes 'en') }
   published = (Get-Date -Format 'yyyy-MM-dd')
 }
-$json = $feed | ConvertTo-Json -Depth 3
+# -InputObject, not the pipeline: newer pwsh wrote a piped OrderedDictionary
+# as its type name ("System.Collections.Specialized.OrderedDictionary").
+$json = ConvertTo-Json -InputObject $feed -Depth 3
+$check = $json | ConvertFrom-Json
+if ($check.version -ne $Version -or $check.sha256 -ne $sha -or -not $check.url) { throw "latest.json is malformed: $json" }
 [IO.File]::WriteAllText((Join-Path $dist 'latest.json'), $json, [Text.UTF8Encoding]::new($false))
 
 "installer: $setup ($([math]::Round((Get-Item $setup).Length / 1MB, 1)) MB)"
