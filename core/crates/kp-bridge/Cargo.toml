@@ -10,7 +10,7 @@ publish.workspace = true
 crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
-# Must match the Dart package exactly (apps/desktop/pubspec.yaml).
+# Must match the Dart package exactly (apps/player/pubspec.yaml).
 flutter_rust_bridge = "=2.13.0"
 kp-core = { path = "../kp-core" }
 anyhow = "1"

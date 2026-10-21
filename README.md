@@ -9,9 +9,9 @@ Açık kaynak, [MPL-2.0](LICENSE). İndirme: [Releases](https://github.com/enesb
 
 | Klasör | İçerik |
 |---|---|
-| `apps/desktop` | Flutter uygulaması (arayüz, oynatıcı, pencere, dil dosyaları `lib/l10n`) |
+| `apps/player` | Flutter uygulaması: Windows, Android, iOS (arayüz, oynatıcı, dil dosyaları `lib/l10n`) |
 | `core/crates/kp-core` | Rust veri çekirdeği: Xtream / M3U / Stalker, SQLite + FTS5, XMLTV, catch-up, TMDB, güncelleyici, anahtar deposu |
-| `core/crates/kp-bridge` | flutter_rust_bridge yüzeyi (`apps/desktop/lib/src/rust` buradan üretilir) |
+| `core/crates/kp-bridge` | flutter_rust_bridge yüzeyi (`apps/player/lib/src/rust` buradan üretilir) |
 | `packages/karadelik_mpv_libs` | SHA-256 doğrulamalı LGPL libmpv + ANGLE (media_kit_libs_video yerine) |
 | `tools/mock-iptv` | Yerel test sağlayıcısı: Xtream, M3U + XMLTV, Stalker portalı, TMDB ve OpenSubtitles taklidi, test yayınları |
 | `tools/installer` | Inno Setup betiği (kullanıcı bazlı kurulum) |
@@ -30,10 +30,10 @@ cargo run -p mock-iptv --release -- 8089          # ayrı terminalde
 cargo test -p kp-core --test xtream_mock -- --ignored --test-threads=1
 
 # Köprü kodu (Rust API değişince) ve dil dosyaları
-cd apps\desktop; flutter_rust_bridge_codegen generate; flutter gen-l10n
+cd apps\player; flutter_rust_bridge_codegen generate; flutter gen-l10n
 
 # Uygulama
-cd apps\desktop; flutter test; flutter build windows --release
+cd apps\player; flutter test; flutter build windows --release
 tools\demo.ps1                    # normal pencerede, demo kaynağıyla
 tools\shots.ps1 [-Language en]    # ekran dışı, sessiz: tüm ekranların PNG'si
 ```

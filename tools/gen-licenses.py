@@ -4,7 +4,7 @@ Flutter itself). Run after changing Rust dependencies:
 
     python tools/gen-licenses.py
 
-Writes apps/desktop/assets/licenses/rust.json.
+Writes apps/player/assets/licenses/rust.json.
 """
 import json
 import pathlib
@@ -44,7 +44,7 @@ crates = sorted(
     ),
     key=lambda c: (c['name'], c['version']),
 )
-out = root / 'apps/desktop/assets/licenses/rust.json'
+out = root / 'apps/player/assets/licenses/rust.json'
 out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(json.dumps(crates, indent=1, ensure_ascii=False) + '\n', encoding='utf-8')
 print(f'{len(crates)} crates -> {out.relative_to(root)}')

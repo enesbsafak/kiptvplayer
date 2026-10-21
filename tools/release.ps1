@@ -26,7 +26,7 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $root = Resolve-Path (Join-Path $PSScriptRoot '..')
-$app = Join-Path $root 'apps\desktop'
+$app = Join-Path $root 'apps\player'
 $dist = Join-Path $root 'dist'
 
 if (-not $Version) {

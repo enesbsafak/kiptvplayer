@@ -11,7 +11,7 @@
   #define AppVersion "0.1.0"
 #endif
 #ifndef BuildDir
-  #define BuildDir "..\..\apps\desktop\build\windows\x64\runner\Release"
+  #define BuildDir "..\..\apps\player\build\windows\x64\runner\Release"
 #endif
 #define AppName "Karadelik IPTV Player"
 #define AppExe "karadelik_player.exe"
@@ -30,7 +30,7 @@ DisableProgramGroupPage=yes
 DisableDirPage=auto
 OutputDir=..\..\dist
 OutputBaseFilename=KaradelikIPTVPlayer-Setup-{#AppVersion}
-SetupIconFile=..\..\apps\desktop\windows\runner\resources\app_icon.ico
+SetupIconFile=..\..\apps\player\windows\runner\resources\app_icon.ico
 UninstallDisplayIcon={app}\{#AppExe}
 UninstallDisplayName={#AppName}
 Compression=lzma2/ultra64

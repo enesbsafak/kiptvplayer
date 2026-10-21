@@ -17,7 +17,7 @@ public class KpWin {
 }
 '@
 
-$exeDir = Join-Path $PSScriptRoot "..\apps\desktop\build\windows\x64\runner\$Build" | Resolve-Path
+$exeDir = Join-Path $PSScriptRoot "..\apps\player\build\windows\x64\runner\$Build" | Resolve-Path
 $data = Join-Path $env:TEMP 'karadelik-snap-check'
 $p = Start-Process (Join-Path $exeDir 'karadelik_player.exe') -WorkingDirectory $exeDir -WindowStyle Hidden -PassThru `
   -ArgumentList '--kp-offscreen', "--kp-data-dir=$data"

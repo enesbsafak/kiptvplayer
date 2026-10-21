@@ -15,7 +15,7 @@ try {
   Start-Sleep -Milliseconds 500
 }
 
-$exeDir = Join-Path $root 'apps\desktop\build\windows\x64\runner\Release'
+$exeDir = Join-Path $root 'apps\player\build\windows\x64\runner\Release'
 $data = Join-Path $env:LOCALAPPDATA 'KaradelikPlayer\demo-data'
 Start-Process (Join-Path $exeDir 'karadelik_player.exe') -WorkingDirectory $exeDir `
   -ArgumentList "--kp-data-dir=$data", "--kp-add-mock=$mockUrl"

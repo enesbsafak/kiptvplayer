@@ -18,7 +18,7 @@ param(
   [string]$Mpv = ''
 )
 $ErrorActionPreference = 'Stop'
-$exeDir = Join-Path $PSScriptRoot "..\apps\desktop\build\windows\x64\runner\$Build" | Resolve-Path
+$exeDir = Join-Path $PSScriptRoot "..\apps\player\build\windows\x64\runner\$Build" | Resolve-Path
 New-Item -ItemType Directory -Force $Out | Out-Null
 $data = Join-Path $Out 'appdata'
 Remove-Item -Recurse -Force $data -ErrorAction SilentlyContinue

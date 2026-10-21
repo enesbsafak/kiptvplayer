@@ -21,7 +21,7 @@ public class KpForeground {
 }
 '@
 
-$exeDir = Join-Path $PSScriptRoot "..\apps\desktop\build\windows\x64\runner\$Build" | Resolve-Path
+$exeDir = Join-Path $PSScriptRoot "..\apps\player\build\windows\x64\runner\$Build" | Resolve-Path
 $data = Join-Path $Out 'appdata'
 Remove-Item -Recurse -Force $Out -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force $Out | Out-Null

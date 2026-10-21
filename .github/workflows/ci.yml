@@ -54,7 +54,7 @@ jobs:
           cargo test -p kp-core --test xtream_mock -- --ignored --test-threads=1
 
       - name: Flutter analyze and tests (headless)
-        working-directory: apps/desktop
+        working-directory: apps/player
         run: |
           flutter pub get
           flutter analyze
@@ -73,12 +73,12 @@ jobs:
           flutter-version: 3.47.7
           cache: true
       - name: Windows release build
-        working-directory: apps/desktop
+        working-directory: apps/player
         run: flutter build windows --release
       - uses: actions/upload-artifact@v4
         with:
           name: karadelik-player-windows
-          path: apps/desktop/build/windows/x64/runner/Release
+          path: apps/player/build/windows/x64/runner/Release
           retention-days: 14
 
   macos-core:

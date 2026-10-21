@@ -30,7 +30,7 @@ The exact archives, with SHA-256 checksums, are pinned in
 ## Rust crates
 
 `tools/gen-licenses.py` lists every crate linked into the core in
-`apps/desktop/assets/licenses/rust.json`. All are permissive (MIT,
+`apps/player/assets/licenses/rust.json`. All are permissive (MIT,
 Apache-2.0, BSD, Zlib, Unicode-3.0, Unlicense); SQLite is public domain.
 
 ## Data sources
