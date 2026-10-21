@@ -39,6 +39,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  BackupCounts dco_decode_backup_counts(dynamic raw);
+
+  @protected
   bool dco_decode_bool(dynamic raw);
 
   @protected
@@ -218,6 +221,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Reminder dco_decode_reminder(dynamic raw);
 
   @protected
+  RestoreResult dco_decode_restore_result(dynamic raw);
+
+  @protected
   SourceHealth dco_decode_source_health(dynamic raw);
 
   @protected
@@ -274,6 +280,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   String sse_decode_String(SseDeserializer deserializer);
+
+  @protected
+  BackupCounts sse_decode_backup_counts(SseDeserializer deserializer);
 
   @protected
   bool sse_decode_bool(SseDeserializer deserializer);
@@ -471,6 +480,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   Reminder sse_decode_reminder(SseDeserializer deserializer);
 
   @protected
+  RestoreResult sse_decode_restore_result(SseDeserializer deserializer);
+
+  @protected
   SourceHealth sse_decode_source_health(SseDeserializer deserializer);
 
   @protected
@@ -532,6 +544,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_String(String self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_backup_counts(BackupCounts self, SseSerializer serializer);
 
   @protected
   void sse_encode_bool(bool self, SseSerializer serializer);
@@ -787,6 +802,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_reminder(Reminder self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_restore_result(RestoreResult self, SseSerializer serializer);
 
   @protected
   void sse_encode_source_health(SourceHealth self, SseSerializer serializer);

@@ -9,8 +9,8 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `cats`, `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These functions are ignored because they are not marked as `pub`: `cats`, `core`, `counts`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
@@ -100,6 +100,23 @@ Future<void> moveCategory({
   kind: kind,
   uid: uid,
   delta: delta,
+);
+
+/// Writes an encrypted backup (password: 8+ characters) to [path].
+Future<BackupCounts> exportBackup({
+  required String path,
+  required String password,
+}) => RustLib.instance.api.crateApiLibraryExportBackup(
+  path: path,
+  password: password,
+);
+
+Future<RestoreResult> importBackup({
+  required String path,
+  required String password,
+}) => RustLib.instance.api.crateApiLibraryImportBackup(
+  path: path,
+  password: password,
 );
 
 Future<EpgSettings> epgSettings({required PlatformInt64 itemId}) =>
@@ -420,6 +437,35 @@ Future<void> setUiLanguage({String? choice, required String effective}) =>
       choice: choice,
       effective: effective,
     );
+
+/// What a backup holds or brought back.
+class BackupCounts {
+  final int sources;
+  final int favorites;
+  final int groups;
+  final int edits;
+
+  const BackupCounts({
+    required this.sources,
+    required this.favorites,
+    required this.groups,
+    required this.edits,
+  });
+
+  @override
+  int get hashCode =>
+      sources.hashCode ^ favorites.hashCode ^ groups.hashCode ^ edits.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is BackupCounts &&
+          runtimeType == other.runtimeType &&
+          sources == other.sources &&
+          favorites == other.favorites &&
+          groups == other.groups &&
+          edits == other.edits;
+}
 
 class Category {
   final PlatformInt64 uid;
@@ -1004,6 +1050,25 @@ class Reminder {
           start == other.start &&
           stop == other.stop &&
           title == other.title;
+}
+
+/// The result of a restore: counts, and sources to sync (no catalog yet).
+class RestoreResult {
+  final BackupCounts counts;
+  final List<String> toSync;
+
+  const RestoreResult({required this.counts, required this.toSync});
+
+  @override
+  int get hashCode => counts.hashCode ^ toSync.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RestoreResult &&
+          runtimeType == other.runtimeType &&
+          counts == other.counts &&
+          toSync == other.toSync;
 }
 
 /// "Kaynağı kontrol et": the provider's answer time and account state.

@@ -812,6 +812,89 @@ impl Core {
     }
 
     /// The app language the user chose; None follows the system.
+    // ---- backup -----------------------------------------------------------
+
+    /// Writes an encrypted backup of everything the user made, the sources'
+    /// passwords and the TMDB key included, to [path].
+    pub fn export_backup(&self, path: &Path, password: &str) -> Result<crate::store::ImportCounts> {
+        if password.chars().count() < 8 {
+            return Err(msg(t("Parola en az 8 karakter olmalı", "The password must be at least 8 characters")));
+        }
+        let data = self.store().export_user_data()?;
+        let mut secrets = serde_json::Map::new();
+        for s in self.store().sources()? {
+            if let Some(p) = self.secrets.get(&password_key(&s.id)) {
+                secrets.insert(password_key(&s.id), Value::String(p));
+            }
+        }
+        if let Some(k) = self.secrets.get(TMDB_KEY) {
+            secrets.insert(TMDB_KEY.into(), Value::String(k));
+        }
+        let counts = crate::store::ImportCounts {
+            sources: data["sources"].as_array().map_or(0, Vec::len) as u32,
+            favorites: data["tables"]["favorite"].as_array().map_or(0, Vec::len) as u32,
+            groups: data["groups"].as_array().map_or(0, Vec::len) as u32,
+            edits: ["channel_edit", "category_edit", "epg_override"]
+                .iter()
+                .map(|t| data["tables"][*t].as_array().map_or(0, Vec::len) as u32)
+                .sum(),
+        };
+        let doc = serde_json::json!({ "format": "karadelik-backup", "version": 1, "created": now(), "data": data, "secrets": secrets });
+        let sealed = crate::backup::seal(doc.to_string().as_bytes(), password).map_err(|e| msg(e.to_string()))?;
+        // Written beside, then moved: a crash never leaves half a backup.
+        let tmp = path.with_extension("kpbackup.tmp");
+        std::fs::write(&tmp, sealed).map_err(|e| msg(format!("{}: {e}", t("Yedek yazılamadı", "Could not write the backup"))))?;
+        std::fs::rename(&tmp, path).map_err(|e| msg(format!("{}: {e}", t("Yedek yazılamadı", "Could not write the backup"))))?;
+        Ok(counts)
+    }
+
+    /// Restores a backup into this library; returns what came in and the
+    /// sources that still need a sync (no catalog here yet).
+    pub fn import_backup(&self, path: &Path, password: &str) -> Result<(crate::store::ImportCounts, Vec<String>)> {
+        let bytes = std::fs::read(path).map_err(|e| msg(format!("{}: {e}", t("Dosya okunamadı", "Could not read the file"))))?;
+        let plain = crate::backup::open(&bytes, password).map_err(|e| {
+            msg(match e {
+                crate::backup::BackupError::NotABackup => t("Bu bir Karadelik yedeği değil", "This is not a Karadelik backup"),
+                crate::backup::BackupError::TooNew => t("Yedek daha yeni bir sürümle alınmış; uygulamayı güncelleyin", "The backup is from a newer version; update the app"),
+                crate::backup::BackupError::Rejected => t("Parola yanlış ya da dosya bozuk", "Wrong password or damaged file"),
+                crate::backup::BackupError::Other(_) => t("Yedek açılamadı", "Could not open the backup"),
+            })
+        })?;
+        let doc: Value = serde_json::from_slice(&plain).map_err(|_| msg(t("Yedek açılamadı", "Could not open the backup")))?;
+        if doc["format"] != "karadelik-backup" {
+            return Err(msg(t("Bu bir Karadelik yedeği değil", "This is not a Karadelik backup")));
+        }
+        let counts = {
+            let mut store = self.store();
+            let counts = store.import_user_data(&doc["data"])?;
+            let pin = store.setting(crate::parental::SETTING)?.is_some_and(|s| !s.is_empty());
+            store.set_hide_adult(pin);
+            counts
+        };
+        if let Some(secrets) = doc["secrets"].as_object() {
+            for (k, v) in secrets {
+                if let Some(v) = v.as_str() {
+                    let _ = self.secrets.set(k, v);
+                }
+            }
+        }
+        // One lock: a guard taken in the loop head would live through the loop.
+        let to_sync = {
+            let store = self.store();
+            let mut ids = Vec::new();
+            for s in store.sources()? {
+                if store.channel_count(&s.id)? == 0 {
+                    ids.push(s.id);
+                }
+            }
+            ids
+        };
+        // Portal sessions and guides follow the restored sources afresh.
+        self.portals.lock().unwrap_or_else(|p| p.into_inner()).clear();
+        self.guides.lock().unwrap_or_else(|p| p.into_inner()).clear();
+        Ok((counts, to_sync))
+    }
+
     // ---- parental lock ---------------------------------------------------
 
     pub fn parental(&self) -> Result<ParentalState> {
@@ -1296,6 +1379,50 @@ fn strip_query(message: &str) -> String {
 mod tests {
     use super::*;
     use crate::secret::MemorySecrets;
+
+    #[test]
+    fn a_backup_moves_everything_to_a_new_library() {
+        let dir = tempfile::tempdir().unwrap();
+        let list = dir.path().join("list.m3u");
+        std::fs::write(&list, "#EXTM3U\n#EXTINF:-1 group-title=\"Ulusal\",TRT 1\nhttp://s/1.ts\n#EXTINF:-1 group-title=\"Ulusal\",ATV\nhttp://s/2.ts\n").unwrap();
+        let old = Core::open_in_memory(Box::new(MemorySecrets::default())).unwrap();
+        let src = |url: String| NewSource { kind: SourceKind::M3u, name: "Liste".into(), url, username: None, password: None, epg_url: None, user_agent: None, insecure_tls: false };
+        let (source, _) = old.add_source(src(list.display().to_string()), &|_| {}).unwrap();
+        let page = old.page(&source.id, ContentKind::Live, None, None, 10).unwrap();
+        let (trt, atv) = (page[0].id, page[1].id);
+        old.set_favorite(trt, true).unwrap();
+        old.rename_channel(trt, Some("TRT Bir")).unwrap();
+        old.hide_channel(atv, true).unwrap();
+        let g = old.create_group(&source.id, ContentKind::Live, "Akşam").unwrap();
+        old.add_to_group(g, trt).unwrap();
+        old.set_epg_settings(trt, None, 30).unwrap();
+        old.set_app_setting("timeshift_mb", Some("4096")).unwrap();
+        old.set_parental_pin(None, Some("2468")).unwrap();
+        old.secrets.set(TMDB_KEY, "tmdb-anahtar").unwrap();
+
+        let file = dir.path().join("yedek.kpbackup");
+        assert!(old.export_backup(&file, "kisa").is_err(), "short password");
+        let counts = old.export_backup(&file, "uzun bir parola").unwrap();
+        assert_eq!((counts.sources, counts.favorites, counts.groups), (1, 1, 1));
+        assert!(!std::fs::read(&file).unwrap().windows(4).any(|w| w == b"TRT "), "nothing readable inside");
+
+        let new = Core::open_in_memory(Box::new(MemorySecrets::default())).unwrap();
+        assert!(new.import_backup(&file, "yanlış parola").unwrap_err().to_string().contains("Parola yanlış"));
+        let (counts, to_sync) = new.import_backup(&file, "uzun bir parola").unwrap();
+        assert_eq!(counts.sources, 1);
+        assert_eq!(to_sync, vec![source.id.clone()], "no catalog yet: needs a sync");
+        assert!(new.parental().unwrap().locked, "the PIN came along, locked");
+        assert_eq!(new.app_setting("timeshift_mb").unwrap().as_deref(), Some("4096"));
+        assert_eq!(new.secrets.get(TMDB_KEY).as_deref(), Some("tmdb-anahtar"));
+
+        new.sync(&source.id, &|_| {}).unwrap();
+        let after = new.page(&source.id, ContentKind::Live, None, None, 10).unwrap();
+        assert_eq!(after.iter().map(|c| c.name.as_str()).collect::<Vec<_>>(), ["TRT Bir"], "renamed, the other hidden");
+        assert_eq!(new.favorites(&source.id, ContentKind::Live).unwrap().len(), 1);
+        let groups = new.user_groups(&source.id, ContentKind::Live).unwrap();
+        assert_eq!((groups[0].name.as_str(), groups[0].count), ("Akşam", 1));
+        assert_eq!(new.epg_settings(after[0].id).unwrap().shift_min, 30);
+    }
 
     #[test]
     fn the_pin_locks_unlocks_and_changes_only_with_itself() {

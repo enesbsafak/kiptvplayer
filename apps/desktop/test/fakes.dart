@@ -146,6 +146,20 @@ class FakeLibrary implements LibraryApi {
   @override
   Future<List<Item>> groupItems(int groupId) async => [for (final id in groups[groupId]!.$2) ?_find(id)].map(_named).toList();
 
+  final backupFiles = <String, String>{};
+  @override
+  Future<BackupCounts> exportBackup(String path, String password) async {
+    if (password.length < 8) throw AnyhowException('Parola en az 8 karakter olmalı');
+    backupFiles[path] = password;
+    return BackupCounts(sources: _sources.length, favorites: favs.length, groups: groups.length, edits: 0);
+  }
+
+  @override
+  Future<RestoreResult> importBackup(String path, String password) async {
+    if (backupFiles[path] != password) throw AnyhowException('Parola yanlış ya da dosya bozuk');
+    return RestoreResult(counts: BackupCounts(sources: _sources.length, favorites: favs.length, groups: 0, edits: 0), toSync: const []);
+  }
+
   final epgOverrides = <int, (String?, int)>{};
   List<GuideEntry> guideChannels = const [GuideEntry(id: 'trt1.tr', label: 'TRT 1'), GuideEntry(id: 'atv.tr', label: 'ATV')];
   @override

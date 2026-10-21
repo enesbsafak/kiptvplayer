@@ -401,6 +401,36 @@ pub fn move_category(source_id: String, kind: Kind, uid: i64, delta: i32) -> Res
     Ok(core()?.move_category(&source_id, kind.into(), uid, delta)?)
 }
 
+/// What a backup holds or brought back.
+#[derive(Debug, Clone)]
+pub struct BackupCounts {
+    pub sources: u32,
+    pub favorites: u32,
+    pub groups: u32,
+    pub edits: u32,
+}
+
+/// The result of a restore: counts, and sources to sync (no catalog yet).
+#[derive(Debug, Clone)]
+pub struct RestoreResult {
+    pub counts: BackupCounts,
+    pub to_sync: Vec<String>,
+}
+
+fn counts(c: kp_core::store::ImportCounts) -> BackupCounts {
+    BackupCounts { sources: c.sources, favorites: c.favorites, groups: c.groups, edits: c.edits }
+}
+
+/// Writes an encrypted backup (password: 8+ characters) to [path].
+pub fn export_backup(path: String, password: String) -> Result<BackupCounts> {
+    Ok(counts(core()?.export_backup(std::path::Path::new(&path), &password)?))
+}
+
+pub fn import_backup(path: String, password: String) -> Result<RestoreResult> {
+    let (c, to_sync) = core()?.import_backup(std::path::Path::new(&path), &password)?;
+    Ok(RestoreResult { counts: counts(c), to_sync })
+}
+
 /// A live channel's guide corrections (the mapping editor).
 #[derive(Debug, Clone)]
 pub struct EpgSettings {

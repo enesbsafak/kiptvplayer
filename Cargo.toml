@@ -17,3 +17,10 @@ unicode-normalization = "0.1"
 [profile.release]
 lto = "thin"
 codegen-units = 1
+
+# The backup key derivation is meant to cost ~0.5 s optimized; unoptimized
+# it takes minutes, so debug builds optimize it too.
+[profile.dev.package.argon2]
+opt-level = 3
+[profile.dev.package.blake2]
+opt-level = 3

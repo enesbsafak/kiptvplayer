@@ -777,5 +777,56 @@
     }
   },
   "epgFindHint": "Yayın akışında kanal ara",
-  "epgSave": "Kaydet"
+  "epgSave": "Kaydet",
+  "backupTitle": "Yedekleme ve geri yükleme",
+  "backupBody": "Kaynaklarınız (şifreleriyle), favorileriniz, izleme geçmişiniz, gizlediğiniz ve yeniden adlandırdığınız kanallar, gruplarınız, yayın akışı düzeltmeleri, hatırlatmalar ve ayarlar tek bir dosyaya, seçtiğiniz parolayla şifrelenerek yazılır. Parola olmadan açılamaz; unutursanız kurtarılamaz. Kanal listeleri dosyada yoktur, geri yüklemeden sonra eşitlenir.",
+  "backupExport": "Yedek al…",
+  "backupImport": "Yedekten geri yükle…",
+  "backupSaved": "Yedek kaydedildi: {sources} kaynak, {favorites} favori, {groups} grup.",
+  "@backupSaved": {
+    "placeholders": {
+      "sources": {
+        "type": "int"
+      },
+      "favorites": {
+        "type": "int"
+      },
+      "groups": {
+        "type": "int"
+      }
+    }
+  },
+  "backupRestored": "Geri yüklendi: {sources} kaynak, {favorites} favori, {groups} grup.",
+  "@backupRestored": {
+    "placeholders": {
+      "sources": {
+        "type": "int"
+      },
+      "favorites": {
+        "type": "int"
+      },
+      "groups": {
+        "type": "int"
+      }
+    }
+  },
+  "backupSyncing": "Kaynaklar eşitleniyor ({n}/{total})…",
+  "@backupSyncing": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "backupPasswordNew": "Yedek parolası",
+  "backupPasswordNewBody": "Yedeği açmak için gerekecek. En az 8 karakter; unutulursa yedek açılamaz.",
+  "backupPasswordAsk": "Yedeğin parolası",
+  "backupPasswordAskBody": "Yedeği alırken seçtiğiniz parola.",
+  "backupPassword": "Parola",
+  "backupPasswordAgain": "Parola (tekrar)",
+  "backupPasswordShort": "En az 8 karakter",
+  "backupPasswordMismatch": "Parolalar aynı değil"
 }

@@ -818,6 +818,138 @@ impl Store {
         Ok(())
     }
 
+    // ---- backup ---------------------------------------------------------
+
+    /// Everything the user made, as JSON: sources (no passwords: those are
+    /// the core's to add), per-source tables, groups, settings.
+    pub fn export_user_data(&self) -> Result<serde_json::Value> {
+        use serde_json::{json, Map, Value};
+        let dump = |sql: &str| -> Result<Vec<Value>> {
+            let mut stmt = self.conn.prepare(sql)?;
+            let names: Vec<String> = stmt.column_names().into_iter().map(String::from).collect();
+            let mut rows = stmt.query([])?;
+            let mut out = Vec::new();
+            while let Some(r) = rows.next()? {
+                let mut obj = Map::new();
+                for (i, n) in names.iter().enumerate() {
+                    let v = match r.get_ref(i)? {
+                        rusqlite::types::ValueRef::Null | rusqlite::types::ValueRef::Blob(_) => Value::Null,
+                        rusqlite::types::ValueRef::Integer(i) => json!(i),
+                        rusqlite::types::ValueRef::Real(f) => json!(f),
+                        rusqlite::types::ValueRef::Text(t) => json!(String::from_utf8_lossy(t)),
+                    };
+                    obj.insert(n.clone(), v);
+                }
+                out.push(Value::Object(obj));
+            }
+            Ok(out)
+        };
+        let mut tables = Map::new();
+        for t in USER_TABLES {
+            tables.insert(t.to_string(), Value::Array(dump(&format!("SELECT * FROM {t}"))?));
+        }
+        Ok(json!({
+            "sources": dump("SELECT id, kind, name, url, username, epg_url, user_agent, insecure_tls, timezone FROM source ORDER BY sort")?,
+            "tables": tables,
+            "groups": dump("SELECT id, source_id, kind, name, sort FROM user_group")?,
+            "group_items": dump("SELECT group_id, uid, pos FROM user_group_item")?,
+            "settings": dump("SELECT key, value FROM setting")?,
+        }))
+    }
+
+    /// Puts an [export_user_data] dump back. Sources keep their ids, so
+    /// their rows find them; groups get fresh ids. Rows for the same keys
+    /// are replaced, everything else in the library stays.
+    pub fn import_user_data(&mut self, data: &serde_json::Value) -> Result<ImportCounts> {
+        use serde_json::Value;
+        fn sql_value(v: &Value) -> rusqlite::types::Value {
+            match v {
+                Value::Null => rusqlite::types::Value::Null,
+                Value::Bool(b) => rusqlite::types::Value::Integer(i64::from(*b)),
+                Value::Number(n) => n
+                    .as_i64()
+                    .map(rusqlite::types::Value::Integer)
+                    .unwrap_or_else(|| rusqlite::types::Value::Real(n.as_f64().unwrap_or(0.0))),
+                Value::String(s) => rusqlite::types::Value::Text(s.clone()),
+                other => rusqlite::types::Value::Text(other.to_string()),
+            }
+        }
+        let rows = |key: &str| data.get(key).and_then(Value::as_array).cloned().unwrap_or_default();
+        let mut counts = ImportCounts::default();
+        let tx = self.conn.transaction()?;
+        for s in rows("sources") {
+            let get = |k: &str| s.get(k).map(sql_value).unwrap_or(rusqlite::types::Value::Null);
+            tx.execute(
+                "INSERT INTO source (id, kind, name, url, username, epg_url, user_agent, insecure_tls, timezone, sort)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, (SELECT coalesce(max(sort), -1) + 1 FROM source))
+                 ON CONFLICT (id) DO UPDATE SET name = excluded.name, url = excluded.url, username = excluded.username,
+                     epg_url = excluded.epg_url, user_agent = excluded.user_agent, insecure_tls = excluded.insecure_tls",
+                params![get("id"), get("kind"), get("name"), get("url"), get("username"), get("epg_url"), get("user_agent"), get("insecure_tls"), get("timezone")],
+            )?;
+            counts.sources += 1;
+        }
+        let tables = data.get("tables").cloned().unwrap_or(Value::Null);
+        for t in USER_TABLES {
+            for row in tables.get(*t).and_then(Value::as_array).cloned().unwrap_or_default() {
+                let Some(obj) = row.as_object() else { continue };
+                let cols: Vec<&String> = obj.keys().collect();
+                // Column names come from the file: only plain identifiers pass.
+                if cols.iter().any(|c| !c.chars().all(|ch| ch.is_ascii_alphanumeric() || ch == '_')) {
+                    continue;
+                }
+                let sql = format!(
+                    "INSERT OR REPLACE INTO {t} ({}) VALUES ({})",
+                    cols.iter().map(|c| c.as_str()).collect::<Vec<_>>().join(", "),
+                    (1..=cols.len()).map(|i| format!("?{i}")).collect::<Vec<_>>().join(", ")
+                );
+                let values: Vec<rusqlite::types::Value> = cols.iter().map(|c| sql_value(&obj[*c])).collect();
+                tx.execute(&sql, rusqlite::params_from_iter(values))?;
+                match *t {
+                    "favorite" => counts.favorites += 1,
+                    "channel_edit" | "category_edit" | "epg_override" => counts.edits += 1,
+                    _ => {}
+                }
+            }
+        }
+        let mut new_ids = std::collections::HashMap::new();
+        for g in rows("groups") {
+            let get = |k: &str| g.get(k).map(sql_value).unwrap_or(rusqlite::types::Value::Null);
+            tx.execute(
+                "INSERT INTO user_group (source_id, kind, name, sort) VALUES (?1, ?2, ?3, ?4)",
+                params![get("source_id"), get("kind"), get("name"), get("sort")],
+            )?;
+            if let Some(old) = g.get("id").and_then(Value::as_i64) {
+                new_ids.insert(old, tx.last_insert_rowid());
+            }
+            counts.groups += 1;
+        }
+        for i in rows("group_items") {
+            let Some(group) = i.get("group_id").and_then(Value::as_i64).and_then(|g| new_ids.get(&g)) else { continue };
+            tx.execute(
+                "INSERT OR REPLACE INTO user_group_item (group_id, uid, pos) VALUES (?1, ?2, ?3)",
+                params![group, i.get("uid").and_then(Value::as_i64), i.get("pos").and_then(Value::as_i64)],
+            )?;
+        }
+        for s in rows("settings") {
+            if let (Some(k), Some(v)) = (s.get("key").and_then(Value::as_str), s.get("value").and_then(Value::as_str)) {
+                tx.execute(
+                    "INSERT INTO setting (key, value) VALUES (?1, ?2) ON CONFLICT (key) DO UPDATE SET value = excluded.value",
+                    params![k, v],
+                )?;
+            }
+        }
+        // Edits onto catalogs already here; new sources get theirs at sync.
+        let ids: Vec<String> = tx.prepare("SELECT id FROM source")?.query_map([], |r| r.get(0))?.collect::<std::result::Result<_, _>>()?;
+        for id in &ids {
+            Self::apply_edits(&tx, id)?;
+        }
+        tx.execute("INSERT INTO channel_fts (channel_fts) VALUES ('rebuild')", [])?;
+        tx.commit()?;
+        self.region_pref = self.setting("region")?.filter(|r| !r.is_empty());
+        Self::reorder(&self.conn, None, self.region_pref.as_deref())?;
+        Ok(counts)
+    }
+
     // ---- custom groups ------------------------------------------------
 
     pub fn user_groups(&self, source_id: &str, kind: ContentKind) -> Result<Vec<CategoryRow>> {
@@ -1344,6 +1476,18 @@ fn source_row(r: &Row<'_>) -> rusqlite::Result<SourceRow> {
         max_connections: r.get(11)?,
         timezone: r.get(12)?,
     })
+}
+
+/// Per-source user tables a backup carries whole (keyed by source and uid).
+const USER_TABLES: &[&str] = &["favorite", "progress", "recent", "reminder", "channel_edit", "category_edit", "epg_override"];
+
+/// What an import brought.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub struct ImportCounts {
+    pub sources: u32,
+    pub favorites: u32,
+    pub groups: u32,
+    pub edits: u32,
 }
 
 /// Moves [id] by [delta] places within [ids], clamped to the ends.

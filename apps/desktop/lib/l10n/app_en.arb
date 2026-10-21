@@ -392,5 +392,20 @@
   "epgNoGuide": "No guide is shown for this channel.",
   "epgPicked": "Picked by hand: {name}",
   "epgFindHint": "Find a channel in the guide",
-  "epgSave": "Save"
+  "epgSave": "Save",
+  "backupTitle": "Backup and restore",
+  "backupBody": "Your sources (with their passwords), favourites, watch history, hidden and renamed channels, groups, guide corrections, reminders and settings go into one file, encrypted with a password you choose. It cannot be opened without it, nor recovered if you forget it. Channel lists are not in the file; they sync after a restore.",
+  "backupExport": "Back up…",
+  "backupImport": "Restore from backup…",
+  "backupSaved": "Backup saved: {sources} sources, {favorites} favourites, {groups} groups.",
+  "backupRestored": "Restored: {sources} sources, {favorites} favourites, {groups} groups.",
+  "backupSyncing": "Syncing sources ({n}/{total})…",
+  "backupPasswordNew": "Backup password",
+  "backupPasswordNewBody": "Needed to open the backup. At least 8 characters; if forgotten, the backup cannot be opened.",
+  "backupPasswordAsk": "The backup's password",
+  "backupPasswordAskBody": "The password chosen when the backup was made.",
+  "backupPassword": "Password",
+  "backupPasswordAgain": "Password (again)",
+  "backupPasswordShort": "At least 8 characters",
+  "backupPasswordMismatch": "The passwords do not match"
 }

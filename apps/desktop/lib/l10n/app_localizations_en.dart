@@ -1348,4 +1348,58 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get epgSave => 'Save';
+
+  @override
+  String get backupTitle => 'Backup and restore';
+
+  @override
+  String get backupBody =>
+      'Your sources (with their passwords), favourites, watch history, hidden and renamed channels, groups, guide corrections, reminders and settings go into one file, encrypted with a password you choose. It cannot be opened without it, nor recovered if you forget it. Channel lists are not in the file; they sync after a restore.';
+
+  @override
+  String get backupExport => 'Back up…';
+
+  @override
+  String get backupImport => 'Restore from backup…';
+
+  @override
+  String backupSaved(int sources, int favorites, int groups) {
+    return 'Backup saved: $sources sources, $favorites favourites, $groups groups.';
+  }
+
+  @override
+  String backupRestored(int sources, int favorites, int groups) {
+    return 'Restored: $sources sources, $favorites favourites, $groups groups.';
+  }
+
+  @override
+  String backupSyncing(int n, int total) {
+    return 'Syncing sources ($n/$total)…';
+  }
+
+  @override
+  String get backupPasswordNew => 'Backup password';
+
+  @override
+  String get backupPasswordNewBody =>
+      'Needed to open the backup. At least 8 characters; if forgotten, the backup cannot be opened.';
+
+  @override
+  String get backupPasswordAsk => 'The backup\'s password';
+
+  @override
+  String get backupPasswordAskBody =>
+      'The password chosen when the backup was made.';
+
+  @override
+  String get backupPassword => 'Password';
+
+  @override
+  String get backupPasswordAgain => 'Password (again)';
+
+  @override
+  String get backupPasswordShort => 'At least 8 characters';
+
+  @override
+  String get backupPasswordMismatch => 'The passwords do not match';
 }

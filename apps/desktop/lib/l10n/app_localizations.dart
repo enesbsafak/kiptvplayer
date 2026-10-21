@@ -2455,6 +2455,96 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kaydet'**
   String get epgSave;
+
+  /// No description provided for @backupTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yedekleme ve geri yükleme'**
+  String get backupTitle;
+
+  /// No description provided for @backupBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaynaklarınız (şifreleriyle), favorileriniz, izleme geçmişiniz, gizlediğiniz ve yeniden adlandırdığınız kanallar, gruplarınız, yayın akışı düzeltmeleri, hatırlatmalar ve ayarlar tek bir dosyaya, seçtiğiniz parolayla şifrelenerek yazılır. Parola olmadan açılamaz; unutursanız kurtarılamaz. Kanal listeleri dosyada yoktur, geri yüklemeden sonra eşitlenir.'**
+  String get backupBody;
+
+  /// No description provided for @backupExport.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yedek al…'**
+  String get backupExport;
+
+  /// No description provided for @backupImport.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yedekten geri yükle…'**
+  String get backupImport;
+
+  /// No description provided for @backupSaved.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yedek kaydedildi: {sources} kaynak, {favorites} favori, {groups} grup.'**
+  String backupSaved(int sources, int favorites, int groups);
+
+  /// No description provided for @backupRestored.
+  ///
+  /// In tr, this message translates to:
+  /// **'Geri yüklendi: {sources} kaynak, {favorites} favori, {groups} grup.'**
+  String backupRestored(int sources, int favorites, int groups);
+
+  /// No description provided for @backupSyncing.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaynaklar eşitleniyor ({n}/{total})…'**
+  String backupSyncing(int n, int total);
+
+  /// No description provided for @backupPasswordNew.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yedek parolası'**
+  String get backupPasswordNew;
+
+  /// No description provided for @backupPasswordNewBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yedeği açmak için gerekecek. En az 8 karakter; unutulursa yedek açılamaz.'**
+  String get backupPasswordNewBody;
+
+  /// No description provided for @backupPasswordAsk.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yedeğin parolası'**
+  String get backupPasswordAsk;
+
+  /// No description provided for @backupPasswordAskBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yedeği alırken seçtiğiniz parola.'**
+  String get backupPasswordAskBody;
+
+  /// No description provided for @backupPassword.
+  ///
+  /// In tr, this message translates to:
+  /// **'Parola'**
+  String get backupPassword;
+
+  /// No description provided for @backupPasswordAgain.
+  ///
+  /// In tr, this message translates to:
+  /// **'Parola (tekrar)'**
+  String get backupPasswordAgain;
+
+  /// No description provided for @backupPasswordShort.
+  ///
+  /// In tr, this message translates to:
+  /// **'En az 8 karakter'**
+  String get backupPasswordShort;
+
+  /// No description provided for @backupPasswordMismatch.
+  ///
+  /// In tr, this message translates to:
+  /// **'Parolalar aynı değil'**
+  String get backupPasswordMismatch;
 }
 
 class _AppLocalizationsDelegate

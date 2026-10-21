@@ -220,6 +220,17 @@ class Automation {
         }
       }
     }
+    // An encrypted backup and its restore through the real core, timed.
+    final file = '$dir${Platform.pathSeparator}test.kpbackup';
+    final sw = Stopwatch()..start();
+    final saved = await app.library.exportBackup(file, 'otomasyon parolasi');
+    final exportMs = sw.elapsedMilliseconds;
+    final back = await app.library.importBackup(file, 'otomasyon parolasi');
+    await File('$dir${Platform.pathSeparator}backup.txt').writeAsString(
+      'export=${exportMs}ms total=${sw.elapsedMilliseconds}ms bytes=${File(file).lengthSync()} '
+      'sources=${saved.sources}/${back.counts.sources} favorites=${saved.favorites} groups=${saved.groups} '
+      'edits=${saved.edits} toSync=${back.toSync.length}',
+    );
     await quit();
   }
 

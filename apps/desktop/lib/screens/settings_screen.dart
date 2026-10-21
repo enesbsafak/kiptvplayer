@@ -16,6 +16,7 @@ import '../l10n/l10n.dart';
 import 'add_source.dart';
 import 'parental.dart';
 import 'edits.dart';
+import 'backup.dart';
 
 enum _Tab { sources, preferences, shortcuts, about }
 
@@ -526,6 +527,10 @@ class _PreferencesTabState extends State<_PreferencesTab> {
         const Divider(height: 1, color: KdColors.line),
         const SizedBox(height: 22),
         const HiddenItemsSettings(),
+        const SizedBox(height: 28),
+        const Divider(height: 1, color: KdColors.line),
+        const SizedBox(height: 22),
+        const BackupSettings(),
         const SizedBox(height: 28),
         const Divider(height: 1, color: KdColors.line),
         const SizedBox(height: 22),

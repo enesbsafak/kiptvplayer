@@ -4,6 +4,7 @@
 //! storing them in SQLite so the UI can paint from disk on launch, and search.
 
 pub mod adult;
+pub mod backup;
 pub mod catalog;
 pub mod catchup;
 pub mod core;

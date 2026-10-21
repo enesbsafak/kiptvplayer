@@ -1326,4 +1326,57 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get epgSave => 'Kaydet';
+
+  @override
+  String get backupTitle => 'Yedekleme ve geri yükleme';
+
+  @override
+  String get backupBody =>
+      'Kaynaklarınız (şifreleriyle), favorileriniz, izleme geçmişiniz, gizlediğiniz ve yeniden adlandırdığınız kanallar, gruplarınız, yayın akışı düzeltmeleri, hatırlatmalar ve ayarlar tek bir dosyaya, seçtiğiniz parolayla şifrelenerek yazılır. Parola olmadan açılamaz; unutursanız kurtarılamaz. Kanal listeleri dosyada yoktur, geri yüklemeden sonra eşitlenir.';
+
+  @override
+  String get backupExport => 'Yedek al…';
+
+  @override
+  String get backupImport => 'Yedekten geri yükle…';
+
+  @override
+  String backupSaved(int sources, int favorites, int groups) {
+    return 'Yedek kaydedildi: $sources kaynak, $favorites favori, $groups grup.';
+  }
+
+  @override
+  String backupRestored(int sources, int favorites, int groups) {
+    return 'Geri yüklendi: $sources kaynak, $favorites favori, $groups grup.';
+  }
+
+  @override
+  String backupSyncing(int n, int total) {
+    return 'Kaynaklar eşitleniyor ($n/$total)…';
+  }
+
+  @override
+  String get backupPasswordNew => 'Yedek parolası';
+
+  @override
+  String get backupPasswordNewBody =>
+      'Yedeği açmak için gerekecek. En az 8 karakter; unutulursa yedek açılamaz.';
+
+  @override
+  String get backupPasswordAsk => 'Yedeğin parolası';
+
+  @override
+  String get backupPasswordAskBody => 'Yedeği alırken seçtiğiniz parola.';
+
+  @override
+  String get backupPassword => 'Parola';
+
+  @override
+  String get backupPasswordAgain => 'Parola (tekrar)';
+
+  @override
+  String get backupPasswordShort => 'En az 8 karakter';
+
+  @override
+  String get backupPasswordMismatch => 'Parolalar aynı değil';
 }

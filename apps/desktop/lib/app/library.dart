@@ -4,6 +4,7 @@ import '../src/rust/api/library.dart' as rust;
 
 export '../src/rust/api/library.dart'
     show
+        BackupCounts,
         Category,
         ContinueItem,
         EpisodeInfo,
@@ -20,6 +21,7 @@ export '../src/rust/api/library.dart'
         Programme,
         RegionCount,
         RegionPreference,
+        RestoreResult,
         Reminder,
         SourceHealth,
         SourceInfo,
@@ -71,6 +73,10 @@ abstract interface class LibraryApi {
   Future<void> removeFromGroup(int groupId, int itemId);
   Future<void> moveInGroup(int groupId, int itemId, int delta);
   Future<List<rust.Item>> groupItems(int groupId);
+
+  /// Encrypted backup of everything the user made, and restoring it.
+  Future<rust.BackupCounts> exportBackup(String path, String password);
+  Future<rust.RestoreResult> importBackup(String path, String password);
 
   /// A live channel's guide corrections: shift and hand-picked match.
   Future<rust.EpgSettings> epgSettings(int itemId);
@@ -199,6 +205,10 @@ class RustLibrary implements LibraryApi {
   Future<void> moveInGroup(int groupId, int itemId, int delta) => rust.moveInGroup(groupId: groupId, itemId: itemId, delta: delta);
   @override
   Future<List<rust.Item>> groupItems(int groupId) => rust.groupItems(groupId: groupId);
+  @override
+  Future<rust.BackupCounts> exportBackup(String path, String password) => rust.exportBackup(path: path, password: password);
+  @override
+  Future<rust.RestoreResult> importBackup(String path, String password) => rust.importBackup(path: path, password: password);
   @override
   Future<rust.EpgSettings> epgSettings(int itemId) => rust.epgSettings(itemId: itemId);
   @override

@@ -127,6 +127,21 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// A backup came back: sources, language, region, lock and lists anew.
+  Future<void> restored() async {
+    languageChoice = await library.uiLanguage();
+    await _applyLanguage();
+    final pref = await library.regionPreference();
+    region = pref.chosen ? pref.region : region;
+    sources = await library.sources();
+    if (!sources.any((s) => s.id == activeSourceId)) activeSourceId = sources.firstOrNull?.id;
+    parental = await library.parental();
+    catalogVersion++;
+    guideVersion++;
+    notifyListeners();
+    unawaited(reminders.load(activeSource?.id));
+  }
+
   /// The user hid, renamed or regrouped something: lists reload.
   void editsChanged() {
     catalogVersion++;
