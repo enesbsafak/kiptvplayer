@@ -51,7 +51,27 @@ function(kp_fetch artifact dest)
     list(GET status 0 code)
     if(NOT code EQUAL 0)
       file(REMOVE "${archive}")
-      message(FATAL_ERROR "karadelik_mpv_libs: download of ${file_name} failed: ${status}")
+      # Upstream prunes old builds: fall back to our mirror (a release of
+      # the private repo, reachable with the developer's or CI's gh login).
+      string(JSON mirror_repo ERROR_VARIABLE no_mirror GET "${KP_MANIFEST}" mirror repo)
+      string(JSON mirror_tag ERROR_VARIABLE no_mirror GET "${KP_MANIFEST}" mirror tag)
+      find_program(KP_GH gh)
+      if(NOT no_mirror AND KP_GH)
+        message(STATUS "karadelik_mpv_libs: ${url} failed, trying the ${mirror_repo} mirror")
+        execute_process(COMMAND "${KP_GH}" release download "${mirror_tag}" --repo "${mirror_repo}"
+                                --pattern "${file_name}" --dir "${KP_NATIVE_CACHE}" --clobber
+                        RESULT_VARIABLE gh_rc OUTPUT_QUIET)
+        if(gh_rc EQUAL 0 AND EXISTS "${archive}")
+          file(SHA256 "${archive}" have)
+          if(NOT have STREQUAL sha256)
+            file(REMOVE "${archive}")
+            message(FATAL_ERROR "karadelik_mpv_libs: mirrored ${file_name} has the wrong SHA-256")
+          endif()
+        endif()
+      endif()
+      if(NOT EXISTS "${archive}")
+        message(FATAL_ERROR "karadelik_mpv_libs: download of ${file_name} failed: ${status}")
+      endif()
     endif()
   endif()
 

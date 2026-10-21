@@ -1,5 +1,10 @@
 {
   "_comment": "Native playback artifacts. packages/karadelik_mpv_libs downloads these at build time and refuses any file whose SHA-256 differs.",
+  "mirror": {
+    "repo": "enesbsafak/kiptvplayer",
+    "tag": "native-deps",
+    "_comment": "Same files, same SHA-256: used when the upstream URL is gone. Upload new pins there too."
+  },
   "windows-x64": {
     "libmpv": {
       "file": "mpv-dev-lgpl-x86_64-20261020-git-e471496c56.7z",
@@ -8,7 +13,7 @@
       "mpv_commit": "e471496c56",
       "license": "LGPL-2.1-or-later (mpv -Dgpl=false; FFmpeg without --enable-gpl)",
       "source": "Build scripts: https://github.com/zhongfly/mpv-winbuild (mpv-dev-lgpl). mpv and FFmpeg sources at the commits above; see THIRD_PARTY.md.",
-      "distribution": "zhongfly keeps 30 days of builds: mirror this exact file to our own GitHub release and point url there before a public release (the hash stays the same)."
+      "distribution": "Mirrored to the native-deps release of enesbsafak/kiptvplayer (see \"mirror\"); the build falls back to it when zhongfly prunes the build (30 days). A public download for end users still needs a public release location."
     },
     "angle": {
       "file": "ANGLE.7z",

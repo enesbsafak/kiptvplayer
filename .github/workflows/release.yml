@@ -37,6 +37,7 @@ jobs:
         shell: pwsh
         env:
           KP_SIGN_CMD: ${{ secrets.KP_SIGN_CMD }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
           ./tools/release.ps1 -Version $version -BaseUrl "https://github.com/${{ github.repository }}/releases/download/v{0}"

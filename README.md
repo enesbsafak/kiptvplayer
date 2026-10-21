@@ -49,6 +49,7 @@ tools\release.ps1 -Version 0.2.0      # dist\: kurulum dosyası + latest.json
 - `v0.2.0` etiketi gönderilince GitHub Actions (`.github/workflows/release.yml`) aynısını yapar ve GitHub sürümü olarak yayınlar.
 - Uygulama içi güncelleyici `latest.json`'u okur, kurulumu indirir, SHA-256'yı doğrular, sessiz kurar ve uygulamayı yeniden açar; bir önceki kurulum saklanır, “önceki sürüme dön” mümkündür.
 - **İmza:** `KP_SIGN_CMD` ortam değişkeni / depo sırrı (ör. Azure Trusted Signing) tanımlıysa exe ve kurulum imzalanır; yoksa imzasızdır ve SmartScreen uyarır.
+- **Yerel bağımlılıklar:** libmpv/ANGLE arşivleri `native-deps` sürümünde (özel depo) aynalanıyor; kaynak adres silinirse derleme oradan indirir (`gh` bu depoya erişebilen hesapla oturum açmış olmalı: `gh auth switch --user enesbsafak`, CI'da otomatik).
 - **Yayın öncesi yapılacaklar:** GitHub deposu ve sürümleri (güncelleme adresi `enesbsafak/kiptvplayer` varsayılıyor; `--dart-define=KP_UPDATE_FEED=...` ile değişir), imza sertifikası, libmpv arşivinin kendi sürümümüze aynalanması (kaynak 30 gün saklıyor; `packages/karadelik_mpv_libs/manifest.json`).
 
 ## Fazlar
@@ -61,3 +62,7 @@ tools\release.ps1 -Version 0.2.0      # dist\: kurulum dosyası + latest.json
 | M3 EPG + catch-up | XMLTV, eşleştirme, grid, catch-up | ✓ XMLTV (250 MB rehber 3.4 sn, 53 MB bellek), tvg-id/ad eşleştirme, tvg-shift, catch-up (Xtream + M3U). Açık: elle eşleştirme tablosu |
 | M4 VOD / arama / Stalker / TMDB | Film/dizi, devam et, arama, Stalker, TMDB | ✓ Stalker canlı TV ve filmler, TMDB (anahtar ayarlardan). Açık: Stalker dizileri |
 | M5 Yayın | Güncelleyici, kurulum, imza, CI | ◐ Güncelleyici, Inno kurulum, CI ve sürüm iş akışı hazır. Açık: imza sertifikası, GitHub deposu, çökme raporu |
+
+## Bilinen sorunlar
+
+- **Kanal değişimi başına ~0.7 MB bellek geri verilmiyor** (tools/soak.ps1: 60 dk, dakikada bir kanal değişimi → 522 → 569 MB; 8 dk, 10 sn'de bir → +31 MB). Çökme yok, kapanış temiz. Dart tarafındaki önbellekler (media_kit `Media` önbelleği, EPG, resimler) sınırlı; şüpheli mpv/FFmpeg'in açılış başına yerel ayırmaları (donanım kod çözücü havuzu). Sonraki adım: UMDH (Windows Debugging Tools) ile yerel yığın karşılaştırması.

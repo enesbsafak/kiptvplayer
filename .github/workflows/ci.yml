@@ -1,21 +1,29 @@
-# Every push and pull request: Rust and Flutter tests, the end-to-end tests
-# against the mock provider, a Windows release build; the data core is also
-# tested on macOS so the later port stays cheap.
+# Private-repo minutes count 1x on Linux, 2x on Windows, 10x on macOS, so:
+# - every push: tests on Linux (Rust, end-to-end against the mock provider,
+#   Flutter analyze + headless tests; none of them need Windows)
+# - pull requests and manual runs: the Windows release build
+# - manual runs: the data core on macOS (the later port stays cheap)
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      macos:
+        description: Also test the data core on macOS (10x minutes)
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  windows:
-    runs-on: windows-latest
-    timeout-minutes: 75
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -32,21 +40,15 @@ jobs:
         run: cargo test --workspace
 
       - name: End-to-end tests against the mock provider
-        shell: pwsh
         run: |
-          # The tests only check that streams answer, so tiny stand-ins
-          # replace the generated test media (tools/mock-iptv/make-media.ps1).
-          New-Item -ItemType Directory -Force tools/mock-iptv/media | Out-Null
-          Set-Content -Path tools/mock-iptv/media/ts1080.ts -Value 'mock' -NoNewline
+          # The tests only check that streams answer, so a tiny stand-in
+          # replaces the generated test media (tools/mock-iptv/make-media.ps1).
+          mkdir -p tools/mock-iptv/media
+          printf 'mock' > tools/mock-iptv/media/ts1080.ts
           cargo build -p mock-iptv --release
-          $mock = Start-Process target/release/mock-iptv.exe -ArgumentList 8089 -PassThru
-          try {
-            Start-Sleep -Seconds 1
-            cargo test -p kp-core --test xtream_mock -- --ignored --test-threads=1
-            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          } finally {
-            Stop-Process $mock
-          }
+          ./target/release/mock-iptv 8089 &
+          sleep 1
+          cargo test -p kp-core --test xtream_mock -- --ignored --test-threads=1
 
       - name: Flutter analyze and tests (headless)
         working-directory: apps/desktop
@@ -55,10 +57,25 @@ jobs:
           flutter analyze
           flutter test
 
+  windows-build:
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
       - name: Windows release build
         working-directory: apps/desktop
+        env:
+          # The native-deps mirror (private release) when upstream pruned a pin.
+          GH_TOKEN: ${{ github.token }}
         run: flutter build windows --release
-
       - uses: actions/upload-artifact@v4
         with:
           name: karadelik-player-windows
@@ -66,6 +83,7 @@ jobs:
           retention-days: 14
 
   macos-core:
+    if: github.event_name == 'workflow_dispatch' && inputs.macos
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
