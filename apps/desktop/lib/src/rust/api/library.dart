@@ -105,6 +105,18 @@ Future<List<Item>> recent({
   limit: limit,
 );
 
+/// Forgets recently watched channels ([recent]) and/or resume points
+/// ([progress]) of a source; favorites stay.
+Future<void> clearHistory({
+  required String sourceId,
+  required bool recent,
+  required bool progress,
+}) => RustLib.instance.api.crateApiLibraryClearHistory(
+  sourceId: sourceId,
+  recent: recent,
+  progress: progress,
+);
+
 Future<List<ContinueItem>> continueWatching({
   required String sourceId,
   required int limit,

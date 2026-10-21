@@ -63,6 +63,9 @@ abstract interface class LibraryApi {
   Future<List<rust.Item>> alternates(int itemId);
   Future<List<rust.Item>> recent(String sourceId, rust.Kind kind, int limit);
   Future<List<rust.ContinueItem>> continueWatching(String sourceId, int limit);
+
+  /// Forgets recent channels and/or resume points; favorites stay.
+  Future<void> clearHistory(String sourceId, {bool recent = true, bool progress = true});
   Future<void> setFavorite(int itemId, bool on);
   Future<bool> isFavorite(int itemId);
   Future<void> saveProgress(
@@ -149,6 +152,9 @@ class RustLibrary implements LibraryApi {
   @override
   Future<List<rust.Item>> recent(String sourceId, rust.Kind kind, int limit) =>
       rust.recent(sourceId: sourceId, kind: kind, limit: limit);
+  @override
+  Future<void> clearHistory(String sourceId, {bool recent = true, bool progress = true}) =>
+      rust.clearHistory(sourceId: sourceId, recent: recent, progress: progress);
   @override
   Future<List<rust.ContinueItem>> continueWatching(String sourceId, int limit) =>
       rust.continueWatching(sourceId: sourceId, limit: limit);

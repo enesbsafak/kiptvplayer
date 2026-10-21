@@ -39,7 +39,7 @@ flutter_rust_bridge::frb_generated_boilerplate!(
     default_rust_auto_opaque = RustAutoOpaqueMoi,
 );
 pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_VERSION: &str = "2.13.0";
-pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = 4440489;
+pub(crate) const FLUTTER_RUST_BRIDGE_CODEGEN_CONTENT_HASH: i32 = -1116835465;
 
 // Section: executor
 
@@ -266,6 +266,47 @@ fn wire__crate__api__update__check_update_impl(
                             api_feed_url,
                             api_current,
                             api_language,
+                        )?;
+                        std::result::Result::Ok(output_ok)
+                    })(),
+                )
+            }
+        },
+    )
+}
+fn wire__crate__api__library__clear_history_impl(
+    port_: flutter_rust_bridge::for_generated::MessagePort,
+    ptr_: flutter_rust_bridge::for_generated::PlatformGeneralizedUint8ListPtr,
+    rust_vec_len_: i32,
+    data_len_: i32,
+) {
+    FLUTTER_RUST_BRIDGE_HANDLER.wrap_normal::<flutter_rust_bridge::for_generated::SseCodec, _, _>(
+        flutter_rust_bridge::for_generated::TaskInfo {
+            debug_name: "clear_history",
+            port: Some(port_),
+            mode: flutter_rust_bridge::for_generated::FfiCallMode::Normal,
+        },
+        move || {
+            let message = unsafe {
+                flutter_rust_bridge::for_generated::Dart2RustMessageSse::from_wire(
+                    ptr_,
+                    rust_vec_len_,
+                    data_len_,
+                )
+            };
+            let mut deserializer =
+                flutter_rust_bridge::for_generated::SseDeserializer::new(message);
+            let api_source_id = <String>::sse_decode(&mut deserializer);
+            let api_recent = <bool>::sse_decode(&mut deserializer);
+            let api_progress = <bool>::sse_decode(&mut deserializer);
+            deserializer.end();
+            move |context| {
+                transform_result_sse::<_, flutter_rust_bridge::for_generated::anyhow::Error>(
+                    (move || {
+                        let output_ok = crate::api::library::clear_history(
+                            api_source_id,
+                            api_recent,
+                            api_progress,
                         )?;
                         std::result::Result::Ok(output_ok)
                     })(),
@@ -2240,39 +2281,40 @@ fn pde_ffi_dispatcher_primary_impl(
         4 => wire__crate__api__library__catchup_playback_impl(port, ptr, rust_vec_len, data_len),
         5 => wire__crate__api__library__categories_impl(port, ptr, rust_vec_len, data_len),
         6 => wire__crate__api__update__check_update_impl(port, ptr, rust_vec_len, data_len),
-        7 => wire__crate__api__library__continue_watching_impl(port, ptr, rust_vec_len, data_len),
-        8 => wire__crate__api__library__detail_impl(port, ptr, rust_vec_len, data_len),
-        9 => wire__crate__api__update__download_update_impl(port, ptr, rust_vec_len, data_len),
-        10 => wire__crate__api__library__epg_impl(port, ptr, rust_vec_len, data_len),
-        11 => wire__crate__api__library__favorites_impl(port, ptr, rust_vec_len, data_len),
-        12 => wire__crate__api__library__init_app_impl(port, ptr, rust_vec_len, data_len),
-        13 => wire__crate__api__update__install_update_impl(port, ptr, rust_vec_len, data_len),
-        14 => wire__crate__api__library__is_favorite_impl(port, ptr, rust_vec_len, data_len),
-        15 => wire__crate__api__library__items_page_impl(port, ptr, rust_vec_len, data_len),
-        16 => wire__crate__api__library__list_sources_impl(port, ptr, rust_vec_len, data_len),
-        17 => wire__crate__api__library__open_library_impl(port, ptr, rust_vec_len, data_len),
-        18 => wire__crate__api__library__playback_impl(port, ptr, rust_vec_len, data_len),
-        19 => wire__crate__api__update__previous_version_impl(port, ptr, rust_vec_len, data_len),
-        20 => wire__crate__api__library__recent_impl(port, ptr, rust_vec_len, data_len),
-        21 => wire__crate__api__library__recently_added_impl(port, ptr, rust_vec_len, data_len),
-        22 => wire__crate__api__library__refresh_guide_impl(port, ptr, rust_vec_len, data_len),
-        23 => wire__crate__api__library__region_preference_impl(port, ptr, rust_vec_len, data_len),
-        24 => wire__crate__api__library__remove_source_impl(port, ptr, rust_vec_len, data_len),
-        25 => wire__crate__api__library__save_progress_impl(port, ptr, rust_vec_len, data_len),
-        26 => wire__crate__api__library__search_impl(port, ptr, rust_vec_len, data_len),
-        27 => wire__crate__api__library__set_favorite_impl(port, ptr, rust_vec_len, data_len),
-        28 => {
+        7 => wire__crate__api__library__clear_history_impl(port, ptr, rust_vec_len, data_len),
+        8 => wire__crate__api__library__continue_watching_impl(port, ptr, rust_vec_len, data_len),
+        9 => wire__crate__api__library__detail_impl(port, ptr, rust_vec_len, data_len),
+        10 => wire__crate__api__update__download_update_impl(port, ptr, rust_vec_len, data_len),
+        11 => wire__crate__api__library__epg_impl(port, ptr, rust_vec_len, data_len),
+        12 => wire__crate__api__library__favorites_impl(port, ptr, rust_vec_len, data_len),
+        13 => wire__crate__api__library__init_app_impl(port, ptr, rust_vec_len, data_len),
+        14 => wire__crate__api__update__install_update_impl(port, ptr, rust_vec_len, data_len),
+        15 => wire__crate__api__library__is_favorite_impl(port, ptr, rust_vec_len, data_len),
+        16 => wire__crate__api__library__items_page_impl(port, ptr, rust_vec_len, data_len),
+        17 => wire__crate__api__library__list_sources_impl(port, ptr, rust_vec_len, data_len),
+        18 => wire__crate__api__library__open_library_impl(port, ptr, rust_vec_len, data_len),
+        19 => wire__crate__api__library__playback_impl(port, ptr, rust_vec_len, data_len),
+        20 => wire__crate__api__update__previous_version_impl(port, ptr, rust_vec_len, data_len),
+        21 => wire__crate__api__library__recent_impl(port, ptr, rust_vec_len, data_len),
+        22 => wire__crate__api__library__recently_added_impl(port, ptr, rust_vec_len, data_len),
+        23 => wire__crate__api__library__refresh_guide_impl(port, ptr, rust_vec_len, data_len),
+        24 => wire__crate__api__library__region_preference_impl(port, ptr, rust_vec_len, data_len),
+        25 => wire__crate__api__library__remove_source_impl(port, ptr, rust_vec_len, data_len),
+        26 => wire__crate__api__library__save_progress_impl(port, ptr, rust_vec_len, data_len),
+        27 => wire__crate__api__library__search_impl(port, ptr, rust_vec_len, data_len),
+        28 => wire__crate__api__library__set_favorite_impl(port, ptr, rust_vec_len, data_len),
+        29 => {
             wire__crate__api__library__set_region_preference_impl(port, ptr, rust_vec_len, data_len)
         }
-        29 => wire__crate__api__library__set_tmdb_key_impl(port, ptr, rust_vec_len, data_len),
-        30 => wire__crate__api__library__set_tmdb_language_impl(port, ptr, rust_vec_len, data_len),
-        31 => wire__crate__api__library__set_ui_language_impl(port, ptr, rust_vec_len, data_len),
-        32 => wire__crate__api__library__source_regions_impl(port, ptr, rust_vec_len, data_len),
-        33 => wire__crate__api__library__sync_source_impl(port, ptr, rust_vec_len, data_len),
-        34 => wire__crate__api__library__tmdb_detail_impl(port, ptr, rust_vec_len, data_len),
-        35 => wire__crate__api__library__tmdb_season_impl(port, ptr, rust_vec_len, data_len),
-        36 => wire__crate__api__library__tmdb_status_impl(port, ptr, rust_vec_len, data_len),
-        37 => wire__crate__api__library__ui_language_impl(port, ptr, rust_vec_len, data_len),
+        30 => wire__crate__api__library__set_tmdb_key_impl(port, ptr, rust_vec_len, data_len),
+        31 => wire__crate__api__library__set_tmdb_language_impl(port, ptr, rust_vec_len, data_len),
+        32 => wire__crate__api__library__set_ui_language_impl(port, ptr, rust_vec_len, data_len),
+        33 => wire__crate__api__library__source_regions_impl(port, ptr, rust_vec_len, data_len),
+        34 => wire__crate__api__library__sync_source_impl(port, ptr, rust_vec_len, data_len),
+        35 => wire__crate__api__library__tmdb_detail_impl(port, ptr, rust_vec_len, data_len),
+        36 => wire__crate__api__library__tmdb_season_impl(port, ptr, rust_vec_len, data_len),
+        37 => wire__crate__api__library__tmdb_status_impl(port, ptr, rust_vec_len, data_len),
+        38 => wire__crate__api__library__ui_language_impl(port, ptr, rust_vec_len, data_len),
         _ => unreachable!(),
     }
 }

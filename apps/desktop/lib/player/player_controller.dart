@@ -45,7 +45,7 @@ class PlayerController extends ChangeNotifier {
       engine.playing.listen((v) => _set(() => playing = v)),
       engine.position.listen((v) => position.value = v),
       engine.duration.listen((v) => _set(() => duration = v)),
-      engine.tracks.listen((v) => _set(() => tracks = v)),
+      engine.tracks.listen(_onTracks),
       engine.videoHeight.listen((v) => _set(() => videoHeight = v)),
       engine.errors.listen(_onError),
     ];
@@ -186,6 +186,31 @@ class PlayerController extends ChangeNotifier {
     } finally {
       if (token == _openToken) _set(() => opening = false);
     }
+  }
+
+  String? _loggedTracks;
+
+  /// Tracks as mpv reports them go to perf.jsonl (no URLs): what a
+  /// "subtitle shows nothing" report needs to be explained.
+  void _onTracks(List<MediaTrack> v) {
+    _set(() => tracks = v);
+    if (v.isEmpty) return;
+    final summary = v
+        .map((t) => [
+              '${t.kind.name}#${t.id}',
+              t.lang ?? '-',
+              t.codec ?? '-',
+              if (t.title != null) '"${t.title}"',
+              if (t.forced) 'forced',
+              if (t.isDefault) 'default',
+              if (t.hearingImpaired) 'sdh',
+              if (t.external) 'external',
+              if (t.selected) 'SELECTED',
+            ].join(' '))
+        .join('; ');
+    if (summary == _loggedTracks) return;
+    _loggedTracks = summary;
+    perf.record('tracks', v.length, {'title': now?.title, 'tracks': summary});
   }
 
   void _onBuffering(bool v) {

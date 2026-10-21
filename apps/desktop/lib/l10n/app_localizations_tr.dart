@@ -876,4 +876,29 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get updBadgeReady => 'Güncelleme hazır';
+
+  @override
+  String get railFilterHint => 'Kategorilerde ara';
+
+  @override
+  String get railNoMatch => 'Eşleşen kategori yok';
+
+  @override
+  String get guidePickCategory => 'Kategori';
+
+  @override
+  String get historyClear => 'Temizle';
+
+  @override
+  String get historyClearAll => 'İzleme geçmişini temizle';
+
+  @override
+  String get historyClearBody =>
+      'Bu kaynağın son izlenen kanalları ve yarım kalan film/dizi kayıtları silinir. Favoriler kalır.';
+
+  @override
+  String get historyCleared => 'İzleme geçmişi temizlendi.';
+
+  @override
+  String get historyTitle => 'İzleme geçmişi';
 }

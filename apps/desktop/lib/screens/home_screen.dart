@@ -9,6 +9,7 @@ import '../app/library.dart';
 import '../app/paging.dart';
 import '../app/scope.dart';
 import '../design/tokens.dart';
+import '../design/widgets/kd_category_rail.dart';
 import '../design/widgets/kd_controls.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
@@ -45,6 +46,13 @@ class _HomeScreenState extends State<HomeScreen> {
       _version = app.catalogVersion;
       _load();
     }
+  }
+
+  Future<void> _clear({bool recent = false, bool progress = false}) async {
+    final sid = context.app.activeSource?.id;
+    if (sid == null) return;
+    await context.library.clearHistory(sid, recent: recent, progress: progress);
+    await _load();
   }
 
   Future<void> _load() async {
@@ -85,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _Shelf(
             title: l10n.homeContinue,
             height: 236,
+            onClear: () => _clear(progress: true),
             children: [
               for (final c in _continue)
                 PosterCard(
@@ -99,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _Shelf(
             title: l10n.homeRecentChannels,
             height: 92,
+            onClear: () => _clear(recent: true),
             children: [for (final c in _recent) _ChannelTile(item: c, queue: _recent)],
           ),
         if (_favs.isNotEmpty)
@@ -218,12 +228,15 @@ String _ago(int unix) => kdAgo(unix);
 String _date(int unix) => DateFormat.yMd(languageCode).format(DateTime.fromMillisecondsSinceEpoch(unix * 1000));
 
 class _Shelf extends StatelessWidget {
-  const _Shelf({required this.title, required this.height, required this.children, this.onMore});
+  const _Shelf({required this.title, required this.height, required this.children, this.onMore, this.onClear});
 
   final String title;
   final double height;
   final List<Widget> children;
   final VoidCallback? onMore;
+
+  /// Forgets this shelf's history ("Temizle").
+  final VoidCallback? onClear;
 
   @override
   Widget build(BuildContext context) {
@@ -236,17 +249,21 @@ class _Shelf extends StatelessWidget {
             children: [
               Text(title, style: const TextStyle(fontSize: KdType.title, fontWeight: FontWeight.w600)),
               const Spacer(),
+              if (onClear != null) KdButton(label: l10n.historyClear, icon: LucideIcons.eraser, kind: KdButtonKind.ghost, onPressed: onClear),
               if (onMore != null) KdButton(label: l10n.actionAll, kind: KdButtonKind.ghost, onPressed: onMore),
             ],
           ),
           const SizedBox(height: 10),
           SizedBox(
             height: height,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: children.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 12),
-              itemBuilder: (_, i) => children[i],
+            child: KdWheelScroll(
+              builder: (controller) => ListView.separated(
+                controller: controller,
+                scrollDirection: Axis.horizontal,
+                itemCount: children.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
+                itemBuilder: (_, i) => children[i],
+              ),
             ),
           ),
         ],

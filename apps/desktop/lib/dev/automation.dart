@@ -118,6 +118,9 @@ class Automation {
           }
         }
         await File('$dir${Platform.pathSeparator}tracks.txt').writeAsString(lines.join(String.fromCharCode(10)));
+        // The seek bar must have moved by now.
+        await shot('player-movie', wait: const Duration(milliseconds: 3500));
+        await File('$dir${Platform.pathSeparator}position.txt').writeAsString('${player.position.value.inMilliseconds}');
         await player.stop();
       }
       final series = await app.library.page(sid, Kind.series, limit: 5);

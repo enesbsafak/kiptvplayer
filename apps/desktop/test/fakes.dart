@@ -134,10 +134,21 @@ class FakeLibrary implements LibraryApi {
       (items[kind] ?? const []).where((i) => favs.contains(i.id)).toList();
 
   @override
-  Future<List<Item>> recent(String sourceId, Kind kind, int limit) async => const [];
+  Future<List<Item>> recent(String sourceId, Kind kind, int limit) async => recentItems;
+
+  List<ContinueItem> continuing = const [];
+  List<Item> recentItems = const [];
+  final cleared = <(bool, bool)>[];
 
   @override
-  Future<List<ContinueItem>> continueWatching(String sourceId, int limit) async => const [];
+  Future<List<ContinueItem>> continueWatching(String sourceId, int limit) async => continuing;
+
+  @override
+  Future<void> clearHistory(String sourceId, {bool recent = true, bool progress = true}) async {
+    cleared.add((recent, progress));
+    if (recent) recentItems = const [];
+    if (progress) continuing = const [];
+  }
 
   @override
   Future<void> setFavorite(int itemId, bool on) async => on ? favs.add(itemId) : favs.remove(itemId);
@@ -275,6 +286,10 @@ class FakeEngine implements PlayerEngine {
   Future<void> setVolume(double percent) async {}
   @override
   Future<void> selectTrack(TrackKind kind, String? id) async => selections.add((kind, id));
+
+  final subtitlePositions = <int>[];
+  @override
+  Future<void> setSubtitlePosition(int percent) async => subtitlePositions.add(percent);
   @override
   Future<void> dispose() async {}
 }

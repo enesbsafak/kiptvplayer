@@ -516,6 +516,68 @@ class _PreferencesTabState extends State<_PreferencesTab> {
         const Divider(height: 1, color: KdColors.line),
         const SizedBox(height: 22),
         const TmdbSettings(),
+        const SizedBox(height: 28),
+        const Divider(height: 1, color: KdColors.line),
+        const SizedBox(height: 22),
+        const _HistorySection(),
+      ],
+    );
+  }
+}
+
+/// "Watch history": clears recent channels and resume points of the active
+/// source after a confirmation; favorites are kept.
+class _HistorySection extends StatefulWidget {
+  const _HistorySection();
+
+  @override
+  State<_HistorySection> createState() => _HistorySectionState();
+}
+
+class _HistorySectionState extends State<_HistorySection> {
+  bool _done = false;
+
+  Future<void> _clear() async {
+    final sid = context.app.activeSource?.id;
+    if (sid == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: KdColors.bg2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+        title: Text(l10n.historyClearAll, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+        content: Text(l10n.historyClearBody, style: const TextStyle(color: KdColors.muted)),
+        actions: [
+          KdButton(label: l10n.actionCancel, onPressed: () => Navigator.pop(context, false)),
+          KdButton(label: l10n.historyClear, kind: KdButtonKind.danger, onPressed: () => Navigator.pop(context, true)),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    await context.library.clearHistory(sid);
+    if (!mounted) return;
+    setState(() => _done = true);
+    context.app.historyCleared();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(l10n.historyTitle, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 4),
+        Text(l10n.historyClearBody, style: const TextStyle(color: KdColors.muted, height: 1.5)),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            KdButton(label: l10n.historyClearAll, icon: LucideIcons.eraser, kind: KdButtonKind.danger, onPressed: _clear),
+            if (_done) ...[
+              const SizedBox(width: 12),
+              Text(l10n.historyCleared, style: const TextStyle(color: KdColors.ok)),
+            ],
+          ],
+        ),
       ],
     );
   }

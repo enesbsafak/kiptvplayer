@@ -697,6 +697,18 @@ impl Store {
             .is_some())
     }
 
+    /// Forgets what was watched: recent channels and/or resume points.
+    /// Favorites are not history and stay.
+    pub fn clear_history(&self, source_id: &str, recent: bool, progress: bool) -> Result<()> {
+        if recent {
+            self.conn.execute("DELETE FROM recent WHERE source_id = ?1", [source_id])?;
+        }
+        if progress {
+            self.conn.execute("DELETE FROM progress WHERE source_id = ?1", [source_id])?;
+        }
+        Ok(())
+    }
+
     pub fn touch_recent(&self, source_id: &str, uid: i64, now: i64) -> Result<()> {
         self.conn.execute(
             "INSERT INTO recent (source_id, uid, watched_at) VALUES (?1, ?2, ?3)
@@ -1065,6 +1077,22 @@ mod tests {
         let past = store.epg_past("src", uid, 0, t + 150).unwrap();
         assert_eq!(past.iter().map(|e| (e.title.as_str(), e.archive)).collect::<Vec<_>>(), vec![("Bitti", true)]);
         assert_eq!(store.epg_short("src", uid, t + 150).unwrap().0[0].title, "Sonra");
+    }
+
+    #[test]
+    fn clearing_history_keeps_favorites() {
+        let store = store();
+        let trt = store.search("trt", None, 1).unwrap()[0].uid;
+        store.touch_recent("src", trt, 10).unwrap();
+        store.set_favorite("src", trt, true, 10).unwrap();
+        store.save_progress(&ProgressRow { source_id: "src".into(), uid: 77, item_uid: 77, title: "Film".into(), position_ms: 60_000, duration_ms: 600_000, updated_at: 11 }).unwrap();
+
+        store.clear_history("src", true, false).unwrap();
+        assert!(store.recent("src", ContentKind::Live, 10).unwrap().is_empty());
+        assert!(store.progress("src", 77).unwrap().is_some(), "only what was asked");
+        store.clear_history("src", false, true).unwrap();
+        assert!(store.progress("src", 77).unwrap().is_none());
+        assert_eq!(store.favorites("src", ContentKind::Live).unwrap().len(), 1, "favorites stay");
     }
 
     #[test]

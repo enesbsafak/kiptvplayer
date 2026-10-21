@@ -898,4 +898,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updBadgeReady => 'Update ready';
+
+  @override
+  String get railFilterHint => 'Filter categories';
+
+  @override
+  String get railNoMatch => 'No matching category';
+
+  @override
+  String get guidePickCategory => 'Category';
+
+  @override
+  String get historyClear => 'Clear';
+
+  @override
+  String get historyClearAll => 'Clear watch history';
+
+  @override
+  String get historyClearBody =>
+      'This source\'s recently watched channels and unfinished movies and episodes are removed. Favorites stay.';
+
+  @override
+  String get historyCleared => 'Watch history cleared.';
+
+  @override
+  String get historyTitle => 'Watch history';
 }

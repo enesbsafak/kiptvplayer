@@ -7,12 +7,17 @@ import '../app/library.dart';
 import '../app/paging.dart';
 import '../app/scope.dart';
 import '../design/tokens.dart';
+import '../design/widgets/kd_category_rail.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 
 /// Movies or series: category rail + poster grid, detail on click.
+
+/// Rail id of "all categories".
+const _allCategories = -1;
+
 class VodScreen extends StatefulWidget {
   const VodScreen({super.key, required this.kind, this.initialDetail});
 
@@ -101,6 +106,37 @@ class _VodScreenState extends State<VodScreen> {
     }
     final total = _categories.fold<int>(0, (a, c) => a + c.count);
     final pager = _pager;
+    // Categories down the left like Live TV: providers list dozens or
+    // hundreds, which a row of pills cannot show (nor scroll with a wheel).
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: 230,
+          child: KdCategoryRail(
+            title: l10n.liveCategories,
+            selected: _category ?? _allCategories,
+            onSelect: (id) => _select(id == _allCategories ? null : id),
+            entries: [
+              KdRailEntry(
+                id: _allCategories,
+                name: l10n.categoryAll,
+                count: total,
+                icon: widget.kind == Kind.movie ? LucideIcons.clapperboard : LucideIcons.layers,
+                pinned: true,
+              ),
+              for (final c in _categories) KdRailEntry(id: c.uid, name: c.name, count: c.count),
+            ],
+          ),
+        ),
+        const VerticalDivider(width: 1, thickness: 1, color: KdColors.line),
+        Expanded(child: _grid(total, pager)),
+      ],
+    );
+  }
+
+  Widget _grid(int total, ItemPager? pager) {
+    final name = _category == null ? null : _categories.where((c) => c.uid == _category).map((c) => c.name).firstOrNull;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -113,33 +149,29 @@ class _VodScreenState extends State<VodScreen> {
                 style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600),
               ),
               const SizedBox(width: 10),
-              Text('$total', style: const TextStyle(color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()])),
+              if (name != null)
+                Flexible(
+                  child: Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: KdColors.muted),
+                  ),
+                )
+              else
+                Text(
+                  '$total',
+                  style: const TextStyle(color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()]),
+                ),
             ],
           ),
         ),
-        SizedBox(
-          height: 34,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            children: [
-              KdPill(label: l10n.categoryAll, selected: _category == null, onTap: () => _select(null)),
-              for (final c in _categories) ...[
-                const SizedBox(width: 6),
-                KdPill(label: c.name, trailing: '${c.count}', selected: _category == c.uid, onTap: () => _select(c.uid)),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 4),
         if (pager != null && pager.loading && pager.items.isEmpty)
           const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: KdIndeterminate()),
         Expanded(
           child: pager == null || (pager.items.isEmpty && !pager.loading)
-              ? KdEmpty(
-                  icon: widget.kind == Kind.movie ? LucideIcons.clapperboard : LucideIcons.layers,
-                  title: l10n.vodEmptyCategory,
-                )
+              ? KdEmpty(icon: widget.kind == Kind.movie ? LucideIcons.clapperboard : LucideIcons.layers, title: l10n.vodEmptyCategory)
               : NotificationListener<ScrollNotification>(
                   onNotification: (n) {
                     if (n.metrics.extentAfter < 1200) pager.loadMore();
@@ -154,10 +186,7 @@ class _VodScreenState extends State<VodScreen> {
                       childAspectRatio: 0.58,
                     ),
                     itemCount: pager.items.length,
-                    itemBuilder: (context, i) => PosterCard(
-                      item: pager.items[i],
-                      onTap: () => setState(() => _detail = pager.items[i]),
-                    ),
+                    itemBuilder: (context, i) => PosterCard(item: pager.items[i], onTap: () => setState(() => _detail = pager.items[i])),
                   ),
                 ),
         ),
@@ -217,19 +246,29 @@ class _PosterCardState extends State<PosterCard> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                             decoration: BoxDecoration(color: const Color(0xCC0B0B10), borderRadius: BorderRadius.circular(4)),
-                            child: Text(r.toStringAsFixed(1), style: const TextStyle(fontSize: KdType.tag, fontWeight: FontWeight.w600)),
+                            child: Text(
+                              r.toStringAsFixed(1),
+                              style: const TextStyle(fontSize: KdType.tag, fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
-                      if (widget.progress case final p?)
-                        Positioned(left: 8, right: 8, bottom: 8, child: KdProgress(value: p, height: 3)),
+                      if (widget.progress case final p?) Positioned(left: 8, right: 8, bottom: 8, child: KdProgress(value: p, height: 3)),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 7),
-              Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w500, color: _hover ? KdColors.accent2 : KdColors.text)),
+              Text(
+                item.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w500, color: _hover ? KdColors.accent2 : KdColors.text),
+              ),
               if (item.year != null)
-                Text('${item.year}', style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+                Text(
+                  '${item.year}',
+                  style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted),
+                ),
             ],
           ),
         ),
@@ -337,7 +376,10 @@ class _DetailViewState extends State<DetailView> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Opacity(opacity: 0.35, child: Image.network(backdrop, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox())),
+                Opacity(
+                  opacity: 0.35,
+                  child: Image.network(backdrop, fit: BoxFit.cover, errorBuilder: (_, _, _) => const SizedBox()),
+                ),
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
@@ -390,7 +432,10 @@ class _DetailViewState extends State<DetailView> {
               if (widget.kind == Kind.series) ...[const SizedBox(height: 22), _episodes(d)],
               if (t != null) ...[
                 const SizedBox(height: 24),
-                Text(l10n.detailSourceTmdb, style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+                Text(
+                  l10n.detailSourceTmdb,
+                  style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted),
+                ),
               ],
             ],
           ],
@@ -425,7 +470,10 @@ class _DetailViewState extends State<DetailView> {
         ],
         if (t?.tagline case final tag? when tag.isNotEmpty) ...[
           const SizedBox(height: 6),
-          Text(tag, style: const TextStyle(color: KdColors.muted, fontStyle: FontStyle.italic)),
+          Text(
+            tag,
+            style: const TextStyle(color: KdColors.muted, fontStyle: FontStyle.italic),
+          ),
         ],
         const SizedBox(height: 8),
         Row(
@@ -435,10 +483,16 @@ class _DetailViewState extends State<DetailView> {
               const Icon(LucideIcons.star, size: 14, color: KdColors.accent),
               const SizedBox(width: 3),
               Text(r.toStringAsFixed(1), style: const TextStyle(fontWeight: FontWeight.w600)),
-              if (t?.voteCount case final v? when v > 0) Text('  ${_votes(v)}', style: const TextStyle(color: KdColors.muted, fontSize: KdType.small)),
+              if (t?.voteCount case final v? when v > 0)
+                Text(
+                  '  ${_votes(v)}',
+                  style: const TextStyle(color: KdColors.muted, fontSize: KdType.small),
+                ),
               const SizedBox(width: 12),
             ],
-            Flexible(child: Text(meta.join('  ·  '), style: const TextStyle(color: KdColors.muted))),
+            Flexible(
+              child: Text(meta.join('  ·  '), style: const TextStyle(color: KdColors.muted)),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -465,12 +519,7 @@ class _DetailViewState extends State<DetailView> {
                 onPressed: () => _play(episode: _resumeEpisode(d) ?? d.episodes.first),
               ),
             if (_trailer case final key?)
-              KdButton(
-                label: l10n.actionTrailer,
-                icon: LucideIcons.clapperboard,
-                large: true,
-                onPressed: () => launchUrl(_youtube(key)),
-              ),
+              KdButton(label: l10n.actionTrailer, icon: LucideIcons.clapperboard, large: true, onPressed: () => launchUrl(_youtube(key))),
             KdButton(
               label: _fav == true ? l10n.listIn : l10n.listAdd,
               icon: _fav == true ? LucideIcons.check : LucideIcons.plus,
@@ -501,7 +550,10 @@ class _DetailViewState extends State<DetailView> {
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 110, child: Text(label, style: const TextStyle(color: KdColors.muted))),
+        SizedBox(
+          width: 110,
+          child: Text(label, style: const TextStyle(color: KdColors.muted)),
+        ),
         Expanded(child: Text(value)),
       ],
     ),
@@ -531,7 +583,12 @@ class _DetailViewState extends State<DetailView> {
           ],
         ),
         const SizedBox(height: 12),
-        for (final e in list) _EpisodeRow(e: e, tmdb: _tmdbEpisodes[(e.season, e.number)], onTap: () => _play(episode: e)),
+        for (final e in list)
+          _EpisodeRow(
+            e: e,
+            tmdb: _tmdbEpisodes[(e.season, e.number)],
+            onTap: () => _play(episode: e),
+          ),
       ],
     );
   }
@@ -553,25 +610,40 @@ class _CastRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: 150,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: cast.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 12),
-        itemBuilder: (context, i) {
-          final p = cast[i];
-          return SizedBox(
-            width: 92,
-            child: Column(
-              children: [
-                KdArt(url: p.photo, label: p.name, width: 84, height: 84, radius: 42),
-                const SizedBox(height: 8),
-                Text(p.name, maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.small, fontWeight: FontWeight.w500)),
-                if (p.role != null)
-                  Text(p.role!, maxLines: 1, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
-              ],
-            ),
-          );
-        },
+      child: KdWheelScroll(
+        builder: (controller) => ListView.separated(
+          controller: controller,
+          scrollDirection: Axis.horizontal,
+          itemCount: cast.length,
+          separatorBuilder: (_, _) => const SizedBox(width: 12),
+          itemBuilder: (context, i) {
+            final p = cast[i];
+            return SizedBox(
+              width: 92,
+              child: Column(
+                children: [
+                  KdArt(url: p.photo, label: p.name, width: 84, height: 84, radius: 42),
+                  const SizedBox(height: 8),
+                  Text(
+                    p.name,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: KdType.small, fontWeight: FontWeight.w500),
+                  ),
+                  if (p.role != null)
+                    Text(
+                      p.role!,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted),
+                    ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -620,15 +692,19 @@ class _EpisodeRowState extends State<_EpisodeRow> {
             children: [
               SizedBox(
                 width: 28,
-                child: Text('${e.number}', style: const TextStyle(color: KdColors.muted, fontSize: KdType.title, fontFeatures: [FontFeature.tabularFigures()])),
+                child: Text(
+                  '${e.number}',
+                  style: const TextStyle(color: KdColors.muted, fontSize: KdType.title, fontFeatures: [FontFeature.tabularFigures()]),
+                ),
               ),
               Stack(
                 children: [
                   KdArt(url: image, label: title, width: 160, height: 90),
                   if (_hover)
-                    const Positioned.fill(child: Center(child: Icon(LucideIcons.play, color: KdColors.text, size: 22))),
-                  if (progress != null)
-                    Positioned(left: 6, right: 6, bottom: 6, child: KdProgress(value: progress, height: 3)),
+                    const Positioned.fill(
+                      child: Center(child: Icon(LucideIcons.play, color: KdColors.text, size: 22)),
+                    ),
+                  if (progress != null) Positioned(left: 6, right: 6, bottom: 6, child: KdProgress(value: progress, height: 3)),
                 ],
               ),
               const SizedBox(width: 14),
@@ -638,13 +714,24 @@ class _EpisodeRowState extends State<_EpisodeRow> {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600))),
-                        if (dur != null && dur > 0) Text(kdDuration(dur), style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
+                        Expanded(
+                          child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        ),
+                        if (dur != null && dur > 0)
+                          Text(
+                            kdDuration(dur),
+                            style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
+                          ),
                       ],
                     ),
                     if (plot != null) ...[
                       const SizedBox(height: 4),
-                      Text(plot, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
+                      Text(
+                        plot,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
+                      ),
                     ],
                   ],
                 ),

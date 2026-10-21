@@ -26,6 +26,7 @@ while (-not $p.HasExited) {
   Start-Sleep -Seconds ([math]::Min(30, [math]::Max(5, $Every)))
   try {
     $p.Refresh()
+    if ($p.HasExited) { break }
     # Invariant culture: a Turkish locale would write decimal commas into the CSV.
     [string]::Format([Globalization.CultureInfo]::InvariantCulture, '{0:F1},{1:F0},{2:F0},{3}',
       $sw.Elapsed.TotalMinutes, ($p.PrivateMemorySize64 / 1MB), ($p.WorkingSet64 / 1MB), $p.HandleCount) | Add-Content $csv
@@ -35,7 +36,8 @@ while (-not $p.HasExited) {
 
 # Growth after the first 10 minutes (decoders, caches and fonts warm up first).
 $warm = [math]::Min(10, $Minutes / 3)
-$rows = Import-Csv $csv | Where-Object { [double]$_.minute -ge $warm }
+# Rows taken after the app exited read 0: left out.
+$rows = Import-Csv $csv | Where-Object { [double]$_.minute -ge $warm -and [double]$_.private_mb -gt 0 }
 if ($rows.Count -ge 2) {
   $first = [double]$rows[0].private_mb; $last = [double]$rows[-1].private_mb
   $hours = ([double]$rows[-1].minute - [double]$rows[0].minute) / 60

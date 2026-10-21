@@ -528,5 +528,13 @@
     }
   },
   "updBadge": "Güncelleme var",
-  "updBadgeReady": "Güncelleme hazır"
+  "updBadgeReady": "Güncelleme hazır",
+  "railFilterHint": "Kategorilerde ara",
+  "railNoMatch": "Eşleşen kategori yok",
+  "guidePickCategory": "Kategori",
+  "historyClear": "Temizle",
+  "historyClearAll": "İzleme geçmişini temizle",
+  "historyClearBody": "Bu kaynağın son izlenen kanalları ve yarım kalan film/dizi kayıtları silinir. Favoriler kalır.",
+  "historyCleared": "İzleme geçmişi temizlendi.",
+  "historyTitle": "İzleme geçmişi"
 }

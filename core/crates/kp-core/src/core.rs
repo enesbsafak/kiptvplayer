@@ -469,6 +469,10 @@ impl Core {
         Ok(self.store().recent(source_id, kind, limit)?)
     }
 
+    pub fn clear_history(&self, source_id: &str, recent: bool, progress: bool) -> Result<()> {
+        Ok(self.store().clear_history(source_id, recent, progress)?)
+    }
+
     pub fn continue_watching(&self, source_id: &str, limit: u32) -> Result<Vec<ProgressRow>> {
         Ok(self.store().continue_watching(source_id, limit)?)
     }

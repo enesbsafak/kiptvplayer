@@ -8,6 +8,7 @@ import '../app/library.dart';
 import '../app/paging.dart';
 import '../app/scope.dart';
 import '../design/tokens.dart';
+import '../design/widgets/kd_category_rail.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
@@ -34,6 +35,7 @@ class _GuideScreenState extends State<GuideScreen> {
   static const _maxBack = 7 * 86400;
 
   List<Category> _categories = const [];
+  final _categoryMenu = MenuController();
   int? _category;
   ItemPager? _pager;
   late int _windowStart;
@@ -150,17 +152,42 @@ class _GuideScreenState extends State<GuideScreen> {
             ],
           ),
         ),
-        SizedBox(
-          height: 34,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            children: [
-              for (final c in _categories) ...[
-                KdPill(label: c.name, trailing: '${c.count}', selected: _category == c.uid, onTap: () => _select(c.uid)),
-                const SizedBox(width: 6),
+        // The grid needs the width, so the category list (the same one as
+        // Live TV) opens from a button instead of taking a column.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: MenuAnchor(
+              controller: _categoryMenu,
+              style: const MenuStyle(
+                backgroundColor: WidgetStatePropertyAll(KdColors.bg2),
+                padding: WidgetStatePropertyAll(EdgeInsets.zero),
+                side: WidgetStatePropertyAll(BorderSide(color: KdColors.line)),
+                shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(KdRadius.card)))),
+              ),
+              menuChildren: [
+                SizedBox(
+                  width: 320,
+                  height: 460,
+                  child: KdCategoryRail(
+                    title: l10n.guidePickCategory,
+                    autofocusFilter: true,
+                    selected: _category,
+                    onSelect: (id) {
+                      _categoryMenu.close();
+                      _select(id);
+                    },
+                    entries: [for (final c in _categories) KdRailEntry(id: c.uid, name: c.name, count: c.count)],
+                  ),
+                ),
               ],
-            ],
+              builder: (context, controller, _) => KdButton(
+                label: _categories.where((c) => c.uid == _category).map((c) => c.name).firstOrNull ?? l10n.guidePickCategory,
+                icon: LucideIcons.listFilter,
+                onPressed: () => controller.isOpen ? controller.close() : controller.open(),
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 10),

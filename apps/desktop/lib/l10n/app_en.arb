@@ -258,5 +258,13 @@
   "updInstall": "Install and restart",
   "updRollBack": "Go back to {version}",
   "updBadge": "Update available",
-  "updBadgeReady": "Update ready"
+  "updBadgeReady": "Update ready",
+  "railFilterHint": "Filter categories",
+  "railNoMatch": "No matching category",
+  "guidePickCategory": "Category",
+  "historyClear": "Clear",
+  "historyClearAll": "Clear watch history",
+  "historyClearBody": "This source's recently watched channels and unfinished movies and episodes are removed. Favorites stay.",
+  "historyCleared": "Watch history cleared.",
+  "historyTitle": "Watch history"
 }

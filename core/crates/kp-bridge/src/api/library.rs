@@ -373,6 +373,12 @@ pub fn recent(source_id: String, kind: Kind, limit: u32) -> Result<Vec<Item>> {
     Ok(items(core()?.recent(&source_id, kind.into(), limit)?))
 }
 
+/// Forgets recently watched channels ([recent]) and/or resume points
+/// ([progress]) of a source; favorites stay.
+pub fn clear_history(source_id: String, recent: bool, progress: bool) -> Result<()> {
+    Ok(core()?.clear_history(&source_id, recent, progress)?)
+}
+
 pub fn continue_watching(source_id: String, limit: u32) -> Result<Vec<ContinueItem>> {
     let core = core()?;
     let mut out = Vec::new();

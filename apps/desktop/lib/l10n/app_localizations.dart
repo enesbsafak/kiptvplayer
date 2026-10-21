@@ -1651,6 +1651,54 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Güncelleme hazır'**
   String get updBadgeReady;
+
+  /// No description provided for @railFilterHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kategorilerde ara'**
+  String get railFilterHint;
+
+  /// No description provided for @railNoMatch.
+  ///
+  /// In tr, this message translates to:
+  /// **'Eşleşen kategori yok'**
+  String get railNoMatch;
+
+  /// No description provided for @guidePickCategory.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kategori'**
+  String get guidePickCategory;
+
+  /// No description provided for @historyClear.
+  ///
+  /// In tr, this message translates to:
+  /// **'Temizle'**
+  String get historyClear;
+
+  /// No description provided for @historyClearAll.
+  ///
+  /// In tr, this message translates to:
+  /// **'İzleme geçmişini temizle'**
+  String get historyClearAll;
+
+  /// No description provided for @historyClearBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu kaynağın son izlenen kanalları ve yarım kalan film/dizi kayıtları silinir. Favoriler kalır.'**
+  String get historyClearBody;
+
+  /// No description provided for @historyCleared.
+  ///
+  /// In tr, this message translates to:
+  /// **'İzleme geçmişi temizlendi.'**
+  String get historyCleared;
+
+  /// No description provided for @historyTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'İzleme geçmişi'**
+  String get historyTitle;
 }
 
 class _AppLocalizationsDelegate

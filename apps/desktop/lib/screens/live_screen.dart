@@ -5,7 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app/library.dart';
 import '../app/paging.dart';
 import '../app/scope.dart';
+import '../app/text.dart';
 import '../design/tokens.dart';
+import '../design/widgets/kd_category_rail.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
@@ -114,9 +116,9 @@ class _LiveScreenState extends State<LiveScreen> {
 
   List<Item> get _items {
     final base = _category == _favorites ? _favoriteItems : (_pager?.items ?? const <Item>[]);
-    final q = _filter.text.trim().toLowerCase();
+    final q = foldText(_filter.text.trim());
     if (q.isEmpty) return base;
-    return base.where((i) => i.name.toLowerCase().contains(q)).toList();
+    return base.where((i) => foldText(i.name).contains(q)).toList();
   }
 
   void _play(int index, {bool full = false}) {
@@ -189,28 +191,14 @@ class _LiveScreenState extends State<LiveScreen> {
 
   Widget _categoryPane() {
     final total = _categories.fold<int>(0, (a, c) => a + c.count);
-    Widget row(int uid, String name, int? count, {IconData? icon}) => _CategoryRow(
-      name: name,
-      count: count,
-      icon: icon,
-      active: _category == uid,
-      onTap: () => _selectCategory(uid),
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(padding: const EdgeInsets.fromLTRB(14, 14, 14, 8), child: KdSectionLabel(l10n.liveCategories)),
-        Expanded(
-          child: ListView(
-            padding: const EdgeInsets.only(bottom: 12),
-            children: [
-              row(_all, l10n.liveAllChannels, total, icon: LucideIcons.tv),
-              row(_favorites, l10n.navFavorites, _favoriteItems.length, icon: LucideIcons.star),
-              const Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Divider(height: 1, color: KdColors.line)),
-              for (final c in _categories) row(c.uid, c.name, c.count),
-            ],
-          ),
-        ),
+    return KdCategoryRail(
+      title: l10n.liveCategories,
+      selected: _category,
+      onSelect: _selectCategory,
+      entries: [
+        KdRailEntry(id: _all, name: l10n.liveAllChannels, count: total, icon: LucideIcons.tv, pinned: true),
+        KdRailEntry(id: _favorites, name: l10n.navFavorites, count: _favoriteItems.length, icon: LucideIcons.star, pinned: true),
+        for (final c in _categories) KdRailEntry(id: c.uid, name: c.name, count: c.count),
       ],
     );
   }
@@ -266,73 +254,6 @@ class _LiveScreenState extends State<LiveScreen> {
                   ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CategoryRow extends StatefulWidget {
-  const _CategoryRow({required this.name, required this.count, required this.active, required this.onTap, this.icon});
-
-  final String name;
-  final int? count;
-  final bool active;
-  final VoidCallback onTap;
-  final IconData? icon;
-
-  @override
-  State<_CategoryRow> createState() => _CategoryRowState();
-}
-
-class _CategoryRowState extends State<_CategoryRow> {
-  bool _hover = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final a = widget.active;
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Container(
-          height: 32,
-          margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 9),
-          decoration: BoxDecoration(
-            color: a ? KdColors.accentAlpha(0.12) : (_hover ? KdColors.bg2 : Colors.transparent),
-            borderRadius: BorderRadius.circular(KdRadius.control),
-          ),
-          child: Row(
-            children: [
-              if (widget.icon != null) ...[
-                Icon(widget.icon, size: 14, color: a ? KdColors.accent2 : KdColors.muted),
-                const SizedBox(width: 8),
-              ],
-              Expanded(
-                child: Text(
-                  widget.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: a ? KdColors.accent2 : KdColors.text,
-                    fontWeight: a ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-              ),
-              if (widget.count != null)
-                Text(
-                  '${widget.count}',
-                  style: const TextStyle(
-                    fontSize: KdType.chip,
-                    color: KdColors.muted,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
-            ],
-          ),
-        ),
       ),
     );
   }

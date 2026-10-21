@@ -93,6 +93,12 @@ class AppState extends ChangeNotifier {
     }
   }
 
+  /// Watch history was cleared: screens showing it reload.
+  void historyCleared() {
+    catalogVersion++;
+    notifyListeners();
+  }
+
   /// A guide was replaced (refresh button or background): reload sources
   /// and let screens fetch now/next again, without switching sources.
   Future<void> guideUpdated() async {

@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+import '../l10n/l10n.dart';
 import 'media_track.dart';
 
 /// Playback behind one narrow interface, so media_kit can be swapped for a
@@ -38,6 +39,10 @@ abstract interface class PlayerEngine {
   Future<void> setVolume(double percent);
   /// Selects track [id] of [kind]; null turns subtitles off.
   Future<void> selectTrack(TrackKind kind, String? id);
+
+  /// Subtitle baseline as a percentage of the picture height (100 = the
+  /// usual bottom): raised while the player controls cover the bottom.
+  Future<void> setSubtitlePosition(int percent);
   Future<void> dispose();
 }
 
@@ -169,12 +174,24 @@ class MediaKitEngine implements PlayerEngine {
     if (previous != null && !previous.isCompleted) previous.complete();
     final firstFrame = _firstFrame = Completer<void>();
 
-    // time-pos turns non-empty once the first frame plays. Until loadfile
-    // swaps files the *previous* stream keeps reporting time-pos, so a value
-    // only counts when mpv's current path is already the new URL.
-    await _native.unobserveProperty('time-pos').catchError((_) {});
-    await _native.observeProperty('time-pos', (value) async {
-      if (value.isEmpty || firstFrame.isCompleted) return;
+    // The position moves once the first frame plays. Until loadfile swaps
+    // files the *previous* stream keeps reporting positions, so one only
+    // counts when mpv's current path is already the new URL.
+    //
+    // This listens to media_kit's position stream. It used to observe
+    // time-pos itself, and media_kit observes properties under a reply id
+    // made from the name: unobserving ours removed media_kit's own
+    // time-pos observer, and the position (seek bar) froze at 00:00.
+    // Subtitles in the app's language. mpv then picks the full track for
+    // foreign audio and only the forced one (foreign lines, signs) when the
+    // audio is already in that language; without slang it followed the
+    // OS language. Both stay selectable in the track panel.
+    await _native
+        .setProperty('slang', languageCode == 'tr' ? 'tr,tur,tr-TR,turkish' : 'en,eng,en-US,english')
+        .catchError((_) {});
+
+    final positions = _player.stream.position.listen((p) async {
+      if (firstFrame.isCompleted) return;
       final path = await _native.getProperty('path');
       if (path == url && !firstFrame.isCompleted) firstFrame.complete();
     });
@@ -187,7 +204,7 @@ class MediaKitEngine implements PlayerEngine {
       sw.stop();
       return sw.elapsed;
     } finally {
-      await _native.unobserveProperty('time-pos').catchError((_) {});
+      await positions.cancel();
     }
   }
 
@@ -204,6 +221,9 @@ class MediaKitEngine implements PlayerEngine {
   Future<void> seek(Duration to) => _player.seek(to);
   @override
   Future<void> setVolume(double percent) => _player.setVolume(percent);
+  @override
+  Future<void> setSubtitlePosition(int percent) => _native.setProperty('sub-pos', '$percent').catchError((_) {});
+
   @override
   Future<void> selectTrack(TrackKind kind, String? id) async {
     await _native.setProperty(kind == TrackKind.audio ? 'aid' : 'sid', id ?? 'no');

@@ -41,15 +41,43 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void dispose() {
     _hide?.cancel();
     _focus.dispose();
+    // Back to the usual place for the preview and the next video.
+    _player?.engine.setSubtitlePosition(100);
     super.dispose();
+  }
+
+  PlayerController? _player;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _player ??= context.player;
+    _placeSubtitles();
+  }
+
+  /// The bottom controls' height (seek bar, buttons, padding).
+  static const _osdHeight = 140.0;
+
+  /// Subtitles sit above the controls while they show, so nothing is
+  /// hidden under them, and drop back once they fade.
+  void _placeSubtitles() {
+    final h = MediaQuery.sizeOf(context).height;
+    final raised = h <= 0 ? 85 : (100 - _osdHeight / h * 100).floor().clamp(60, 100);
+    _player?.engine.setSubtitlePosition(_osd ? raised : 100);
+  }
+
+  void _setOsd(bool v) {
+    if (_osd == v) return;
+    setState(() => _osd = v);
+    _placeSubtitles();
   }
 
   /// Shows the OSD and restarts its 3 s hide timer.
   void _poke() {
     _hide?.cancel();
-    if (!_osd) setState(() => _osd = true);
+    _setOsd(true);
     _hide = Timer(const Duration(seconds: 3), () {
-      if (mounted && _panel == _Panel.none) setState(() => _osd = false);
+      if (mounted && _panel == _Panel.none) _setOsd(false);
     });
   }
 
