@@ -8,6 +8,7 @@ import 'package:karadelik_player/app/scope.dart';
 import 'package:karadelik_player/app/updates.dart';
 import 'package:karadelik_player/perf/perf.dart';
 import 'package:karadelik_player/player/media_track.dart';
+import 'package:karadelik_player/player/playback_stats.dart';
 import 'package:karadelik_player/player/player_controller.dart';
 import 'package:karadelik_player/player/player_engine.dart';
 
@@ -79,6 +80,14 @@ class FakeLibrary implements LibraryApi {
   /// What the next guide refresh reports.
   GuideInfo? nextGuide;
   final List<String> guideRefreshes = [];
+
+  SourceHealth health = const SourceHealth(ok: true, latencyMs: 120, maxConnections: 2, activeConnections: 1);
+  final checked = <String>[];
+  @override
+  Future<SourceHealth> checkSource(String sourceId) async {
+    checked.add(sourceId);
+    return health;
+  }
 
   @override
   Future<SourceInfo> refreshGuide(String sourceId) async {
@@ -290,6 +299,9 @@ class FakeEngine implements PlayerEngine {
 
   final subtitlePositions = <int>[];
   final adjustments = <String, Object?>{};
+  PlaybackStats nextStats = PlaybackStats.empty;
+  @override
+  Future<PlaybackStats> stats() async => nextStats;
   @override
   Future<void> setSubtitleDelay(double seconds) async => adjustments['subDelay'] = seconds;
   @override

@@ -958,4 +958,103 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get keySubtitleDelay => 'Altyazıyı 0,1 sn erken / geç göster';
+
+  @override
+  String get statsTitle => 'İstatistikler';
+
+  @override
+  String get tipStats => 'İstatistikler ve teşhis (I)';
+
+  @override
+  String get keyStats => 'İstatistikler: neden takılıyor?';
+
+  @override
+  String get actionClose => 'Kapat';
+
+  @override
+  String get statsVideo => 'Görüntü';
+
+  @override
+  String get statsDecoder => 'Donanım çözme';
+
+  @override
+  String get statsSoftware => 'Kapalı (işlemci)';
+
+  @override
+  String get statsBitrate => 'Görüntü bit hızı';
+
+  @override
+  String get statsAudio => 'Ses';
+
+  @override
+  String get statsBuffer => 'Önbellek';
+
+  @override
+  String get statsDownload => 'İndirme hızı';
+
+  @override
+  String get statsDropped => 'Atlanan kare';
+
+  @override
+  String get statsOpen => 'Açılış süresi';
+
+  @override
+  String get statsReconnects => 'Yeniden bağlanma';
+
+  @override
+  String get statsCheckSource => 'Sağlayıcıyı kontrol et';
+
+  @override
+  String get statsChecking => 'Kontrol ediliyor…';
+
+  @override
+  String statsAnswered(int ms) {
+    return 'Sunucu yanıt verdi · $ms ms';
+  }
+
+  @override
+  String get statsNoAnswer => 'Sunucu yanıt vermedi';
+
+  @override
+  String statsConnections(int active, int max) {
+    return 'Bağlantı $active/$max';
+  }
+
+  @override
+  String statsExpires(String date) {
+    return 'Bitiş $date';
+  }
+
+  @override
+  String get findSourceDown =>
+      'Sağlayıcı yanıt vermiyor: sorun büyük olasılıkla onların tarafında.';
+
+  @override
+  String get findAccountExpired => 'Hesabın süresi dolmuş görünüyor.';
+
+  @override
+  String get findConnectionLimit =>
+      'Bağlantı sınırı dolu: hesap başka bir cihazda da açıksa yayın kesilebilir.';
+
+  @override
+  String get findSlowNetwork =>
+      'İndirme hızı yayının bit hızına yetişmiyor: ağ ya da sağlayıcı yavaş.';
+
+  @override
+  String get findCacheLow =>
+      'Önbellek neredeyse boş: kısa takılmalar olabilir.';
+
+  @override
+  String get findFramesDropping =>
+      'Kareler atlanıyor: bilgisayar görüntüyü çözmeye yetişemiyor.';
+
+  @override
+  String get findSoftwareDecoding =>
+      'Donanım çözme kullanılmıyor; ekran kartı sürücüsünü güncellemek yardımcı olabilir.';
+
+  @override
+  String get findReconnected => 'Yayın bu kanalda kesilip yeniden bağlandı.';
+
+  @override
+  String get findHealthy => 'Şu an bir sorun görünmüyor.';
 }

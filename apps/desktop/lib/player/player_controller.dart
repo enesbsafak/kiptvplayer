@@ -67,6 +67,9 @@ class PlayerController extends ChangeNotifier {
   /// Asks the full-screen player to open its audio/subtitle panel (media
   /// flyout, automation); the player screen resets it once shown.
   final tracksPanelRequest = ValueNotifier(false);
+
+  /// The same for the statistics panel (automation).
+  final statsPanelRequest = ValueNotifier(false);
   List<MediaTrack> tracks = const [];
   int? videoHeight;
   String? error;
@@ -76,6 +79,9 @@ class PlayerController extends ChangeNotifier {
   /// Live recovery: set while waiting to reopen a stalled or dropped stream.
   bool reconnecting = false;
   int reconnectAttempt = 0;
+
+  /// Recoveries since the channel was picked (statistics panel).
+  int reconnects = 0;
   String? reconnectReason;
   DateTime? reconnectAt;
 
@@ -142,6 +148,7 @@ class PlayerController extends ChangeNotifier {
     _retryTimer?.cancel();
     if (!retry) {
       _clearReconnect();
+      reconnects = 0;
       _origin = item;
       _backups = null;
     }
@@ -262,6 +269,7 @@ class PlayerController extends ChangeNotifier {
     final n = now;
     if (n == null || !n.isLive || (_retryTimer?.isActive ?? false)) return;
     reconnectAttempt++;
+    reconnects++;
     final delay = Duration(seconds: math.min(30, 1 << math.min(reconnectAttempt - 1, 5)));
     _set(() {
       reconnecting = true;
@@ -497,6 +505,7 @@ class PlayerController extends ChangeNotifier {
     _sleepTimer?.cancel();
     position.dispose();
     tracksPanelRequest.dispose();
+    statsPanelRequest.dispose();
     super.dispose();
   }
 }

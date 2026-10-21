@@ -10,7 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
@@ -23,6 +23,10 @@ Future<void> openLibrary({
   dataDir: dataDir,
   ephemeralSecrets: ephemeralSecrets,
 );
+
+/// One light request to the source, timed; never opens a stream.
+Future<SourceHealth> checkSource({required String sourceId}) =>
+    RustLib.instance.api.crateApiLibraryCheckSource(sourceId: sourceId);
 
 Future<List<SourceInfo>> listSources() =>
     RustLib.instance.api.crateApiLibraryListSources();
@@ -677,6 +681,50 @@ class RegionPreference {
           runtimeType == other.runtimeType &&
           chosen == other.chosen &&
           region == other.region;
+}
+
+/// "Kaynağı kontrol et": the provider's answer time and account state.
+class SourceHealth {
+  final bool ok;
+  final int latencyMs;
+  final String? error;
+  final String? status;
+  final PlatformInt64? expiresAt;
+  final PlatformInt64? maxConnections;
+  final PlatformInt64? activeConnections;
+
+  const SourceHealth({
+    required this.ok,
+    required this.latencyMs,
+    this.error,
+    this.status,
+    this.expiresAt,
+    this.maxConnections,
+    this.activeConnections,
+  });
+
+  @override
+  int get hashCode =>
+      ok.hashCode ^
+      latencyMs.hashCode ^
+      error.hashCode ^
+      status.hashCode ^
+      expiresAt.hashCode ^
+      maxConnections.hashCode ^
+      activeConnections.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SourceHealth &&
+          runtimeType == other.runtimeType &&
+          ok == other.ok &&
+          latencyMs == other.latencyMs &&
+          error == other.error &&
+          status == other.status &&
+          expiresAt == other.expiresAt &&
+          maxConnections == other.maxConnections &&
+          activeConnections == other.activeConnections;
 }
 
 class SourceInfo {

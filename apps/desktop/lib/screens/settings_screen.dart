@@ -735,6 +735,7 @@ class _ShortcutsTab extends StatelessWidget {
       ('A, S', l10n.keyTracks),
       ('L', l10n.keyChannelList),
       ('Z / X', l10n.keySubtitleDelay),
+      ('I', l10n.keyStats),
       ('M', l10n.keyMute),
       ('Esc', l10n.keyEsc),
     ];

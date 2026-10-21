@@ -8,6 +8,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import '../l10n/l10n.dart';
 import 'media_track.dart';
+import 'playback_stats.dart';
 
 /// Playback behind one narrow interface, so media_kit can be swapped for a
 /// direct libmpv render-API binding without touching screens.
@@ -55,6 +56,10 @@ abstract interface class PlayerEngine {
 
   /// Loads a subtitle file from disk and selects it.
   Future<void> addSubtitleFile(String path);
+
+  /// A snapshot of codec, decoder, bitrate, cache and dropped-frame
+  /// numbers for the statistics panel (read on demand, never observed).
+  Future<PlaybackStats> stats();
   Future<void> dispose();
 }
 
@@ -254,6 +259,37 @@ class MediaKitEngine implements PlayerEngine {
 
   @override
   Future<void> setSpeed(double speed) => _player.setRate(speed);
+  @override
+  Future<PlaybackStats> stats() async {
+    Future<String> read(String name) => _native.getProperty(name).catchError((_) => '');
+    final v = await Future.wait([
+      for (final name in const [
+        'video-format', 'video-params/w', 'video-params/h', 'estimated-vf-fps', 'container-fps', 'hwdec-current',
+        'video-bitrate', 'audio-codec-name', 'audio-bitrate', 'audio-params/channel-count',
+        'demuxer-cache-duration', 'cache-speed', 'frame-drop-count', 'decoder-frame-drop-count',
+      ])
+        read(name),
+    ]);
+    String? text(String s) => s.isEmpty ? null : s;
+    int? whole(String s) => double.tryParse(s)?.round();
+    final fps = double.tryParse(v[3]) ?? double.tryParse(v[4]);
+    return PlaybackStats(
+      videoCodec: text(v[0]),
+      width: whole(v[1]),
+      height: whole(v[2]),
+      fps: fps != null && fps > 0 ? fps : null,
+      hwdec: text(v[5]),
+      videoBitrate: whole(v[6]),
+      audioCodec: text(v[7]),
+      audioBitrate: whole(v[8]),
+      channels: whole(v[9]),
+      cacheSeconds: double.tryParse(v[10]),
+      inputRate: whole(v[11]),
+      droppedFrames: whole(v[12]) ?? 0,
+      decoderDrops: whole(v[13]) ?? 0,
+    );
+  }
+
   @override
   Future<void> addSubtitleFile(String path) async {
     await _native.command(['sub-add', path, 'select']);

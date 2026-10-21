@@ -13,8 +13,10 @@ import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
 import '../player/media_track.dart';
+import '../player/playback_stats.dart';
 import '../player/player_controller.dart';
 import '../player/reconnect_banner.dart';
+import '../player/stats_panel.dart';
 
 enum _Panel { none, tracks, channels }
 
@@ -31,6 +33,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   bool _osd = true;
   Timer? _hide;
   _Panel _panel = _Panel.none;
+
+  /// The statistics panel ("I"): stays while the controls fade.
+  bool _stats = false;
 
   /// A short note for key-driven changes without a panel ("Altyazı +0.3 s").
   String? _flash;
@@ -58,6 +63,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     // Back to the usual place for the preview and the next video.
     _player?.engine.setSubtitlePosition(100);
     _player?.tracksPanelRequest.removeListener(_openTracksOnRequest);
+    _player?.statsPanelRequest.removeListener(_openStatsOnRequest);
     super.dispose();
   }
 
@@ -67,8 +73,11 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (_player == null) {
-      _player = context.player..tracksPanelRequest.addListener(_openTracksOnRequest);
+      _player = context.player
+        ..tracksPanelRequest.addListener(_openTracksOnRequest)
+        ..statsPanelRequest.addListener(_openStatsOnRequest);
       _openTracksOnRequest();
+      _openStatsOnRequest();
     }
     _placeSubtitles();
   }
@@ -78,6 +87,13 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (request == null || !request.value) return;
     request.value = false;
     if (_panel != _Panel.tracks) _togglePanel(_Panel.tracks);
+  }
+
+  void _openStatsOnRequest() {
+    final request = _player?.statsPanelRequest;
+    if (request == null || !request.value) return;
+    request.value = false;
+    setState(() => _stats = true);
   }
 
   /// The bottom controls' height (seek bar, buttons, padding).
@@ -152,6 +168,8 @@ class _PlayerScreenState extends State<PlayerScreen> {
       p.nudgeSubtitleDelay(k == LogicalKeyboardKey.keyZ ? -0.1 : 0.1).then((_) {
         if (mounted) _note(l10n.adjSubtitleDelayNote(seconds(p.subtitleDelay)));
       });
+    } else if (k == LogicalKeyboardKey.keyI) {
+      setState(() => _stats = !_stats);
     } else if (k == LogicalKeyboardKey.keyM) {
       p.setVolume(p.volume > 0 ? 0 : 100);
     } else if (live && k == LogicalKeyboardKey.arrowUp) {
@@ -223,6 +241,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           child: _BottomBar(
                             player: player,
                             onTracks: () => _togglePanel(_Panel.tracks),
+                            onStats: () => setState(() => _stats = !_stats),
                             onChannels: () => _togglePanel(_Panel.channels),
                           ),
                         ),
@@ -231,6 +250,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   ),
                 ),
                 Positioned(top: 70, right: 24, child: ZapDigits(player: player)),
+                if (_stats && now != null)
+                  Positioned(
+                    top: 70,
+                    left: 20,
+                    child: StatsPanel(player: player, onClose: () => setState(() => _stats = false)),
+                  ),
                 if (_flash case final f?)
                   Positioned(
                     top: 70,
@@ -336,10 +361,11 @@ class _TopBar extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.player, required this.onTracks, required this.onChannels});
+  const _BottomBar({required this.player, required this.onTracks, required this.onStats, required this.onChannels});
 
   final PlayerController player;
   final VoidCallback onTracks;
+  final VoidCallback onStats;
   final VoidCallback onChannels;
 
   @override
@@ -415,6 +441,8 @@ class _BottomBar extends StatelessWidget {
                     _Volume(player: player),
                     const SizedBox(width: 6),
                     _OsdButton(icon: LucideIcons.subtitles, tooltip: l10n.tipTracks, onTap: onTracks),
+                    const SizedBox(width: 6),
+                    _OsdButton(icon: LucideIcons.activity, tooltip: l10n.tipStats, onTap: onStats),
                     if (live) ...[
                       const SizedBox(width: 6),
                       _OsdButton(icon: LucideIcons.listVideo, tooltip: l10n.tipChannelList, onTap: onChannels),
@@ -695,8 +723,8 @@ Future<void> _pickSubtitle(PlayerController player) async {
 
 /// "+0.3 s", "0.0 s", "−0.2 s" for delays.
 String seconds(double v) {
-  final s = v.abs().toStringAsFixed(1);
-  return v > 0.04 ? '+$s s' : v < -0.04 ? '−$s s' : '0.0 s';
+  final s = oneDecimal(v.abs());
+  return v > 0.04 ? '+$s s' : v < -0.04 ? '−$s s' : '$s s';
 }
 
 /// Delays, subtitle size, aspect, speed (files) and the sleep timer.

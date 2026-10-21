@@ -1801,6 +1801,180 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Altyazıyı 0,1 sn erken / geç göster'**
   String get keySubtitleDelay;
+
+  /// No description provided for @statsTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'İstatistikler'**
+  String get statsTitle;
+
+  /// No description provided for @tipStats.
+  ///
+  /// In tr, this message translates to:
+  /// **'İstatistikler ve teşhis (I)'**
+  String get tipStats;
+
+  /// No description provided for @keyStats.
+  ///
+  /// In tr, this message translates to:
+  /// **'İstatistikler: neden takılıyor?'**
+  String get keyStats;
+
+  /// No description provided for @actionClose.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kapat'**
+  String get actionClose;
+
+  /// No description provided for @statsVideo.
+  ///
+  /// In tr, this message translates to:
+  /// **'Görüntü'**
+  String get statsVideo;
+
+  /// No description provided for @statsDecoder.
+  ///
+  /// In tr, this message translates to:
+  /// **'Donanım çözme'**
+  String get statsDecoder;
+
+  /// No description provided for @statsSoftware.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kapalı (işlemci)'**
+  String get statsSoftware;
+
+  /// No description provided for @statsBitrate.
+  ///
+  /// In tr, this message translates to:
+  /// **'Görüntü bit hızı'**
+  String get statsBitrate;
+
+  /// No description provided for @statsAudio.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ses'**
+  String get statsAudio;
+
+  /// No description provided for @statsBuffer.
+  ///
+  /// In tr, this message translates to:
+  /// **'Önbellek'**
+  String get statsBuffer;
+
+  /// No description provided for @statsDownload.
+  ///
+  /// In tr, this message translates to:
+  /// **'İndirme hızı'**
+  String get statsDownload;
+
+  /// No description provided for @statsDropped.
+  ///
+  /// In tr, this message translates to:
+  /// **'Atlanan kare'**
+  String get statsDropped;
+
+  /// No description provided for @statsOpen.
+  ///
+  /// In tr, this message translates to:
+  /// **'Açılış süresi'**
+  String get statsOpen;
+
+  /// No description provided for @statsReconnects.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeniden bağlanma'**
+  String get statsReconnects;
+
+  /// No description provided for @statsCheckSource.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sağlayıcıyı kontrol et'**
+  String get statsCheckSource;
+
+  /// No description provided for @statsChecking.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kontrol ediliyor…'**
+  String get statsChecking;
+
+  /// No description provided for @statsAnswered.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sunucu yanıt verdi · {ms} ms'**
+  String statsAnswered(int ms);
+
+  /// No description provided for @statsNoAnswer.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sunucu yanıt vermedi'**
+  String get statsNoAnswer;
+
+  /// No description provided for @statsConnections.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bağlantı {active}/{max}'**
+  String statsConnections(int active, int max);
+
+  /// No description provided for @statsExpires.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bitiş {date}'**
+  String statsExpires(String date);
+
+  /// No description provided for @findSourceDown.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sağlayıcı yanıt vermiyor: sorun büyük olasılıkla onların tarafında.'**
+  String get findSourceDown;
+
+  /// No description provided for @findAccountExpired.
+  ///
+  /// In tr, this message translates to:
+  /// **'Hesabın süresi dolmuş görünüyor.'**
+  String get findAccountExpired;
+
+  /// No description provided for @findConnectionLimit.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bağlantı sınırı dolu: hesap başka bir cihazda da açıksa yayın kesilebilir.'**
+  String get findConnectionLimit;
+
+  /// No description provided for @findSlowNetwork.
+  ///
+  /// In tr, this message translates to:
+  /// **'İndirme hızı yayının bit hızına yetişmiyor: ağ ya da sağlayıcı yavaş.'**
+  String get findSlowNetwork;
+
+  /// No description provided for @findCacheLow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Önbellek neredeyse boş: kısa takılmalar olabilir.'**
+  String get findCacheLow;
+
+  /// No description provided for @findFramesDropping.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kareler atlanıyor: bilgisayar görüntüyü çözmeye yetişemiyor.'**
+  String get findFramesDropping;
+
+  /// No description provided for @findSoftwareDecoding.
+  ///
+  /// In tr, this message translates to:
+  /// **'Donanım çözme kullanılmıyor; ekran kartı sürücüsünü güncellemek yardımcı olabilir.'**
+  String get findSoftwareDecoding;
+
+  /// No description provided for @findReconnected.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yayın bu kanalda kesilip yeniden bağlandı.'**
+  String get findReconnected;
+
+  /// No description provided for @findHealthy.
+  ///
+  /// In tr, this message translates to:
+  /// **'Şu an bir sorun görünmüyor.'**
+  String get findHealthy;
 }
 
 class _AppLocalizationsDelegate

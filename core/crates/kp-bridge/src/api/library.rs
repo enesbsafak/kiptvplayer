@@ -98,6 +98,32 @@ pub struct SourceInfo {
     pub guide: Option<GuideInfo>,
 }
 
+/// "Kaynağı kontrol et": the provider's answer time and account state.
+#[derive(Debug, Clone)]
+pub struct SourceHealth {
+    pub ok: bool,
+    pub latency_ms: u32,
+    pub error: Option<String>,
+    pub status: Option<String>,
+    pub expires_at: Option<i64>,
+    pub max_connections: Option<i64>,
+    pub active_connections: Option<i64>,
+}
+
+/// One light request to the source, timed; never opens a stream.
+pub fn check_source(source_id: String) -> Result<SourceHealth> {
+    let h = core()?.check_source(&source_id)?;
+    Ok(SourceHealth {
+        ok: h.ok,
+        latency_ms: h.latency_ms,
+        error: h.error,
+        status: h.status,
+        expires_at: h.expires_at,
+        max_connections: h.max_connections,
+        active_connections: h.active_connections,
+    })
+}
+
 /// The last XMLTV guide download of an M3U source.
 #[derive(Debug, Clone)]
 pub struct GuideInfo {

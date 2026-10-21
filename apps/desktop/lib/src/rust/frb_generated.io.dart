@@ -189,6 +189,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RegionPreference dco_decode_region_preference(dynamic raw);
 
   @protected
+  SourceHealth dco_decode_source_health(dynamic raw);
+
+  @protected
   SourceInfo dco_decode_source_info(dynamic raw);
 
   @protected
@@ -408,6 +411,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   RegionPreference sse_decode_region_preference(SseDeserializer deserializer);
+
+  @protected
+  SourceHealth sse_decode_source_health(SseDeserializer deserializer);
 
   @protected
   SourceInfo sse_decode_source_info(SseDeserializer deserializer);
@@ -687,6 +693,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     RegionPreference self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_source_health(SourceHealth self, SseSerializer serializer);
 
   @protected
   void sse_encode_source_info(SourceInfo self, SseSerializer serializer);

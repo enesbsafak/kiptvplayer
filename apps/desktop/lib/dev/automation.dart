@@ -96,6 +96,9 @@ class Automation {
         await shot('live-preview', wait: const Duration(milliseconds: 2500));
         player.setView(PlayerView.full);
         await shot('player', wait: const Duration(milliseconds: 1200));
+        // Statistics after a few samples, with the provider checked.
+        player.statsPanelRequest.value = true;
+        await shot('player-stats', wait: const Duration(milliseconds: 3500));
         final past = await app.library.archive(channel.id);
         if (past.isNotEmpty) {
           await player.play(channel, Kind.live, queue: channels, programme: past.first, view: PlayerView.full);

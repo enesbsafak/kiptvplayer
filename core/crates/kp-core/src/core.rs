@@ -406,6 +406,36 @@ impl Core {
         }
     }
 
+    /// "Is it the provider?": one light request to the source (Xtream
+    /// account, portal account page, the playlist's headers), timed, with
+    /// what the provider says about the account. Never opens a stream, so
+    /// it does not take a connection away from the one playing.
+    pub fn check_source(&self, source_id: &str) -> Result<SourceHealth> {
+        let source = self.store().source(source_id)?.ok_or_else(|| msg(t("Kaynak bulunamadı", "Source not found")))?;
+        let started = std::time::Instant::now();
+        let mut health = SourceHealth::default();
+        let outcome: Result<()> = (|| {
+            match source.kind.as_str() {
+                "xtream" => {
+                    let a = self.xtream(&source)?.account()?;
+                    health.status = Some(a.status).filter(|s| !s.is_empty());
+                    health.expires_at = a.expires_at;
+                    health.max_connections = a.max_connections;
+                    health.active_connections = a.active_connections;
+                }
+                "stalker" => health.expires_at = self.portal(&source)?.main_info()?,
+                _ => probe_playlist(&source)?,
+            }
+            Ok(())
+        })();
+        health.latency_ms = started.elapsed().as_millis().min(u32::MAX as u128) as u32;
+        match outcome {
+            Ok(()) => health.ok = true,
+            Err(e) => health.error = Some(e.to_string()),
+        }
+        Ok(health)
+    }
+
     /// The portal session for [source], opened (handshake) on first use.
     fn portal(&self, source: &SourceRow) -> Result<std::sync::Arc<crate::stalker::StalkerClient>> {
         if let Some(p) = self.portals.lock().unwrap_or_else(|p| p.into_inner()).get(&source.id) {
@@ -939,6 +969,46 @@ fn default_name(url: &str) -> String {
     if host.is_empty() { "Kaynak".to_string() } else { host.to_string() }
 }
 
+/// What [Core::check_source] found.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct SourceHealth {
+    pub ok: bool,
+    pub latency_ms: u32,
+    pub error: Option<String>,
+    /// The provider's word for the account ("Active", "Banned", ...).
+    pub status: Option<String>,
+    pub expires_at: Option<i64>,
+    pub max_connections: Option<i64>,
+    pub active_connections: Option<i64>,
+}
+
+/// Reaches the playlist without downloading it: the response headers of a
+/// one-byte range (servers that ignore ranges are dropped after headers).
+fn probe_playlist(source: &SourceRow) -> Result<()> {
+    let url = source.url.trim();
+    if !(url.starts_with("http://") || url.starts_with("https://")) {
+        return std::fs::metadata(url)
+            .map(|_| ())
+            .map_err(|e| msg(format!("{}: {e}", t("Dosya okunamadı", "Could not read the file"))));
+    }
+    let http = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .connect_timeout(Duration::from_secs(10))
+        .user_agent(source.user_agent.as_deref().unwrap_or(crate::DEFAULT_USER_AGENT))
+        .danger_accept_invalid_certs(source.insecure_tls)
+        .build()
+        .map_err(|e| msg(e.to_string()))?;
+    let resp = http
+        .get(url)
+        .header(reqwest::header::RANGE, "bytes=0-0")
+        .send()
+        .map_err(|e| msg(format!("{}: {}", t("Sunucuya ulaşılamadı", "The server did not answer"), strip_query(&e.to_string()))))?;
+    if !resp.status().is_success() {
+        return Err(msg(format!("HTTP {}", resp.status().as_u16())));
+    }
+    Ok(())
+}
+
 /// M3U from a URL or a local file. 300 MB cap: AbiPlayer's 20 MB limit
 /// rejected many real 100k-entry lists.
 fn fetch_playlist(source: &SourceRow) -> Result<String> {
@@ -979,6 +1049,24 @@ fn strip_query(message: &str) -> String {
 mod tests {
     use super::*;
     use crate::secret::MemorySecrets;
+
+    #[test]
+    fn checking_a_file_source_finds_the_file_or_not() {
+        let dir = tempfile::tempdir().unwrap();
+        let list = dir.path().join("list.m3u");
+        std::fs::write(&list, "#EXTM3U\n#EXTINF:-1,TRT 1\nhttp://s/1.ts\n").unwrap();
+        let core = Core::open_in_memory(Box::new(MemorySecrets::default())).unwrap();
+        let (source, _) = core
+            .add_source(
+                NewSource { kind: SourceKind::M3u, name: "Liste".into(), url: list.display().to_string(), username: None, password: None, epg_url: None, user_agent: None, insecure_tls: false },
+                &|_| {},
+            )
+            .unwrap();
+        assert!(core.check_source(&source.id).unwrap().ok);
+        std::fs::remove_file(&list).unwrap();
+        let h = core.check_source(&source.id).unwrap();
+        assert!(!h.ok && h.error.is_some(), "{h:?}");
+    }
 
     #[test]
     fn m3u_file_source_end_to_end() {

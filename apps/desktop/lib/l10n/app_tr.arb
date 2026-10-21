@@ -574,5 +574,58 @@
       }
     }
   },
-  "keySubtitleDelay": "Altyazıyı 0,1 sn erken / geç göster"
+  "keySubtitleDelay": "Altyazıyı 0,1 sn erken / geç göster",
+  "statsTitle": "İstatistikler",
+  "tipStats": "İstatistikler ve teşhis (I)",
+  "keyStats": "İstatistikler: neden takılıyor?",
+  "actionClose": "Kapat",
+  "statsVideo": "Görüntü",
+  "statsDecoder": "Donanım çözme",
+  "statsSoftware": "Kapalı (işlemci)",
+  "statsBitrate": "Görüntü bit hızı",
+  "statsAudio": "Ses",
+  "statsBuffer": "Önbellek",
+  "statsDownload": "İndirme hızı",
+  "statsDropped": "Atlanan kare",
+  "statsOpen": "Açılış süresi",
+  "statsReconnects": "Yeniden bağlanma",
+  "statsCheckSource": "Sağlayıcıyı kontrol et",
+  "statsChecking": "Kontrol ediliyor…",
+  "statsAnswered": "Sunucu yanıt verdi · {ms} ms",
+  "@statsAnswered": {
+    "placeholders": {
+      "ms": {
+        "type": "int"
+      }
+    }
+  },
+  "statsNoAnswer": "Sunucu yanıt vermedi",
+  "statsConnections": "Bağlantı {active}/{max}",
+  "@statsConnections": {
+    "placeholders": {
+      "active": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "statsExpires": "Bitiş {date}",
+  "@statsExpires": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "findSourceDown": "Sağlayıcı yanıt vermiyor: sorun büyük olasılıkla onların tarafında.",
+  "findAccountExpired": "Hesabın süresi dolmuş görünüyor.",
+  "findConnectionLimit": "Bağlantı sınırı dolu: hesap başka bir cihazda da açıksa yayın kesilebilir.",
+  "findSlowNetwork": "İndirme hızı yayının bit hızına yetişmiyor: ağ ya da sağlayıcı yavaş.",
+  "findCacheLow": "Önbellek neredeyse boş: kısa takılmalar olabilir.",
+  "findFramesDropping": "Kareler atlanıyor: bilgisayar görüntüyü çözmeye yetişemiyor.",
+  "findSoftwareDecoding": "Donanım çözme kullanılmıyor; ekran kartı sürücüsünü güncellemek yardımcı olabilir.",
+  "findReconnected": "Yayın bu kanalda kesilip yeniden bağlandı.",
+  "findHealthy": "Şu an bir sorun görünmüyor."
 }

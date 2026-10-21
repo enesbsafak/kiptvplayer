@@ -16,6 +16,7 @@ export '../src/rust/api/library.dart'
         Programme,
         RegionCount,
         RegionPreference,
+        SourceHealth,
         SourceInfo,
         SourceType,
         SyncEvent,
@@ -46,6 +47,9 @@ abstract interface class LibraryApi {
   /// Downloads an M3U source's XMLTV guide again; the result's `guide`
   /// tells how it went.
   Future<rust.SourceInfo> refreshGuide(String sourceId);
+
+  /// One light, timed request to the provider (never opens a stream).
+  Future<rust.SourceHealth> checkSource(String sourceId);
   Future<void> removeSource(String sourceId);
   Future<List<rust.Category>> categories(String sourceId, rust.Kind kind);
   Future<List<rust.Item>> page(
@@ -112,6 +116,8 @@ class RustLibrary implements LibraryApi {
       rust.syncSource(sourceId: sourceId);
   @override
   Future<rust.SourceInfo> refreshGuide(String sourceId) => rust.refreshGuide(sourceId: sourceId);
+  @override
+  Future<rust.SourceHealth> checkSource(String sourceId) => rust.checkSource(sourceId: sourceId);
   @override
   Future<void> removeSource(String sourceId) =>
       rust.removeSource(sourceId: sourceId);

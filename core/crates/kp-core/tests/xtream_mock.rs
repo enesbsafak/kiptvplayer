@@ -89,6 +89,11 @@ fn xtream_source_end_to_end() {
 
     let hits = core.search("haber", Some(ContentKind::Live), 20).unwrap();
     assert!(!hits.is_empty());
+
+    let health = core.check_source(&source.id).unwrap();
+    assert!(health.ok, "{health:?}");
+    assert_eq!((health.active_connections, health.max_connections), (Some(0), Some(2)));
+    assert!(health.expires_at.is_some());
 }
 
 #[test]
@@ -200,6 +205,8 @@ fn stalker_portal_end_to_end() {
     let (source, summary) = core.add_source(portal("00-1a-79-00-00-01"), &|_| {}).unwrap();
     assert_eq!(summary.live, 40);
     assert!(source.expires_at.is_some(), "account end date from the portal");
+    let health = core.check_source(&source.id).unwrap();
+    assert!(health.ok && health.expires_at.is_some(), "{health:?}");
     let cats = core.categories(&source.id, ContentKind::Live).unwrap();
     assert_eq!(cats.last().unwrap().name, "XXX", "adult genre last");
 

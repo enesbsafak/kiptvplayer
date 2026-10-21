@@ -195,13 +195,20 @@ impl StalkerClient {
 
     /// Account expiry, when the portal says (Unix seconds).
     pub fn expires_at(&self) -> Option<i64> {
-        let js = self.call(&[("type", "account_info"), ("action", "get_main_info")]).ok()?;
+        self.main_info().ok().flatten()
+    }
+
+    /// The account page: answers when the portal and the session are fine,
+    /// with the end date when the portal gives one.
+    pub fn main_info(&self) -> Result<Option<i64>> {
+        let js = self.call(&[("type", "account_info"), ("action", "get_main_info")])?;
         // Ministra reports the end date in a field named "phone".
-        let end = as_string(js.get("end_date")).or_else(|| as_string(js.get("phone")))?;
-        chrono::NaiveDate::parse_from_str(end.get(..10)?, "%Y-%m-%d")
-            .ok()
+        let Some(end) = as_string(js.get("end_date")).or_else(|| as_string(js.get("phone"))) else { return Ok(None) };
+        Ok(end
+            .get(..10)
+            .and_then(|d| chrono::NaiveDate::parse_from_str(d, "%Y-%m-%d").ok())
             .and_then(|d| d.and_hms_opt(0, 0, 0))
-            .map(|d| d.and_utc().timestamp())
+            .map(|d| d.and_utc().timestamp()))
     }
 
     pub fn genres(&self) -> Result<Vec<Genre>> {

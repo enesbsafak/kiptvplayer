@@ -980,4 +980,104 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keySubtitleDelay => 'Show subtitles 0.1 s earlier / later';
+
+  @override
+  String get statsTitle => 'Statistics';
+
+  @override
+  String get tipStats => 'Statistics and diagnosis (I)';
+
+  @override
+  String get keyStats => 'Statistics: why does it stutter?';
+
+  @override
+  String get actionClose => 'Close';
+
+  @override
+  String get statsVideo => 'Video';
+
+  @override
+  String get statsDecoder => 'Hardware decoding';
+
+  @override
+  String get statsSoftware => 'Off (CPU)';
+
+  @override
+  String get statsBitrate => 'Video bitrate';
+
+  @override
+  String get statsAudio => 'Audio';
+
+  @override
+  String get statsBuffer => 'Buffer';
+
+  @override
+  String get statsDownload => 'Download speed';
+
+  @override
+  String get statsDropped => 'Dropped frames';
+
+  @override
+  String get statsOpen => 'Start time';
+
+  @override
+  String get statsReconnects => 'Reconnects';
+
+  @override
+  String get statsCheckSource => 'Check the provider';
+
+  @override
+  String get statsChecking => 'Checking…';
+
+  @override
+  String statsAnswered(int ms) {
+    return 'The server answered · $ms ms';
+  }
+
+  @override
+  String get statsNoAnswer => 'The server did not answer';
+
+  @override
+  String statsConnections(int active, int max) {
+    return 'Connections $active/$max';
+  }
+
+  @override
+  String statsExpires(String date) {
+    return 'Ends $date';
+  }
+
+  @override
+  String get findSourceDown =>
+      'The provider is not answering: the problem is most likely on their side.';
+
+  @override
+  String get findAccountExpired => 'The account appears to have expired.';
+
+  @override
+  String get findConnectionLimit =>
+      'The connection limit is reached: if the account is open on another device, streams may cut out.';
+
+  @override
+  String get findSlowNetwork =>
+      'The download speed does not keep up with the stream bitrate: the network or the provider is slow.';
+
+  @override
+  String get findCacheLow =>
+      'The buffer is almost empty: short stalls are likely.';
+
+  @override
+  String get findFramesDropping =>
+      'Frames are being dropped: the computer cannot decode the picture fast enough.';
+
+  @override
+  String get findSoftwareDecoding =>
+      'Hardware decoding is not in use; updating the graphics driver may help.';
+
+  @override
+  String get findReconnected =>
+      'The stream dropped and reconnected on this channel.';
+
+  @override
+  String get findHealthy => 'No problem visible right now.';
 }
