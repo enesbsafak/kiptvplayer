@@ -15,6 +15,33 @@ class AppState extends ChangeNotifier {
 
   final LibraryApi library;
 
+  /// Parental lock: whether a PIN exists and adult content is hidden.
+  Parental parental = const Parental(pinSet: false, locked: false);
+
+  Future<bool> unlockAdult(String pin) async {
+    final ok = await library.unlockAdult(pin);
+    if (ok) await _parentalChanged();
+    return ok;
+  }
+
+  Future<void> lockAdult() async {
+    await library.lockAdult();
+    await _parentalChanged();
+  }
+
+  Future<void> setPin({String? current, String? pin}) async {
+    await library.setParentalPin(current: current, pin: pin);
+    await _parentalChanged();
+  }
+
+  /// Lists, shelves and search change with the lock: reload them.
+  Future<void> _parentalChanged() async {
+    parental = await library.parental();
+    catalogVersion++;
+    notifyListeners();
+    unawaited(reminders.load(activeSource?.id));
+  }
+
   /// Programme reminders of the active source.
   late final reminders = Reminders(library);
 
@@ -77,6 +104,7 @@ class AppState extends ChangeNotifier {
     }
     sources = await library.sources();
     activeSourceId ??= sources.isEmpty ? null : sources.first.id;
+    parental = await library.parental();
     loaded = true;
     notifyListeners();
     unawaited(reminders.load(activeSource?.id));

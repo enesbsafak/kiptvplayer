@@ -1155,4 +1155,75 @@ class AppLocalizationsEn extends AppLocalizations {
   String prefTimeshiftMinutes(int n) {
     return '≈$n min';
   }
+
+  @override
+  String get pinTitle => 'Parental lock';
+
+  @override
+  String get pinBodyOff =>
+      'With a PIN, adult categories and items are hidden from lists, search and Home until the PIN is entered. The app locks again every time it starts.';
+
+  @override
+  String get pinBodyLocked => 'Locked: adult content is hidden.';
+
+  @override
+  String get pinBodyOpen =>
+      'Unlocked: adult content is shown. It locks again when the app closes.';
+
+  @override
+  String get pinSet => 'Set a PIN';
+
+  @override
+  String get pinUnlock => 'Unlock';
+
+  @override
+  String get pinLockNow => 'Lock now';
+
+  @override
+  String get pinChange => 'Change PIN';
+
+  @override
+  String get pinRemove => 'Remove PIN';
+
+  @override
+  String get pinOk => 'OK';
+
+  @override
+  String get pinUnlockTitle => 'Parental lock';
+
+  @override
+  String get pinUnlockBody => 'Enter the PIN to show adult content.';
+
+  @override
+  String get pinCurrentTitle => 'Current PIN';
+
+  @override
+  String get pinCurrentBody => 'Enter the current PIN to continue.';
+
+  @override
+  String get pinNewTitle => 'New PIN';
+
+  @override
+  String get pinNewBody => 'Choose a PIN of 4-6 digits.';
+
+  @override
+  String get pinRepeatTitle => 'Repeat the PIN';
+
+  @override
+  String get pinRepeatBody => 'Enter the same PIN once more.';
+
+  @override
+  String get pinRemoveTitle => 'Remove PIN';
+
+  @override
+  String get pinWrong => 'Wrong PIN';
+
+  @override
+  String get pinMismatch => 'The PINs do not match';
+
+  @override
+  String get pinTooShort => 'At least 4 digits';
+
+  @override
+  String get pinLockedCategories => 'Locked categories';
 }

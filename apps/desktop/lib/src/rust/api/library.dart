@@ -10,7 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
@@ -95,6 +95,27 @@ Future<List<Item>> alternates({required PlatformInt64 itemId}) =>
 
 Future<List<Item>> favorites({required String sourceId, required Kind kind}) =>
     RustLib.instance.api.crateApiLibraryFavorites(
+      sourceId: sourceId,
+      kind: kind,
+    );
+
+Future<Parental> parental() => RustLib.instance.api.crateApiLibraryParental();
+
+/// Sets, changes (with the current PIN) or removes (new = None) the PIN.
+Future<Parental> setParentalPin({String? current, String? new_}) => RustLib
+    .instance
+    .api
+    .crateApiLibrarySetParentalPin(current: current, new_: new_);
+
+/// False on a wrong PIN; an error while too many tries make it wait.
+Future<bool> unlockAdult({required String pin}) =>
+    RustLib.instance.api.crateApiLibraryUnlockAdult(pin: pin);
+
+Future<void> lockAdult() => RustLib.instance.api.crateApiLibraryLockAdult();
+
+/// How many adult categories the lock hides in this kind.
+Future<int> lockedCategories({required String sourceId, required Kind kind}) =>
+    RustLib.instance.api.crateApiLibraryLockedCategories(
       sourceId: sourceId,
       kind: kind,
     );
@@ -595,6 +616,25 @@ class NewSourceInput {
           userAgent == other.userAgent &&
           insecureTls == other.insecureTls &&
           epgUrl == other.epgUrl;
+}
+
+/// Parental lock state: a PIN exists, and adult content is hidden now.
+class Parental {
+  final bool pinSet;
+  final bool locked;
+
+  const Parental({required this.pinSet, required this.locked});
+
+  @override
+  int get hashCode => pinSet.hashCode ^ locked.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Parental &&
+          runtimeType == other.runtimeType &&
+          pinSet == other.pinSet &&
+          locked == other.locked;
 }
 
 class Playback {

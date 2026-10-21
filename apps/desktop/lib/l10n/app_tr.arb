@@ -670,5 +670,28 @@
         "type": "int"
       }
     }
-  }
+  },
+  "pinTitle": "Ebeveyn kilidi",
+  "pinBodyOff": "Bir PIN belirlediğinizde yetişkin kategorileri ve içerikleri listelerden, aramadan ve ana sayfadan gizlenir; PIN girilince görünür. Uygulama her açılışta yeniden kilitlenir.",
+  "pinBodyLocked": "Kilitli: yetişkin içerik gizli.",
+  "pinBodyOpen": "Kilit açık: yetişkin içerik görünüyor. Uygulama kapanınca yeniden kilitlenir.",
+  "pinSet": "PIN belirle",
+  "pinUnlock": "Kilidi aç",
+  "pinLockNow": "Şimdi kilitle",
+  "pinChange": "PIN'i değiştir",
+  "pinRemove": "PIN'i kaldır",
+  "pinOk": "Tamam",
+  "pinUnlockTitle": "Ebeveyn kilidi",
+  "pinUnlockBody": "Yetişkin içeriği göstermek için PIN'i girin.",
+  "pinCurrentTitle": "Mevcut PIN",
+  "pinCurrentBody": "Devam etmek için mevcut PIN'i girin.",
+  "pinNewTitle": "Yeni PIN",
+  "pinNewBody": "4-6 rakamlı bir PIN seçin.",
+  "pinRepeatTitle": "PIN'i tekrarlayın",
+  "pinRepeatBody": "Aynı PIN'i bir kez daha girin.",
+  "pinRemoveTitle": "PIN'i kaldır",
+  "pinWrong": "PIN yanlış",
+  "pinMismatch": "PIN'ler aynı değil",
+  "pinTooShort": "En az 4 rakam",
+  "pinLockedCategories": "Kilitli kategoriler"
 }

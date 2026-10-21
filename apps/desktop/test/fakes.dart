@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_rust_bridge/flutter_rust_bridge.dart' show AnyhowException;
 import 'package:karadelik_player/app/app_state.dart';
 import 'package:karadelik_player/app/library.dart';
 import 'package:karadelik_player/app/paging.dart';
@@ -80,6 +81,31 @@ class FakeLibrary implements LibraryApi {
   /// What the next guide refresh reports.
   GuideInfo? nextGuide;
   final List<String> guideRefreshes = [];
+
+  String? pin;
+  bool locked = false;
+  int adultCategories = 0;
+  @override
+  Future<Parental> parental() async => Parental(pinSet: pin != null, locked: locked);
+  @override
+  Future<Parental> setParentalPin({String? current, String? pin}) async {
+    if (this.pin != null && current != this.pin) throw AnyhowException('PIN yanlış');
+    this.pin = pin;
+    locked = pin != null;
+    return parental();
+  }
+
+  @override
+  Future<bool> unlockAdult(String pin) async {
+    if (pin != this.pin) return false;
+    locked = false;
+    return true;
+  }
+
+  @override
+  Future<void> lockAdult() async => locked = pin != null;
+  @override
+  Future<int> lockedCategories(String sourceId, Kind kind) async => locked ? adultCategories : 0;
 
   final appSettings = <String, String>{};
   @override

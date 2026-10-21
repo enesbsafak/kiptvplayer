@@ -258,6 +258,9 @@ pub struct Store {
     conn: Connection,
     /// Region shown first (e.g. "TR"); None keeps pure provider order.
     region_pref: Option<String>,
+    /// Parental lock engaged: adult categories and items are left out of
+    /// every list, search and shelf.
+    hide_adult: bool,
 }
 
 impl Store {
@@ -277,7 +280,7 @@ impl Store {
              PRAGMA mmap_size = 268435456;
              PRAGMA foreign_keys = ON;",
         )?;
-        let mut store = Store { conn, region_pref: None };
+        let mut store = Store { conn, region_pref: None, hide_adult: false };
         store.migrate()?;
         store.region_pref = store.setting("region")?.filter(|r| !r.is_empty());
         Ok(store)
@@ -435,6 +438,28 @@ impl Store {
         Ok(())
     }
 
+    pub fn set_hide_adult(&mut self, on: bool) {
+        self.hide_adult = on;
+    }
+
+    pub fn hides_adult(&self) -> bool {
+        self.hide_adult
+    }
+
+    /// " AND <col> = 0" while adult content is locked away.
+    fn adult_filter(&self, col: &str) -> String {
+        if self.hide_adult { format!(" AND {col} = 0") } else { String::new() }
+    }
+
+    /// Adult categories of a kind (what the lock hides).
+    pub fn adult_category_count(&self, source_id: &str, kind: ContentKind) -> Result<u32> {
+        Ok(self.conn.query_row(
+            "SELECT count(*) FROM category WHERE source_id = ?1 AND kind = ?2 AND adult = 1",
+            params![source_id, kind as u8],
+            |r| r.get(0),
+        )?)
+    }
+
     pub fn region_pref(&self) -> Option<&str> {
         self.region_pref.as_deref()
     }
@@ -544,13 +569,15 @@ impl Store {
     /// Categories in provider order, each with its item count. Adult
     /// categories go last, so a list never opens on them.
     pub fn categories(&self, source_id: &str, kind: ContentKind) -> Result<Vec<CategoryRow>> {
-        let mut stmt = self.conn.prepare_cached(
+        let mut stmt = self.conn.prepare_cached(&format!(
             "SELECT c.uid, c.name, c.adult,
                     (SELECT count(*) FROM channel ch WHERE ch.source_id = c.source_id AND ch.kind = c.kind
-                        AND ch.category_uid = c.uid)
-             FROM category c WHERE c.source_id = ?1 AND c.kind = ?2
+                        AND ch.category_uid = c.uid{})
+             FROM category c WHERE c.source_id = ?1 AND c.kind = ?2{}
              ORDER BY c.adult, (c.region IS ?3 AND ?3 IS NOT NULL) DESC, c.sort",
-        )?;
+            self.adult_filter("ch.adult"),
+            self.adult_filter("c.adult"),
+        ))?;
         let rows = stmt.query_map(params![source_id, kind as u8, self.region_pref], |r| {
             Ok(CategoryRow { uid: r.get(0)?, name: r.get(1)?, adult: r.get(2)?, count: r.get(3)? })
         })?;
@@ -575,8 +602,9 @@ impl Store {
             Some(cat) => {
                 let mut stmt = self.conn.prepare_cached(&format!(
                     "SELECT {CHANNEL_ROW_COLS} FROM channel
-                     WHERE source_id = ?1 AND kind = ?2 AND category_uid = ?3 AND order_key > ?4
-                     ORDER BY order_key LIMIT ?5"
+                     WHERE source_id = ?1 AND kind = ?2 AND category_uid = ?3 AND order_key > ?4{}
+                     ORDER BY order_key LIMIT ?5",
+                    self.adult_filter("adult")
                 ))?;
                 let rows = stmt.query_map(params![source_id, kind as u8, cat, after, limit], channel_row)?;
                 rows.collect::<std::result::Result<Vec<_>, _>>()?
@@ -584,8 +612,9 @@ impl Store {
             None => {
                 let mut stmt = self.conn.prepare_cached(&format!(
                     "SELECT {CHANNEL_ROW_COLS} FROM channel
-                     WHERE source_id = ?1 AND kind = ?2 AND order_key > ?3
-                     ORDER BY order_key LIMIT ?4"
+                     WHERE source_id = ?1 AND kind = ?2 AND order_key > ?3{}
+                     ORDER BY order_key LIMIT ?4",
+                    self.adult_filter("adult")
                 ))?;
                 let rows = stmt.query_map(params![source_id, kind as u8, after, limit], channel_row)?;
                 rows.collect::<std::result::Result<Vec<_>, _>>()?
@@ -609,7 +638,8 @@ impl Store {
         let key = crate::guide::match_name(&name);
         let tvg = tvg.map(|t| t.trim().to_lowercase()).filter(|t| !t.is_empty());
         let mut stmt = self.conn.prepare_cached(&format!(
-            "SELECT {CHANNEL_ROW_COLS}, tvg_id FROM channel WHERE source_id = ?1 AND kind = 0 AND uid != ?2 ORDER BY order_key"
+            "SELECT {CHANNEL_ROW_COLS}, tvg_id FROM channel WHERE source_id = ?1 AND kind = 0 AND uid != ?2{} ORDER BY order_key",
+            self.adult_filter("adult")
         ))?;
         let mut out = Vec::new();
         let mut rows = stmt.query(params![source_id, uid])?;
@@ -648,17 +678,19 @@ impl Store {
             let phrase = format!("\"{}\"", q.replace('"', "\"\""));
             let mut stmt = self.conn.prepare_cached(&format!(
                 "SELECT {} FROM channel_fts f JOIN channel c ON c.id = f.rowid
-                 WHERE channel_fts MATCH ?1 AND (?2 IS NULL OR c.kind = ?2)
+                 WHERE channel_fts MATCH ?1 AND (?2 IS NULL OR c.kind = ?2){}
                  ORDER BY c.order_key LIMIT ?3",
-                CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", ")
+                CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", "),
+                self.adult_filter("c.adult")
             ))?;
             let rows = stmt.query_map(params![phrase, kind, limit], channel_row)?;
             rows.collect::<std::result::Result<Vec<_>, _>>()?
         } else {
             let mut stmt = self.conn.prepare_cached(&format!(
                 "SELECT {CHANNEL_ROW_COLS} FROM channel
-                 WHERE name_fold LIKE ?1 ESCAPE '\\' AND (?2 IS NULL OR kind = ?2)
-                 ORDER BY order_key LIMIT ?3"
+                 WHERE name_fold LIKE ?1 ESCAPE '\\' AND (?2 IS NULL OR kind = ?2){}
+                 ORDER BY order_key LIMIT ?3",
+                self.adult_filter("adult")
             ))?;
             let pattern = format!("{}%", q.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"));
             let rows = stmt.query_map(params![pattern, kind, limit], channel_row)?;
@@ -709,8 +741,9 @@ impl Store {
     pub fn favorites(&self, source_id: &str, kind: ContentKind) -> Result<Vec<ChannelRow>> {
         let mut stmt = self.conn.prepare_cached(&format!(
             "SELECT {} FROM favorite f JOIN channel c ON c.source_id = f.source_id AND c.uid = f.uid
-             WHERE f.source_id = ?1 AND c.kind = ?2 ORDER BY f.added_at",
-            CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", ")
+             WHERE f.source_id = ?1 AND c.kind = ?2{} ORDER BY f.added_at",
+            CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", "),
+            self.adult_filter("c.adult")
         ))?;
         let rows = stmt.query_map(params![source_id, kind as u8], channel_row)?;
         Ok(rows.collect::<std::result::Result<_, _>>()?)
@@ -743,8 +776,9 @@ impl Store {
         let mut stmt = self.conn.prepare_cached(&format!(
             "SELECT {}, r.start, r.stop, r.title FROM reminder r
              JOIN channel c ON c.source_id = r.source_id AND c.uid = r.uid
-             WHERE r.source_id = ?1 ORDER BY r.start",
-            CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", ")
+             WHERE r.source_id = ?1{} ORDER BY r.start",
+            CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", "),
+            self.adult_filter("c.adult")
         ))?;
         let rows = stmt.query_map([source_id], |r| {
             Ok((channel_row(r)?, ReminderRow { start: r.get(10)?, stop: r.get(11)?, title: r.get(12)? }))
@@ -776,8 +810,9 @@ impl Store {
     pub fn recent(&self, source_id: &str, kind: ContentKind, limit: u32) -> Result<Vec<ChannelRow>> {
         let mut stmt = self.conn.prepare_cached(&format!(
             "SELECT {} FROM recent r JOIN channel c ON c.source_id = r.source_id AND c.uid = r.uid
-             WHERE r.source_id = ?1 AND c.kind = ?2 ORDER BY r.watched_at DESC LIMIT ?3",
-            CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", ")
+             WHERE r.source_id = ?1 AND c.kind = ?2{} ORDER BY r.watched_at DESC LIMIT ?3",
+            CHANNEL_ROW_COLS.split(", ").map(|c| format!("c.{c}")).collect::<Vec<_>>().join(", "),
+            self.adult_filter("c.adult")
         ))?;
         let rows = stmt.query_map(params![source_id, kind as u8, limit], channel_row)?;
         Ok(rows.collect::<std::result::Result<_, _>>()?)
@@ -808,12 +843,18 @@ impl Store {
 
     /// Unfinished items (between 2 % and 95 %), newest first: "Devam et".
     pub fn continue_watching(&self, source_id: &str, limit: u32) -> Result<Vec<ProgressRow>> {
-        let mut stmt = self.conn.prepare_cached(
+        let locked = if self.hide_adult {
+            " AND NOT EXISTS (SELECT 1 FROM channel c WHERE c.source_id = progress.source_id
+                 AND c.uid = progress.item_uid AND c.adult = 1)"
+        } else {
+            ""
+        };
+        let mut stmt = self.conn.prepare_cached(&format!(
             "SELECT source_id, uid, item_uid, title, position_ms, duration_ms, updated_at FROM progress
              WHERE source_id = ?1 AND duration_ms > 0
-               AND position_ms * 100 > duration_ms * 2 AND position_ms * 100 < duration_ms * 95
+               AND position_ms * 100 > duration_ms * 2 AND position_ms * 100 < duration_ms * 95{locked}
              ORDER BY updated_at DESC LIMIT ?2",
-        )?;
+        ))?;
         let rows = stmt.query_map(params![source_id, limit], progress_row)?;
         Ok(rows.collect::<std::result::Result<_, _>>()?)
     }
@@ -1132,6 +1173,31 @@ mod tests {
         let past = store.epg_past("src", uid, 0, t + 150).unwrap();
         assert_eq!(past.iter().map(|e| (e.title.as_str(), e.archive)).collect::<Vec<_>>(), vec![("Bitti", true)]);
         assert_eq!(store.epg_short("src", uid, t + 150).unwrap().0[0].title, "Sonra");
+    }
+
+    #[test]
+    fn the_parental_lock_hides_adult_everywhere() {
+        let mut store = store();
+        let adult = store.channels_page("src", ContentKind::Live, None, None, 50).unwrap().into_iter().find(|c| c.adult).unwrap();
+        store.set_favorite("src", adult.uid, true, 5).unwrap();
+        store.touch_recent("src", adult.uid, 6).unwrap();
+        let open = (
+            store.categories("src", ContentKind::Live).unwrap().len(),
+            store.channels_page("src", ContentKind::Live, None, None, 50).unwrap().len(),
+        );
+
+        store.set_hide_adult(true);
+        let cats = store.categories("src", ContentKind::Live).unwrap();
+        assert!(cats.iter().all(|c| !c.adult) && cats.len() < open.0);
+        let page = store.channels_page("src", ContentKind::Live, None, None, 50).unwrap();
+        assert!(page.iter().all(|c| !c.adult) && page.len() < open.1);
+        assert!(store.search(&adult.name, None, 10).unwrap().is_empty());
+        assert!(store.favorites("src", ContentKind::Live).unwrap().is_empty());
+        assert!(store.recent("src", ContentKind::Live, 10).unwrap().is_empty());
+        assert_eq!(store.adult_category_count("src", ContentKind::Live).unwrap(), 1);
+
+        store.set_hide_adult(false);
+        assert_eq!(store.favorites("src", ContentKind::Live).unwrap().len(), 1);
     }
 
     #[test]

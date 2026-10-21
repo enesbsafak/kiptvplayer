@@ -404,6 +404,38 @@ pub struct Reminder {
     pub title: String,
 }
 
+/// Parental lock state: a PIN exists, and adult content is hidden now.
+#[derive(Debug, Clone)]
+pub struct Parental {
+    pub pin_set: bool,
+    pub locked: bool,
+}
+
+pub fn parental() -> Result<Parental> {
+    let s = core()?.parental()?;
+    Ok(Parental { pin_set: s.pin_set, locked: s.locked })
+}
+
+/// Sets, changes (with the current PIN) or removes (new = None) the PIN.
+pub fn set_parental_pin(current: Option<String>, new: Option<String>) -> Result<Parental> {
+    let s = core()?.set_parental_pin(current.as_deref(), new.as_deref())?;
+    Ok(Parental { pin_set: s.pin_set, locked: s.locked })
+}
+
+/// False on a wrong PIN; an error while too many tries make it wait.
+pub fn unlock_adult(pin: String) -> Result<bool> {
+    Ok(core()?.unlock_adult(&pin)?)
+}
+
+pub fn lock_adult() -> Result<()> {
+    Ok(core()?.lock_adult()?)
+}
+
+/// How many adult categories the lock hides in this kind.
+pub fn locked_categories(source_id: String, kind: Kind) -> Result<u32> {
+    Ok(core()?.locked_categories(&source_id, kind.into())?)
+}
+
 /// An app preference (stored with the library); None when unset.
 pub fn app_setting(key: String) -> Result<Option<String>> {
     Ok(core()?.app_setting(&key)?)

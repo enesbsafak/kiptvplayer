@@ -151,6 +151,15 @@ pub struct Core {
     /// Portal sessions by source id: a handshake per channel change would
     /// cost a round trip every zap.
     portals: Mutex<HashMap<String, std::sync::Arc<crate::stalker::StalkerClient>>>,
+    /// Wrong PIN guesses, to slow them down.
+    pin_guard: Mutex<crate::parental::Guard>,
+}
+
+/// Whether a parental PIN exists and whether adult content is hidden now.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ParentalState {
+    pub pin_set: bool,
+    pub locked: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -172,7 +181,14 @@ impl Core {
     pub fn open(db_path: impl AsRef<Path>, secrets: Box<dyn SecretStore>) -> Result<Self> {
         let db_path = db_path.as_ref();
         let dir = db_path.parent().map(Path::to_path_buf).unwrap_or_else(|| PathBuf::from("."));
-        Ok(Core { store: Mutex::new(Store::open(db_path)?), secrets, dir, guides: Mutex::default(), portals: Mutex::default() })
+        Self::with(Store::open(db_path)?, secrets, dir)
+    }
+
+    /// Starts locked when a PIN is set: every launch asks again.
+    fn with(mut store: Store, secrets: Box<dyn SecretStore>, dir: PathBuf) -> Result<Self> {
+        let pin_set = store.setting(crate::parental::SETTING)?.is_some_and(|s| !s.is_empty());
+        store.set_hide_adult(pin_set);
+        Ok(Core { store: Mutex::new(store), secrets, dir, guides: Mutex::default(), portals: Mutex::default(), pin_guard: Mutex::default() })
     }
 
     /// Tests: the library in memory, guides in a fresh temp folder.
@@ -180,7 +196,7 @@ impl Core {
         let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
         let dir = std::env::temp_dir().join(format!("kp-core-{}-{nanos}", std::process::id()));
         std::fs::create_dir_all(&dir).map_err(|e| msg(e.to_string()))?;
-        Ok(Core { store: Mutex::new(Store::open_in_memory()?), secrets, dir, guides: Mutex::default(), portals: Mutex::default() })
+        Self::with(Store::open_in_memory()?, secrets, dir)
     }
 
     fn store(&self) -> std::sync::MutexGuard<'_, Store> {
@@ -687,6 +703,75 @@ impl Core {
     }
 
     /// The app language the user chose; None follows the system.
+    // ---- parental lock ---------------------------------------------------
+
+    pub fn parental(&self) -> Result<ParentalState> {
+        let store = self.store();
+        let pin_set = store.setting(crate::parental::SETTING)?.is_some_and(|s| !s.is_empty());
+        Ok(ParentalState { pin_set, locked: store.hides_adult() })
+    }
+
+    /// Sets, changes ([current] must match) or with None removes the PIN.
+    /// A new PIN locks at once; removing it shows everything.
+    pub fn set_parental_pin(&self, current: Option<&str>, new: Option<&str>) -> Result<ParentalState> {
+        let stored = self.store().setting(crate::parental::SETTING)?.filter(|s| !s.is_empty());
+        if let Some(stored) = &stored {
+            if !self.check_pin(stored, current.unwrap_or(""))? {
+                return Err(msg(t("PIN yanlış", "Wrong PIN")));
+            }
+        }
+        match new {
+            Some(pin) if !crate::parental::valid(pin) => return Err(msg(t("PIN 4-6 rakam olmalı", "The PIN must be 4-6 digits"))),
+            Some(pin) => {
+                let mut store = self.store();
+                store.set_setting(crate::parental::SETTING, &crate::parental::seal(pin))?;
+                store.set_hide_adult(true);
+            }
+            None => {
+                let mut store = self.store();
+                store.set_setting(crate::parental::SETTING, "")?;
+                store.set_hide_adult(false);
+            }
+        }
+        self.parental()
+    }
+
+    /// Shows adult content until [lock_adult] or the next launch; false on a wrong PIN.
+    pub fn unlock_adult(&self, pin: &str) -> Result<bool> {
+        let Some(stored) = self.store().setting(crate::parental::SETTING)?.filter(|s| !s.is_empty()) else { return Ok(true) };
+        let ok = self.check_pin(&stored, pin)?;
+        if ok {
+            self.store().set_hide_adult(false);
+        }
+        Ok(ok)
+    }
+
+    pub fn lock_adult(&self) -> Result<()> {
+        let pin_set = self.parental()?.pin_set;
+        self.store().set_hide_adult(pin_set);
+        Ok(())
+    }
+
+    /// Adult categories of a kind hidden by the lock right now.
+    pub fn locked_categories(&self, source_id: &str, kind: ContentKind) -> Result<u32> {
+        let store = self.store();
+        if !store.hides_adult() {
+            return Ok(0);
+        }
+        Ok(store.adult_category_count(source_id, kind)?)
+    }
+
+    fn check_pin(&self, stored: &str, pin: &str) -> Result<bool> {
+        let now = std::time::Instant::now();
+        let mut guard = self.pin_guard.lock().unwrap_or_else(|p| p.into_inner());
+        if let Some(secs) = guard.wait(now) {
+            return Err(msg(format!("{} ({secs} sn)", t("Çok fazla deneme; biraz bekleyin", "Too many tries; please wait"))));
+        }
+        let ok = crate::parental::matches(stored, pin);
+        guard.record(ok, now);
+        Ok(ok)
+    }
+
     /// The app's own preferences (timeshift size, ...), under "app." so
     /// they never meet the core's keys. Empty reads as unset.
     pub fn app_setting(&self, key: &str) -> Result<Option<String>> {
@@ -1068,6 +1153,24 @@ fn strip_query(message: &str) -> String {
 mod tests {
     use super::*;
     use crate::secret::MemorySecrets;
+
+    #[test]
+    fn the_pin_locks_unlocks_and_changes_only_with_itself() {
+        let core = Core::open_in_memory(Box::new(MemorySecrets::default())).unwrap();
+        assert_eq!(core.parental().unwrap(), ParentalState { pin_set: false, locked: false });
+        assert!(core.set_parental_pin(None, Some("12")).is_err(), "too short");
+        assert_eq!(core.set_parental_pin(None, Some("1234")).unwrap(), ParentalState { pin_set: true, locked: true });
+
+        assert!(!core.unlock_adult("0000").unwrap());
+        assert!(core.parental().unwrap().locked);
+        assert!(core.unlock_adult("1234").unwrap());
+        assert!(!core.parental().unwrap().locked);
+        core.lock_adult().unwrap();
+        assert!(core.parental().unwrap().locked);
+
+        assert!(core.set_parental_pin(Some("9999"), None).is_err(), "removing needs the PIN");
+        assert_eq!(core.set_parental_pin(Some("1234"), None).unwrap(), ParentalState { pin_set: false, locked: false });
+    }
 
     #[test]
     fn checking_a_file_source_finds_the_file_or_not() {

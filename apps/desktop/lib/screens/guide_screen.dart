@@ -13,6 +13,7 @@ import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
+import 'parental.dart';
 
 /// EPG grid: sticky channel column, time ruler, programme tiles, now line.
 /// Going back in time shows catch-up channels' archive; those tiles replay.
@@ -179,6 +180,7 @@ class _GuideScreenState extends State<GuideScreen> {
                       _select(id);
                     },
                     entries: [for (final c in _categories) KdRailEntry(id: c.uid, name: c.name, count: c.count)],
+                    footer: const LockedCategoriesRow(kind: Kind.live),
                   ),
                 ),
               ],

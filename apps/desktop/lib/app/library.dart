@@ -12,6 +12,7 @@ export '../src/rust/api/library.dart'
         ItemDetail,
         Kind,
         NewSourceInput,
+        Parental,
         Playback,
         Programme,
         RegionCount,
@@ -48,6 +49,13 @@ abstract interface class LibraryApi {
   /// Downloads an M3U source's XMLTV guide again; the result's `guide`
   /// tells how it went.
   Future<rust.SourceInfo> refreshGuide(String sourceId);
+
+  /// Parental lock (PIN) state, and its changes.
+  Future<rust.Parental> parental();
+  Future<rust.Parental> setParentalPin({String? current, String? pin});
+  Future<bool> unlockAdult(String pin);
+  Future<void> lockAdult();
+  Future<int> lockedCategories(String sourceId, rust.Kind kind);
 
   /// App preferences stored with the library (null when unset).
   Future<String?> appSetting(String key);
@@ -129,6 +137,16 @@ class RustLibrary implements LibraryApi {
   Future<rust.SourceHealth> checkSource(String sourceId) => rust.checkSource(sourceId: sourceId);
   @override
   Future<List<rust.Reminder>> reminders(String sourceId) => rust.reminders(sourceId: sourceId);
+  @override
+  Future<rust.Parental> parental() => rust.parental();
+  @override
+  Future<rust.Parental> setParentalPin({String? current, String? pin}) => rust.setParentalPin(current: current, new_: pin);
+  @override
+  Future<bool> unlockAdult(String pin) => rust.unlockAdult(pin: pin);
+  @override
+  Future<void> lockAdult() => rust.lockAdult();
+  @override
+  Future<int> lockedCategories(String sourceId, rust.Kind kind) => rust.lockedCategories(sourceId: sourceId, kind: kind);
   @override
   Future<String?> appSetting(String key) => rust.appSetting(key: key);
   @override

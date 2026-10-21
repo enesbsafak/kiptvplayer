@@ -13,6 +13,7 @@ import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
+import '../screens/parental.dart';
 
 /// The app's navigator: dialogs opened from outside the widget tree
 /// (screen captures).
@@ -160,6 +161,17 @@ class _CommandPaletteState extends State<CommandPalette> {
         keywords: 'dil language',
         run: () => app.setLanguage(languageCode == 'tr' ? 'en' : 'tr'),
       ),
+      if (app.parental.pinSet)
+        app.parental.locked
+            ? PaletteEntry(
+                icon: LucideIcons.lockOpen,
+                label: l10n.pinUnlock,
+                detail: l10n.pinTitle,
+                keywords: 'yetişkin ebeveyn pin adult parental',
+                // The palette is closed by now: ask from the app's navigator.
+                run: () => askPinToUnlock(rootNavigator.currentContext!),
+              )
+            : PaletteEntry(icon: LucideIcons.lock, label: l10n.pinLockNow, detail: l10n.pinTitle, keywords: 'yetişkin ebeveyn pin adult parental', run: app.lockAdult),
       PaletteEntry(icon: LucideIcons.keyboard, label: l10n.setShortcuts, keywords: 'klavye keyboard', run: () => app.openSettings('shortcuts')),
       PaletteEntry(icon: LucideIcons.refreshCw, label: l10n.paletteUpdates, keywords: 'güncelle update', run: () => app.openSettings('about')),
       PaletteEntry(icon: LucideIcons.circlePlus, label: l10n.paletteAddSource, keywords: 'kaynak ekle add source', run: () => app.openSettings('sources')),

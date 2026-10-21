@@ -109,6 +109,13 @@ class Automation {
       }
     }
 
+    // Parental lock through the real core: adult categories leave the rail
+    // and a "locked categories" row takes their place.
+    await app.setPin(pin: '2580');
+    app.go(Section.live);
+    await shot('live-locked', wait: const Duration(milliseconds: 1500));
+    await app.setPin(current: '2580', pin: null);
+
     // Live preview, then the full player with its OSD.
     app.go(Section.live);
     await Future<void>.delayed(const Duration(milliseconds: 800));

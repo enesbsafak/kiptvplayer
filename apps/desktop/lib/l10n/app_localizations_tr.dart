@@ -1132,4 +1132,75 @@ class AppLocalizationsTr extends AppLocalizations {
   String prefTimeshiftMinutes(int n) {
     return '≈$n dk';
   }
+
+  @override
+  String get pinTitle => 'Ebeveyn kilidi';
+
+  @override
+  String get pinBodyOff =>
+      'Bir PIN belirlediğinizde yetişkin kategorileri ve içerikleri listelerden, aramadan ve ana sayfadan gizlenir; PIN girilince görünür. Uygulama her açılışta yeniden kilitlenir.';
+
+  @override
+  String get pinBodyLocked => 'Kilitli: yetişkin içerik gizli.';
+
+  @override
+  String get pinBodyOpen =>
+      'Kilit açık: yetişkin içerik görünüyor. Uygulama kapanınca yeniden kilitlenir.';
+
+  @override
+  String get pinSet => 'PIN belirle';
+
+  @override
+  String get pinUnlock => 'Kilidi aç';
+
+  @override
+  String get pinLockNow => 'Şimdi kilitle';
+
+  @override
+  String get pinChange => 'PIN\'i değiştir';
+
+  @override
+  String get pinRemove => 'PIN\'i kaldır';
+
+  @override
+  String get pinOk => 'Tamam';
+
+  @override
+  String get pinUnlockTitle => 'Ebeveyn kilidi';
+
+  @override
+  String get pinUnlockBody => 'Yetişkin içeriği göstermek için PIN\'i girin.';
+
+  @override
+  String get pinCurrentTitle => 'Mevcut PIN';
+
+  @override
+  String get pinCurrentBody => 'Devam etmek için mevcut PIN\'i girin.';
+
+  @override
+  String get pinNewTitle => 'Yeni PIN';
+
+  @override
+  String get pinNewBody => '4-6 rakamlı bir PIN seçin.';
+
+  @override
+  String get pinRepeatTitle => 'PIN\'i tekrarlayın';
+
+  @override
+  String get pinRepeatBody => 'Aynı PIN\'i bir kez daha girin.';
+
+  @override
+  String get pinRemoveTitle => 'PIN\'i kaldır';
+
+  @override
+  String get pinWrong => 'PIN yanlış';
+
+  @override
+  String get pinMismatch => 'PIN\'ler aynı değil';
+
+  @override
+  String get pinTooShort => 'En az 4 rakam';
+
+  @override
+  String get pinLockedCategories => 'Kilitli kategoriler';
 }

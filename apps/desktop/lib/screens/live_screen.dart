@@ -13,6 +13,7 @@ import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
 import '../player/reconnect_banner.dart';
+import 'parental.dart';
 
 /// Live TV: categories · channel list · preview with now/next.
 /// Click previews in place, double-click or Enter goes full screen,
@@ -195,6 +196,7 @@ class _LiveScreenState extends State<LiveScreen> {
       title: l10n.liveCategories,
       selected: _category,
       onSelect: _selectCategory,
+      footer: const LockedCategoriesRow(kind: Kind.live),
       entries: [
         KdRailEntry(id: _all, name: l10n.liveAllChannels, count: total, icon: LucideIcons.tv, pinned: true),
         KdRailEntry(id: _favorites, name: l10n.navFavorites, count: _favoriteItems.length, icon: LucideIcons.star, pinned: true),

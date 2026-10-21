@@ -34,6 +34,7 @@ class KdCategoryRail extends StatefulWidget {
     required this.onSelect,
     this.filterFrom = 12,
     this.autofocusFilter = false,
+    this.footer,
   });
 
   final String title;
@@ -44,6 +45,9 @@ class KdCategoryRail extends StatefulWidget {
   /// Category count from which the filter box appears.
   final int filterFrom;
   final bool autofocusFilter;
+
+  /// Below the categories (the parental lock's "locked categories" row).
+  final Widget? footer;
 
   @override
   State<KdCategoryRail> createState() => _KdCategoryRailState();
@@ -99,6 +103,7 @@ class _KdCategoryRailState extends State<KdCategoryRail> {
                   padding: const EdgeInsets.all(14),
                   child: Text(l10n.railNoMatch, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small)),
                 ),
+              ?widget.footer,
             ],
           ),
         ),

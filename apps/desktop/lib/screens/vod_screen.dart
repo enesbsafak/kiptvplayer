@@ -12,6 +12,7 @@ import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
 import '../player/player_controller.dart';
+import 'parental.dart';
 
 /// Movies or series: category rail + poster grid, detail on click.
 
@@ -117,6 +118,7 @@ class _VodScreenState extends State<VodScreen> {
             title: l10n.liveCategories,
             selected: _category ?? _allCategories,
             onSelect: (id) => _select(id == _allCategories ? null : id),
+            footer: LockedCategoriesRow(kind: widget.kind),
             entries: [
               KdRailEntry(
                 id: _allCategories,

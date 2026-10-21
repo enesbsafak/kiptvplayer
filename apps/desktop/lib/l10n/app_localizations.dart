@@ -2107,6 +2107,144 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'≈{n} dk'**
   String prefTimeshiftMinutes(int n);
+
+  /// No description provided for @pinTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ebeveyn kilidi'**
+  String get pinTitle;
+
+  /// No description provided for @pinBodyOff.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bir PIN belirlediğinizde yetişkin kategorileri ve içerikleri listelerden, aramadan ve ana sayfadan gizlenir; PIN girilince görünür. Uygulama her açılışta yeniden kilitlenir.'**
+  String get pinBodyOff;
+
+  /// No description provided for @pinBodyLocked.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kilitli: yetişkin içerik gizli.'**
+  String get pinBodyLocked;
+
+  /// No description provided for @pinBodyOpen.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kilit açık: yetişkin içerik görünüyor. Uygulama kapanınca yeniden kilitlenir.'**
+  String get pinBodyOpen;
+
+  /// No description provided for @pinSet.
+  ///
+  /// In tr, this message translates to:
+  /// **'PIN belirle'**
+  String get pinSet;
+
+  /// No description provided for @pinUnlock.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kilidi aç'**
+  String get pinUnlock;
+
+  /// No description provided for @pinLockNow.
+  ///
+  /// In tr, this message translates to:
+  /// **'Şimdi kilitle'**
+  String get pinLockNow;
+
+  /// No description provided for @pinChange.
+  ///
+  /// In tr, this message translates to:
+  /// **'PIN\'i değiştir'**
+  String get pinChange;
+
+  /// No description provided for @pinRemove.
+  ///
+  /// In tr, this message translates to:
+  /// **'PIN\'i kaldır'**
+  String get pinRemove;
+
+  /// No description provided for @pinOk.
+  ///
+  /// In tr, this message translates to:
+  /// **'Tamam'**
+  String get pinOk;
+
+  /// No description provided for @pinUnlockTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ebeveyn kilidi'**
+  String get pinUnlockTitle;
+
+  /// No description provided for @pinUnlockBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yetişkin içeriği göstermek için PIN\'i girin.'**
+  String get pinUnlockBody;
+
+  /// No description provided for @pinCurrentTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Mevcut PIN'**
+  String get pinCurrentTitle;
+
+  /// No description provided for @pinCurrentBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Devam etmek için mevcut PIN\'i girin.'**
+  String get pinCurrentBody;
+
+  /// No description provided for @pinNewTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yeni PIN'**
+  String get pinNewTitle;
+
+  /// No description provided for @pinNewBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'4-6 rakamlı bir PIN seçin.'**
+  String get pinNewBody;
+
+  /// No description provided for @pinRepeatTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'PIN\'i tekrarlayın'**
+  String get pinRepeatTitle;
+
+  /// No description provided for @pinRepeatBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aynı PIN\'i bir kez daha girin.'**
+  String get pinRepeatBody;
+
+  /// No description provided for @pinRemoveTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'PIN\'i kaldır'**
+  String get pinRemoveTitle;
+
+  /// No description provided for @pinWrong.
+  ///
+  /// In tr, this message translates to:
+  /// **'PIN yanlış'**
+  String get pinWrong;
+
+  /// No description provided for @pinMismatch.
+  ///
+  /// In tr, this message translates to:
+  /// **'PIN\'ler aynı değil'**
+  String get pinMismatch;
+
+  /// No description provided for @pinTooShort.
+  ///
+  /// In tr, this message translates to:
+  /// **'En az 4 rakam'**
+  String get pinTooShort;
+
+  /// No description provided for @pinLockedCategories.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kilitli kategoriler'**
+  String get pinLockedCategories;
 }
 
 class _AppLocalizationsDelegate

@@ -177,6 +177,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   UpdateInfo? dco_decode_opt_box_autoadd_update_info(dynamic raw);
 
   @protected
+  Parental dco_decode_parental(dynamic raw);
+
+  @protected
   Playback dco_decode_playback(dynamic raw);
 
   @protected
@@ -403,6 +406,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   UpdateInfo? sse_decode_opt_box_autoadd_update_info(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Parental sse_decode_parental(SseDeserializer deserializer);
 
   @protected
   Playback sse_decode_playback(SseDeserializer deserializer);
@@ -687,6 +693,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     UpdateInfo? self,
     SseSerializer serializer,
   );
+
+  @protected
+  void sse_encode_parental(Parental self, SseSerializer serializer);
 
   @protected
   void sse_encode_playback(Playback self, SseSerializer serializer);
