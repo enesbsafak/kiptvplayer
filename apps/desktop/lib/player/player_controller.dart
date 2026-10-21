@@ -189,6 +189,7 @@ class PlayerController extends ChangeNotifier {
         p.url,
         headers: headers,
         start: resume == null ? null : Duration(milliseconds: resume),
+        live: kind == Kind.live && programme == null,
       );
       if (token != _openToken) return;
       await _applyAdjustments(newStream: !retry);
@@ -404,7 +405,41 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> togglePause() => engine.togglePause();
 
+  /// Megabytes of local timeshift buffer for live channels; 0 = off.
+  int timeshiftMb = 0;
+  String? _timeshiftDir;
+
+  /// The default: about half an hour of a typical HD channel behind live.
+  static const defaultTimeshiftMb = 2048;
+
+  void configureTimeshift(int megabytes, {String? dir}) {
+    timeshiftMb = megabytes;
+    _timeshiftDir = dir ?? _timeshiftDir;
+    engine.setTimeshift(megabytes, dir: _timeshiftDir);
+    notifyListeners();
+  }
+
+  /// Live TV that can pause and rewind on its own buffer.
+  bool get canTimeshift => timeshiftMb > 0 && (now?.isLive ?? false);
+
+  /// Within the buffer, never past the live edge (kept a second back).
+  Future<void> _seekLive(Duration to) async {
+    final range = await engine.seekableRange();
+    if (range == null) return;
+    final (start, end) = range;
+    final edge = end - const Duration(seconds: 1);
+    await engine.seek(to < start ? start : (to > edge ? edge : to));
+  }
+
+  /// Back to the live edge of the buffer, playing.
+  Future<void> goLive() async {
+    final range = await engine.seekableRange();
+    if (range != null) await engine.seek(range.$2 - const Duration(seconds: 1));
+    if (!playing) await engine.togglePause();
+  }
+
   Future<void> seekBy(Duration d) async {
+    if (canTimeshift) return _seekLive(position.value + d);
     if (now?.isLive ?? true) return;
     var to = position.value + d;
     if (to < Duration.zero) to = Duration.zero;
@@ -412,7 +447,7 @@ class PlayerController extends ChangeNotifier {
     await engine.seek(to);
   }
 
-  Future<void> seekTo(Duration d) => engine.seek(d);
+  Future<void> seekTo(Duration d) => canTimeshift ? _seekLive(d) : engine.seek(d);
 
   Future<void> setVolume(double v) async {
     volume = v.clamp(0, 100);

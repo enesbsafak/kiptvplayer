@@ -687,6 +687,16 @@ impl Core {
     }
 
     /// The app language the user chose; None follows the system.
+    /// The app's own preferences (timeshift size, ...), under "app." so
+    /// they never meet the core's keys. Empty reads as unset.
+    pub fn app_setting(&self, key: &str) -> Result<Option<String>> {
+        Ok(self.store().setting(&format!("app.{key}"))?.filter(|v| !v.is_empty()))
+    }
+
+    pub fn set_app_setting(&self, key: &str, value: Option<&str>) -> Result<()> {
+        Ok(self.store().set_setting(&format!("app.{key}"), value.unwrap_or(""))?)
+    }
+
     pub fn ui_language(&self) -> Result<Option<String>> {
         Ok(self.store().setting("ui_language")?.filter(|l| !l.is_empty()))
     }

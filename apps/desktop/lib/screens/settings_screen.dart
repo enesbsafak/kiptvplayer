@@ -515,12 +515,57 @@ class _PreferencesTabState extends State<_PreferencesTab> {
         const SizedBox(height: 28),
         const Divider(height: 1, color: KdColors.line),
         const SizedBox(height: 22),
+        const _TimeshiftSection(),
+        const SizedBox(height: 28),
+        const Divider(height: 1, color: KdColors.line),
+        const SizedBox(height: 22),
         const TmdbSettings(),
         const SizedBox(height: 28),
         const Divider(height: 1, color: KdColors.line),
         const SizedBox(height: 22),
         const _HistorySection(),
       ],
+    );
+  }
+}
+
+/// Local timeshift size: how much of a live channel is kept on disk to
+/// pause and rewind.
+class _TimeshiftSection extends StatelessWidget {
+  const _TimeshiftSection();
+
+  static const _sizes = [0, 1024, 2048, 4096, 8192];
+
+  @override
+  Widget build(BuildContext context) {
+    final player = context.player;
+    return ListenableBuilder(
+      listenable: player,
+      builder: (context, _) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.prefTimeshift, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(l10n.prefTimeshiftBody, style: const TextStyle(color: KdColors.muted, height: 1.5)),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final mb in _sizes)
+                KdPill(
+                  label: mb == 0 ? l10n.prefOff : '${mb ~/ 1024} GB',
+                  trailing: mb == 0 ? null : l10n.prefTimeshiftMinutes(mb * 8 ~/ 2 ~/ 5 ~/ 60),
+                  selected: player.timeshiftMb == mb,
+                  onTap: () {
+                    player.configureTimeshift(mb);
+                    context.library.setAppSetting('timeshift_mb', '$mb');
+                  },
+                ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

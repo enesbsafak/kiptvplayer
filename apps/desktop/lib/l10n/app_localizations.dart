@@ -2083,6 +2083,30 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Kaynak ekle veya düzenle'**
   String get paletteAddSource;
+
+  /// No description provided for @timeshiftGoLive.
+  ///
+  /// In tr, this message translates to:
+  /// **'Canlıya dön'**
+  String get timeshiftGoLive;
+
+  /// No description provided for @prefTimeshift.
+  ///
+  /// In tr, this message translates to:
+  /// **'Canlı yayını durdurma ve geri sarma'**
+  String get prefTimeshift;
+
+  /// No description provided for @prefTimeshiftBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Sağlayıcı arşiv sunmasa da canlı kanalı durdurup geri sarabilmeniz için son dakikalar diskte geçici bir dosyada tutulur; kanal değişince ve uygulama kapanınca silinir. Süre, yayının bit hızına göre değişir (5 Mbit/s HD için tahmin).'**
+  String get prefTimeshiftBody;
+
+  /// No description provided for @prefTimeshiftMinutes.
+  ///
+  /// In tr, this message translates to:
+  /// **'≈{n} dk'**
+  String prefTimeshiftMinutes(int n);
 }
 
 class _AppLocalizationsDelegate

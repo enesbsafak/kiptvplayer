@@ -81,6 +81,13 @@ class FakeLibrary implements LibraryApi {
   GuideInfo? nextGuide;
   final List<String> guideRefreshes = [];
 
+  final appSettings = <String, String>{};
+  @override
+  Future<String?> appSetting(String key) async => appSettings[key];
+  @override
+  Future<void> setAppSetting(String key, String? value) async =>
+      value == null ? appSettings.remove(key) : appSettings[key] = value;
+
   List<Reminder> reminderList = [];
   @override
   Future<List<Reminder>> reminders(String sourceId) async => [...reminderList]..sort((a, b) => a.start.compareTo(b.start));
@@ -285,8 +292,9 @@ class FakeEngine implements PlayerEngine {
   Stream<int?> get videoHeight => const Stream.empty();
 
   @override
-  Future<Duration> open(String url, {Map<String, String> headers = const {}, Duration? start}) async {
+  Future<Duration> open(String url, {Map<String, String> headers = const {}, Duration? start, bool live = false}) async {
     opened.add(url);
+    openedLive.add(live);
     if (failNextOpens > 0) {
       failNextOpens--;
       throw TimeoutException('no picture');
@@ -300,7 +308,15 @@ class FakeEngine implements PlayerEngine {
   @override
   Future<void> togglePause() async => toggles++;
   @override
-  Future<void> seek(Duration to) async {}
+  Future<void> seek(Duration to) async => seeks.add(to);
+  final seeks = <Duration>[];
+  final openedLive = <bool>[];
+  int timeshiftMb = 0;
+  (Duration, Duration)? range;
+  @override
+  void setTimeshift(int megabytes, {String? dir}) => timeshiftMb = megabytes;
+  @override
+  Future<(Duration, Duration)?> seekableRange() async => range;
   @override
   Future<void> setVolume(double percent) async {}
   @override

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:ui' show PlatformDispatcher;
 
@@ -33,7 +34,17 @@ abstract interface class PlayerEngine {
     String url, {
     Map<String, String> headers,
     Duration? start,
+    bool live,
   });
+
+  /// Local timeshift for live TV: a disk buffer of [megabytes] in [dir]
+  /// (half ahead, half behind), so live channels pause and rewind without
+  /// a provider archive. 0 switches it off. Applies from the next open.
+  void setTimeshift(int megabytes, {String? dir});
+
+  /// The stretch of the current stream that can be sought to (the cache),
+  /// in the position's time base; null when there is none.
+  Future<(Duration, Duration)?> seekableRange();
   Future<void> stop();
   Future<void> togglePause();
   Future<void> seek(Duration to);
@@ -178,14 +189,71 @@ class MediaKitEngine implements PlayerEngine {
 
   Completer<void>? _firstFrame;
 
+  int _timeshiftMb = 0;
+  String? _timeshiftDir;
+  String? _cacheProfile;
+
+  @override
+  void setTimeshift(int megabytes, {String? dir}) {
+    _timeshiftMb = megabytes;
+    _timeshiftDir = dir;
+  }
+
+  /// Live channels with timeshift buffer on disk and keep reading while
+  /// paused (until the buffer is full); everything else keeps the small
+  /// in-memory cache, so films never pull a gigabyte ahead.
+  Future<void> _applyCacheProfile({required bool timeshift}) async {
+    final profile = timeshift ? 'ts$_timeshiftMb' : 'plain';
+    if (profile == _cacheProfile) return;
+    _cacheProfile = profile;
+    final half = '${_timeshiftMb ~/ 2}MiB';
+    final options = timeshift
+        ? {
+            'cache-on-disk': 'yes',
+            'cache-dir': ?_timeshiftDir,
+            'demuxer-max-bytes': half,
+            'demuxer-max-back-bytes': half,
+            'cache-secs': '86400',
+            // Live streams are not seekable by themselves; within the cache they are.
+            'force-seekable': 'yes',
+          }
+        : {
+            'cache-on-disk': 'no',
+            'demuxer-max-bytes': _liveOptions['demuxer-max-bytes']!,
+            'demuxer-max-back-bytes': _liveOptions['demuxer-max-back-bytes']!,
+            'cache-secs': _liveOptions['cache-secs']!,
+            'force-seekable': 'no',
+          };
+    for (final e in options.entries) {
+      await _set(e.key, e.value);
+    }
+  }
+
+  @override
+  Future<(Duration, Duration)?> seekableRange() async {
+    final raw = await _native.getProperty('demuxer-cache-state').catchError((_) => '');
+    try {
+      final ranges = (jsonDecode(raw) as Map<String, dynamic>)['seekable-ranges'] as List<dynamic>? ?? const [];
+      if (ranges.isEmpty) return null;
+      // The range being played is the newest one (live only grows forward).
+      final last = ranges.cast<Map<String, dynamic>>().reduce((a, b) => (a['end'] as num) >= (b['end'] as num) ? a : b);
+      Duration at(Object? v) => Duration(milliseconds: ((v as num) * 1000).round());
+      return (at(last['start']), at(last['end']));
+    } on Object {
+      return null;
+    }
+  }
+
   @override
   Future<Duration> open(
     String url, {
     Map<String, String> headers = const {},
     Duration? start,
+    bool live = false,
   }) async {
     final sw = Stopwatch()..start();
     await ready;
+    await _applyCacheProfile(timeshift: live && _timeshiftMb > 0);
     // A zap before the previous stream showed a frame releases its waiter.
     final previous = _firstFrame;
     if (previous != null && !previous.isCompleted) previous.complete();

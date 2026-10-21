@@ -1117,4 +1117,19 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get paletteAddSource => 'Kaynak ekle veya düzenle';
+
+  @override
+  String get timeshiftGoLive => 'Canlıya dön';
+
+  @override
+  String get prefTimeshift => 'Canlı yayını durdurma ve geri sarma';
+
+  @override
+  String get prefTimeshiftBody =>
+      'Sağlayıcı arşiv sunmasa da canlı kanalı durdurup geri sarabilmeniz için son dakikalar diskte geçici bir dosyada tutulur; kanal değişince ve uygulama kapanınca silinir. Süre, yayının bit hızına göre değişir (5 Mbit/s HD için tahmin).';
+
+  @override
+  String prefTimeshiftMinutes(int n) {
+    return '≈$n dk';
+  }
 }

@@ -64,6 +64,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _player?.engine.setSubtitlePosition(100);
     _player?.tracksPanelRequest.removeListener(_openTracksOnRequest);
     _player?.statsPanelRequest.removeListener(_openStatsOnRequest);
+    _player?.removeListener(_onPlayer);
     super.dispose();
   }
 
@@ -75,7 +76,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (_player == null) {
       _player = context.player
         ..tracksPanelRequest.addListener(_openTracksOnRequest)
-        ..statsPanelRequest.addListener(_openStatsOnRequest);
+        ..statsPanelRequest.addListener(_openStatsOnRequest)
+        ..addListener(_onPlayer);
+      _wasPlaying = _player!.playing;
       _openTracksOnRequest();
       _openStatsOnRequest();
     }
@@ -87,6 +90,14 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (request == null || !request.value) return;
     request.value = false;
     if (_panel != _Panel.tracks) _togglePanel(_Panel.tracks);
+  }
+
+  /// A pause from anywhere (key, click, media keys) brings the controls up.
+  bool _wasPlaying = true;
+  void _onPlayer() {
+    final playing = _player?.playing ?? true;
+    if (_wasPlaying && !playing && mounted) _poke();
+    _wasPlaying = playing;
   }
 
   void _openStatsOnRequest() {
@@ -117,8 +128,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
   void _poke() {
     _hide?.cancel();
     _setOsd(true);
+    // Paused, the controls stay: where it stopped, how far behind live.
     _hide = Timer(const Duration(seconds: 3), () {
-      if (mounted && _panel == _Panel.none) _setOsd(false);
+      if (mounted && _panel == _Panel.none && (_player?.playing ?? true)) _setOsd(false);
     });
   }
 
@@ -176,9 +188,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
       p.zap(-1);
     } else if (live && k == LogicalKeyboardKey.arrowDown) {
       p.zap(1);
-    } else if (!live && k == LogicalKeyboardKey.arrowLeft) {
+    } else if ((!live || p.canTimeshift) && k == LogicalKeyboardKey.arrowLeft) {
       p.seekBy(const Duration(seconds: -10));
-    } else if (!live && k == LogicalKeyboardKey.arrowRight) {
+    } else if ((!live || p.canTimeshift) && k == LogicalKeyboardKey.arrowRight) {
       p.seekBy(const Duration(seconds: 10));
     } else if (k == LogicalKeyboardKey.arrowUp) {
       p.setVolume(p.volume + 5);
@@ -413,6 +425,7 @@ class _BottomBar extends StatelessWidget {
             )
           else
             _SeekBar(player: player),
+          if (player.canTimeshift) _TimeshiftBar(player: player),
           Row(
             children: [
               Expanded(child: _NowInfo(player: player)),
@@ -500,6 +513,110 @@ class _NowInfo extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Live TV on the local buffer: how far behind live, the buffered stretch
+/// to scrub in, and the way back to live.
+class _TimeshiftBar extends StatefulWidget {
+  const _TimeshiftBar({required this.player});
+
+  final PlayerController player;
+
+  @override
+  State<_TimeshiftBar> createState() => _TimeshiftBarState();
+}
+
+class _TimeshiftBarState extends State<_TimeshiftBar> {
+  Timer? _timer;
+  (Duration, Duration)? _range;
+  double? _drag;
+
+  @override
+  void initState() {
+    super.initState();
+    _read();
+    // The buffer's ends move every second; only while the controls show.
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _read());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _read() async {
+    final r = await widget.player.engine.seekableRange();
+    if (mounted) setState(() => _range = r);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.player;
+    final range = _range;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: ValueListenableBuilder<Duration>(
+        valueListenable: p.position,
+        builder: (context, pos, _) {
+          final (start, end) = range ?? (pos, pos);
+          final span = (end - start).inMilliseconds;
+          final behind = end - pos;
+          final atLive = behind < const Duration(seconds: 4) && p.playing;
+          final value = _drag ?? (span > 0 ? (pos - start).inMilliseconds / span : 1.0);
+          return Row(
+            children: [
+              SizedBox(
+                width: 64,
+                child: Text(
+                  atLive ? l10n.tagLive : '−${_fmt(behind)}',
+                  style: TextStyle(
+                    fontSize: KdType.chip,
+                    color: atLive ? KdColors.accent : KdColors.muted,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, c) {
+                    void at(double dx) => setState(() => _drag = (dx / c.maxWidth).clamp(0, 1));
+                    void commit() {
+                      final v = _drag;
+                      if (v != null && span > 0) p.seekTo(start + Duration(milliseconds: (v * span).round()));
+                      setState(() => _drag = null);
+                    }
+
+                    return GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTapDown: (d) => at(d.localPosition.dx),
+                      onTapUp: (_) => commit(),
+                      onHorizontalDragUpdate: (d) => at(d.localPosition.dx),
+                      onHorizontalDragEnd: (_) => commit(),
+                      child: SizedBox(height: 16, child: Center(child: KdProgress(value: value.toDouble(), height: 3))),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              KdButton(
+                label: l10n.timeshiftGoLive,
+                icon: LucideIcons.radio,
+                kind: atLive ? KdButtonKind.ghost : KdButtonKind.cta,
+                onPressed: atLive ? null : p.goLive,
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  static String _fmt(Duration d) {
+    final m = d.inMinutes.toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
   }
 }
 

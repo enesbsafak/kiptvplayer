@@ -122,6 +122,21 @@ class Automation {
         await shot('live-preview', wait: const Duration(milliseconds: 2500));
         player.setView(PlayerView.full);
         await shot('player', wait: const Duration(milliseconds: 1200));
+        // Local timeshift on the live stream: pause, step back, capture.
+        if (player.canTimeshift) {
+          await Future<void>.delayed(const Duration(seconds: 6));
+          await player.togglePause();
+          await Future<void>.delayed(const Duration(seconds: 3));
+          await player.seekBy(const Duration(seconds: -5));
+          await Future<void>.delayed(const Duration(milliseconds: 1500));
+          final range = await player.engine.seekableRange();
+          await File('$dir${Platform.pathSeparator}timeshift.txt').writeAsString(
+            'range=${range?.$1.inMilliseconds}..${range?.$2.inMilliseconds} '
+            'position=${player.position.value.inMilliseconds} playing=${player.playing}',
+          );
+          await shot('player-timeshift', wait: const Duration(milliseconds: 300));
+          await player.goLive();
+        }
         // Statistics after a few samples, with the provider checked.
         player.statsPanelRequest.value = true;
         await shot('player-stats', wait: const Duration(milliseconds: 3500));

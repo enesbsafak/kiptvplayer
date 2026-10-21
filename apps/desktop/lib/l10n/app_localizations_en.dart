@@ -1140,4 +1140,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get paletteAddSource => 'Add or edit sources';
+
+  @override
+  String get timeshiftGoLive => 'Back to live';
+
+  @override
+  String get prefTimeshift => 'Pause and rewind live TV';
+
+  @override
+  String get prefTimeshiftBody =>
+      'So you can pause and rewind a live channel even when the provider keeps no archive, the last minutes are kept in a temporary file on disk; it is deleted when you change channel or close the app. How long depends on the stream bitrate (estimate for 5 Mbit/s HD).';
+
+  @override
+  String prefTimeshiftMinutes(int n) {
+    return '≈$n min';
+  }
 }

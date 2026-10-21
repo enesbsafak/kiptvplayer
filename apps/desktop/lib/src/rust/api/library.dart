@@ -99,6 +99,14 @@ Future<List<Item>> favorites({required String sourceId, required Kind kind}) =>
       kind: kind,
     );
 
+/// An app preference (stored with the library); None when unset.
+Future<String?> appSetting({required String key}) =>
+    RustLib.instance.api.crateApiLibraryAppSetting(key: key);
+
+/// Stores (or with None, clears) an app preference.
+Future<void> setAppSetting({required String key, String? value}) =>
+    RustLib.instance.api.crateApiLibrarySetAppSetting(key: key, value: value);
+
 /// Sets or clears a reminder for a programme of a live channel.
 Future<void> setReminder({
   required PlatformInt64 itemId,

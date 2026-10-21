@@ -77,6 +77,17 @@ Future<void> main(List<String> args) async {
     return;
   }
   final player = PlayerController(engine, library, perf);
+  // Timeshift files are deleted when mpv closes them; a crash can leave
+  // some behind, so the folder starts empty.
+  final timeshiftDir = Directory('$dataDir${Platform.pathSeparator}timeshift');
+  try {
+    if (timeshiftDir.existsSync()) timeshiftDir.deleteSync(recursive: true);
+    timeshiftDir.createSync(recursive: true);
+  } on FileSystemException catch (_) {}
+  player.configureTimeshift(
+    int.tryParse(await library.appSetting('timeshift_mb') ?? '') ?? PlayerController.defaultTimeshiftMb,
+    dir: timeshiftDir.path,
+  );
   final epg = EpgCache(library);
   final shutdown = Shutdown(player);
   await shutdown.install();

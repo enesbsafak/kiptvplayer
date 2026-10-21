@@ -144,7 +144,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Türkiye'), findsOneWidget);
-    await tester.tap(find.text('Kapalı'));
+    await tester.tap(find.text('Kapalı').first); // the region's, above the timeshift one
     await tester.pumpAndSettle();
     expect(lib.region, isNull);
     expect(h.state.region, isNull);

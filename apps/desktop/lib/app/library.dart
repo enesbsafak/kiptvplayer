@@ -49,6 +49,10 @@ abstract interface class LibraryApi {
   /// tells how it went.
   Future<rust.SourceInfo> refreshGuide(String sourceId);
 
+  /// App preferences stored with the library (null when unset).
+  Future<String?> appSetting(String key);
+  Future<void> setAppSetting(String key, String? value);
+
   /// Programme reminders not over yet, soonest first.
   Future<List<rust.Reminder>> reminders(String sourceId);
   Future<void> setReminder(int itemId, int start, int stop, String title, {required bool on});
@@ -125,6 +129,10 @@ class RustLibrary implements LibraryApi {
   Future<rust.SourceHealth> checkSource(String sourceId) => rust.checkSource(sourceId: sourceId);
   @override
   Future<List<rust.Reminder>> reminders(String sourceId) => rust.reminders(sourceId: sourceId);
+  @override
+  Future<String?> appSetting(String key) => rust.appSetting(key: key);
+  @override
+  Future<void> setAppSetting(String key, String? value) => rust.setAppSetting(key: key, value: value);
   @override
   Future<void> setReminder(int itemId, int start, int stop, String title, {required bool on}) =>
       rust.setReminder(itemId: itemId, start: start, stop: stop, title: title, on_: on);

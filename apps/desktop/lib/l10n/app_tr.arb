@@ -659,5 +659,16 @@
   },
   "paletteLanguage": "Arayüz dili",
   "paletteUpdates": "Güncellemeler ve sürüm",
-  "paletteAddSource": "Kaynak ekle veya düzenle"
+  "paletteAddSource": "Kaynak ekle veya düzenle",
+  "timeshiftGoLive": "Canlıya dön",
+  "prefTimeshift": "Canlı yayını durdurma ve geri sarma",
+  "prefTimeshiftBody": "Sağlayıcı arşiv sunmasa da canlı kanalı durdurup geri sarabilmeniz için son dakikalar diskte geçici bir dosyada tutulur; kanal değişince ve uygulama kapanınca silinir. Süre, yayının bit hızına göre değişir (5 Mbit/s HD için tahmin).",
+  "prefTimeshiftMinutes": "≈{n} dk",
+  "@prefTimeshiftMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

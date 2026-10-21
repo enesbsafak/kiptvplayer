@@ -404,6 +404,16 @@ pub struct Reminder {
     pub title: String,
 }
 
+/// An app preference (stored with the library); None when unset.
+pub fn app_setting(key: String) -> Result<Option<String>> {
+    Ok(core()?.app_setting(&key)?)
+}
+
+/// Stores (or with None, clears) an app preference.
+pub fn set_app_setting(key: String, value: Option<String>) -> Result<()> {
+    Ok(core()?.set_app_setting(&key, value.as_deref())?)
+}
+
 /// Sets or clears a reminder for a programme of a live channel.
 pub fn set_reminder(item_id: i64, start: i64, stop: i64, title: String, on: bool) -> Result<()> {
     Ok(core()?.set_reminder(item_id, &kp_core::store::ReminderRow { start, stop, title }, on)?)

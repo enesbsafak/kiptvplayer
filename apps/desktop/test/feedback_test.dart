@@ -55,11 +55,17 @@ void main() {
     // Live TV: no resume-point timer to outlive the test.
     final channel = FakeLibrary.item(7, 'TRT 1');
     await h.player.play(channel, Kind.live, queue: [channel], view: PlayerView.full);
+    h.engine.playingCtl.add(true); // paused, the controls would stay
     await tester.pumpWidget(app(h, const PlayerScreen()));
     await tester.pump();
     expect(h.engine.subtitlePositions.last, lessThan(100), reason: 'controls visible: raised');
 
     await tester.pump(const Duration(seconds: 4));
     expect(h.engine.subtitlePositions.last, 100, reason: 'controls faded: usual place');
+
+    h.engine.playingCtl.add(false);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 4));
+    expect(h.engine.subtitlePositions.last, lessThan(100), reason: 'paused: controls come up and stay');
   });
 }
