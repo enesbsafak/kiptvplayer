@@ -16,7 +16,7 @@ export '../src/rust/api/update.dart' show UpdateInfo, UpdateProgress, UpdateProg
 /// `KP_UPDATE_FEED` environment variable (e.g. the local mock).
 const _builtInFeed = String.fromEnvironment(
   'KP_UPDATE_FEED',
-  defaultValue: 'https://github.com/enesbsafak/karadelik-iptv-player/releases/latest/download/latest.json',
+  defaultValue: 'https://github.com/enesbsafak/kiptvplayer/releases/latest/download/latest.json',
 );
 
 String get updateFeed => Platform.environment['KP_UPDATE_FEED'] ?? _builtInFeed;

@@ -16,7 +16,7 @@
 # Without it the build is unsigned and SmartScreen will warn.
 param(
   [string]$Version,
-  [string]$BaseUrl = 'https://github.com/enesbsafak/karadelik-iptv-player/releases/download/v{0}',
+  [string]$BaseUrl = 'https://github.com/enesbsafak/kiptvplayer/releases/download/v{0}',
   [string]$Configuration = 'Release'
 )
 $ErrorActionPreference = 'Stop'

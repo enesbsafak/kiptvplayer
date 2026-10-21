@@ -49,7 +49,7 @@ tools\release.ps1 -Version 0.2.0      # dist\: kurulum dosyası + latest.json
 - `v0.2.0` etiketi gönderilince GitHub Actions (`.github/workflows/release.yml`) aynısını yapar ve GitHub sürümü olarak yayınlar.
 - Uygulama içi güncelleyici `latest.json`'u okur, kurulumu indirir, SHA-256'yı doğrular, sessiz kurar ve uygulamayı yeniden açar; bir önceki kurulum saklanır, “önceki sürüme dön” mümkündür.
 - **İmza:** `KP_SIGN_CMD` ortam değişkeni / depo sırrı (ör. Azure Trusted Signing) tanımlıysa exe ve kurulum imzalanır; yoksa imzasızdır ve SmartScreen uyarır.
-- **Yayın öncesi yapılacaklar:** GitHub deposu ve sürümleri (güncelleme adresi `enesbsafak/karadelik-iptv-player` varsayılıyor; `--dart-define=KP_UPDATE_FEED=...` ile değişir), imza sertifikası, libmpv arşivinin kendi sürümümüze aynalanması (kaynak 30 gün saklıyor; `packages/karadelik_mpv_libs/manifest.json`).
+- **Yayın öncesi yapılacaklar:** GitHub deposu ve sürümleri (güncelleme adresi `enesbsafak/kiptvplayer` varsayılıyor; `--dart-define=KP_UPDATE_FEED=...` ile değişir), imza sertifikası, libmpv arşivinin kendi sürümümüze aynalanması (kaynak 30 gün saklıyor; `packages/karadelik_mpv_libs/manifest.json`).
 
 ## Fazlar
 
