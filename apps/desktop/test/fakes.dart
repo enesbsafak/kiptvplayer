@@ -146,6 +146,21 @@ class FakeLibrary implements LibraryApi {
   @override
   Future<List<Item>> groupItems(int groupId) async => [for (final id in groups[groupId]!.$2) ?_find(id)].map(_named).toList();
 
+  final epgOverrides = <int, (String?, int)>{};
+  List<GuideEntry> guideChannels = const [GuideEntry(id: 'trt1.tr', label: 'TRT 1'), GuideEntry(id: 'atv.tr', label: 'ATV')];
+  @override
+  Future<EpgSettings> epgSettings(int itemId) async {
+    final o = epgOverrides[itemId];
+    return EpgSettings(hasGuide: true, mapped: guideChannels.first, forced: o?.$1, shiftMinutes: o?.$2 ?? 0);
+  }
+
+  @override
+  Future<void> setEpgSettings(int itemId, {String? forced, required int shiftMinutes}) async =>
+      epgOverrides[itemId] = (forced, shiftMinutes);
+  @override
+  Future<List<GuideEntry>> findGuideChannels(String sourceId, String query) async =>
+      guideChannels.where((g) => g.label.toLowerCase().contains(query.toLowerCase())).toList();
+
   String? pin;
   bool locked = false;
   int adultCategories = 0;

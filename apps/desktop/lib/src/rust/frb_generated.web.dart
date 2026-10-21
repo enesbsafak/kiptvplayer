@@ -45,6 +45,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double dco_decode_box_autoadd_f_32(dynamic raw);
 
   @protected
+  GuideEntry dco_decode_box_autoadd_guide_entry(dynamic raw);
+
+  @protected
   GuideInfo dco_decode_box_autoadd_guide_info(dynamic raw);
 
   @protected
@@ -81,6 +84,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ContinueItem dco_decode_continue_item(dynamic raw);
 
   @protected
+  EpgSettings dco_decode_epg_settings(dynamic raw);
+
+  @protected
   EpisodeInfo dco_decode_episode_info(dynamic raw);
 
   @protected
@@ -88,6 +94,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double dco_decode_f_64(dynamic raw);
+
+  @protected
+  GuideEntry dco_decode_guide_entry(dynamic raw);
 
   @protected
   GuideInfo dco_decode_guide_info(dynamic raw);
@@ -123,6 +132,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<EpisodeInfo> dco_decode_list_episode_info(dynamic raw);
 
   @protected
+  List<GuideEntry> dco_decode_list_guide_entry(dynamic raw);
+
+  @protected
   List<Item> dco_decode_list_item(dynamic raw);
 
   @protected
@@ -154,6 +166,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double? dco_decode_opt_box_autoadd_f_32(dynamic raw);
+
+  @protected
+  GuideEntry? dco_decode_opt_box_autoadd_guide_entry(dynamic raw);
 
   @protected
   GuideInfo? dco_decode_opt_box_autoadd_guide_info(dynamic raw);
@@ -267,6 +282,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   double sse_decode_box_autoadd_f_32(SseDeserializer deserializer);
 
   @protected
+  GuideEntry sse_decode_box_autoadd_guide_entry(SseDeserializer deserializer);
+
+  @protected
   GuideInfo sse_decode_box_autoadd_guide_info(SseDeserializer deserializer);
 
   @protected
@@ -307,6 +325,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   ContinueItem sse_decode_continue_item(SseDeserializer deserializer);
 
   @protected
+  EpgSettings sse_decode_epg_settings(SseDeserializer deserializer);
+
+  @protected
   EpisodeInfo sse_decode_episode_info(SseDeserializer deserializer);
 
   @protected
@@ -314,6 +335,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double sse_decode_f_64(SseDeserializer deserializer);
+
+  @protected
+  GuideEntry sse_decode_guide_entry(SseDeserializer deserializer);
 
   @protected
   GuideInfo sse_decode_guide_info(SseDeserializer deserializer);
@@ -351,6 +375,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<EpisodeInfo> sse_decode_list_episode_info(SseDeserializer deserializer);
 
   @protected
+  List<GuideEntry> sse_decode_list_guide_entry(SseDeserializer deserializer);
+
+  @protected
   List<Item> sse_decode_list_item(SseDeserializer deserializer);
 
   @protected
@@ -384,6 +411,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   double? sse_decode_opt_box_autoadd_f_32(SseDeserializer deserializer);
+
+  @protected
+  GuideEntry? sse_decode_opt_box_autoadd_guide_entry(
+    SseDeserializer deserializer,
+  );
 
   @protected
   GuideInfo? sse_decode_opt_box_autoadd_guide_info(
@@ -508,6 +540,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_box_autoadd_f_32(double self, SseSerializer serializer);
 
   @protected
+  void sse_encode_box_autoadd_guide_entry(
+    GuideEntry self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_box_autoadd_guide_info(
     GuideInfo self,
     SseSerializer serializer,
@@ -565,6 +603,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_continue_item(ContinueItem self, SseSerializer serializer);
 
   @protected
+  void sse_encode_epg_settings(EpgSettings self, SseSerializer serializer);
+
+  @protected
   void sse_encode_episode_info(EpisodeInfo self, SseSerializer serializer);
 
   @protected
@@ -572,6 +613,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_f_64(double self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_guide_entry(GuideEntry self, SseSerializer serializer);
 
   @protected
   void sse_encode_guide_info(GuideInfo self, SseSerializer serializer);
@@ -609,6 +653,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_list_episode_info(
     List<EpisodeInfo> self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_list_guide_entry(
+    List<GuideEntry> self,
     SseSerializer serializer,
   );
 
@@ -665,6 +715,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_opt_box_autoadd_f_32(double? self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_opt_box_autoadd_guide_entry(
+    GuideEntry? self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_opt_box_autoadd_guide_info(

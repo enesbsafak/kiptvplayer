@@ -7,6 +7,8 @@ export '../src/rust/api/library.dart'
         Category,
         ContinueItem,
         EpisodeInfo,
+        EpgSettings,
+        GuideEntry,
         GuideInfo,
         HiddenItems,
         Item,
@@ -69,6 +71,11 @@ abstract interface class LibraryApi {
   Future<void> removeFromGroup(int groupId, int itemId);
   Future<void> moveInGroup(int groupId, int itemId, int delta);
   Future<List<rust.Item>> groupItems(int groupId);
+
+  /// A live channel's guide corrections: shift and hand-picked match.
+  Future<rust.EpgSettings> epgSettings(int itemId);
+  Future<void> setEpgSettings(int itemId, {String? forced, required int shiftMinutes});
+  Future<List<rust.GuideEntry>> findGuideChannels(String sourceId, String query);
 
   /// Parental lock (PIN) state, and its changes.
   Future<rust.Parental> parental();
@@ -192,6 +199,14 @@ class RustLibrary implements LibraryApi {
   Future<void> moveInGroup(int groupId, int itemId, int delta) => rust.moveInGroup(groupId: groupId, itemId: itemId, delta: delta);
   @override
   Future<List<rust.Item>> groupItems(int groupId) => rust.groupItems(groupId: groupId);
+  @override
+  Future<rust.EpgSettings> epgSettings(int itemId) => rust.epgSettings(itemId: itemId);
+  @override
+  Future<void> setEpgSettings(int itemId, {String? forced, required int shiftMinutes}) =>
+      rust.setEpgSettings(itemId: itemId, forced: forced, shiftMinutes: shiftMinutes);
+  @override
+  Future<List<rust.GuideEntry>> findGuideChannels(String sourceId, String query) =>
+      rust.findGuideChannels(sourceId: sourceId, query: query);
   @override
   Future<rust.Parental> parental() => rust.parental();
   @override

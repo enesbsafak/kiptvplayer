@@ -176,9 +176,26 @@ fn m3u_with_xmltv_guide_and_catchup() {
     assert!(replay.url.contains(&format!("?utc={}&lutc=", past[0].start)), "{}", replay.url);
     assert!(core.archive(by_name("Kanal 1")).unwrap().is_empty(), "no archive without catchup");
 
-    // A refresh swaps the guide while it is open.
+    // The user's corrections: an hour later, then Kanal 2's guide for Kanal 1.
+    let k1 = by_name("Kanal 1");
+    let before = core.epg(k1).unwrap();
+    core.set_epg_settings(k1, None, 60).unwrap();
+    let later = core.epg(k1).unwrap();
+    assert!(later.iter().any(|p| p.title == before[0].title && p.start == before[0].start + 3600), "shifted an hour");
+    let settings = core.epg_settings(k1).unwrap();
+    assert!(settings.has_guide && settings.mapped.is_some() && settings.shift_min == 60);
+    let other = core.find_guide_channels(&source.id, "Kanal 2", 5).unwrap();
+    assert!(!other.is_empty());
+    core.set_epg_settings(k1, Some(&other[0].0), 0).unwrap();
+    assert_eq!(core.epg(k1).unwrap()[0].title, core.epg(by_name("Kanal 2")).unwrap()[0].title, "the picked guide channel");
+    core.set_epg_settings(k1, Some(""), 0).unwrap();
+    assert!(core.epg(k1).unwrap().is_empty(), "no guide on purpose");
+
+    // A refresh swaps the guide while it is open, and keeps the corrections.
     core.refresh_guide(&source.id).unwrap();
-    assert!(!core.epg(by_name("Kanal 1")).unwrap().is_empty());
+    assert!(core.epg(k1).unwrap().is_empty());
+    core.set_epg_settings(k1, None, 0).unwrap();
+    assert!(!core.epg(k1).unwrap().is_empty());
     core.delete_source(&source.id).unwrap();
 }
 

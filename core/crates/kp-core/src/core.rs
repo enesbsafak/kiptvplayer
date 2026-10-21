@@ -328,14 +328,57 @@ impl Core {
 
     /// Guide programmes for [item] overlapping [from]..[to], with its tvg-shift.
     fn guide_programmes(&self, item: &ItemRow, from: i64, to: i64, limit: u32) -> Result<Vec<EpgRow>> {
+        let (forced, shift_min) = self.store().epg_override(&item.source_id, item.uid)?;
+        let shift = (item.tvg_shift.unwrap_or(0.0) * 3600.0).round() as i64 + i64::from(shift_min) * 60;
+        self.with_guide(&item.source_id, |g| Ok(g.programmes(item.uid, from, to, shift, limit, forced.as_deref())?))
+            .map(Option::unwrap_or_default)
+    }
+
+    /// Runs [f] on the source's XMLTV guide, opened on first use; None
+    /// when the source has none.
+    fn with_guide<T>(&self, source_id: &str, f: impl FnOnce(&Guide) -> Result<T>) -> Result<Option<T>> {
         let mut guides = self.guides.lock().unwrap_or_else(|p| p.into_inner());
-        if !guides.contains_key(&item.source_id) {
-            let g = Guide::open(&self.guide_path(&item.source_id))?;
-            guides.insert(item.source_id.clone(), g);
+        if !guides.contains_key(source_id) {
+            let g = Guide::open(&self.guide_path(source_id))?;
+            guides.insert(source_id.to_string(), g);
         }
-        let Some(Some(guide)) = guides.get(&item.source_id) else { return Ok(Vec::new()) };
-        let shift = (item.tvg_shift.unwrap_or(0.0) * 3600.0).round() as i64;
-        Ok(guide.programmes(item.uid, from, to, shift, limit)?)
+        match guides.get(source_id) {
+            Some(Some(guide)) => Ok(Some(f(guide)?)),
+            _ => Ok(None),
+        }
+    }
+
+    /// The user's shift for a provider-EPG channel (Xtream, portal), seconds.
+    fn extra_shift(&self, item: &ItemRow) -> Result<i64> {
+        Ok(i64::from(self.store().epg_override(&item.source_id, item.uid)?.1) * 60)
+    }
+
+    /// The guide settings of a live channel, for the mapping editor.
+    pub fn epg_settings(&self, item_id: i64) -> Result<EpgSettings> {
+        let item = self.item(item_id)?;
+        let (forced, shift_min) = self.store().epg_override(&item.source_id, item.uid)?;
+        let (mapped, forced_label) = self
+            .with_guide(&item.source_id, |g| {
+                let label = match forced.as_deref() {
+                    Some(id) if !id.is_empty() => g.label(id)?,
+                    _ => None,
+                };
+                Ok((g.mapped(item.uid)?, label))
+            })?
+            .map_or((None, None), |(m, l)| (m, l));
+        let has_guide = !item.url.starts_with("xtream:") && !item.url.starts_with("stalker:") && self.guide_path(&item.source_id).exists();
+        Ok(EpgSettings { has_guide, mapped, forced, forced_label, shift_min })
+    }
+
+    /// [forced]: None automatic, Some("") no guide, Some(id) that channel.
+    pub fn set_epg_settings(&self, item_id: i64, forced: Option<&str>, shift_min: i32) -> Result<()> {
+        let item = self.item(item_id)?;
+        Ok(self.store().set_epg_override(&item.source_id, item.uid, forced, shift_min.clamp(-24 * 60, 24 * 60))?)
+    }
+
+    /// Guide channels of the source matching [query]: (id, label).
+    pub fn find_guide_channels(&self, source_id: &str, query: &str, limit: usize) -> Result<Vec<(String, String)>> {
+        Ok(self.with_guide(source_id, |g| Ok(g.find_channels(query, limit)?))?.unwrap_or_default())
     }
 
     /// Downloads the source's catalog and swaps it in atomically. Readers
@@ -980,7 +1023,8 @@ impl Core {
         }
         let from = t - i64::from(days) * 86_400;
         let rows = if xtream {
-            self.store().epg_past(&item.source_id, item.uid, from, t)?
+            let shift = self.extra_shift(&item)?;
+            self.store().epg_past(&item.source_id, item.uid, from - shift, t - shift)?.into_iter().map(|r| shifted(r, shift)).collect()
         } else {
             // M3U: the XMLTV guide; the archive covers the whole window.
             let mut past: Vec<EpgRow> = self.guide_programmes(&item, from, t, 5000)?.into_iter().filter(|r| r.stop <= t).collect();
@@ -1022,10 +1066,24 @@ impl Core {
     pub fn epg(&self, item_id: i64) -> Result<Vec<Programme>> {
         let item = self.item(item_id)?;
         let t = now();
-        let portal = item.url.starts_with("stalker:");
-        if !item.url.starts_with("xtream:") && !portal {
+        if !item.url.starts_with("xtream:") && !item.url.starts_with("stalker:") {
             return Ok(self.guide_programmes(&item, t, t + 2 * 86_400, 8)?.into_iter().map(programme).collect());
         }
+        let shift = self.extra_shift(&item)?;
+        Ok(self
+            .provider_epg(&item, t)?
+            .into_iter()
+            .map(|mut p| {
+                p.start += shift;
+                p.stop += shift;
+                p
+            })
+            .collect())
+    }
+
+    /// Now / next from the provider (Xtream short EPG, portal), cached.
+    fn provider_epg(&self, item: &ItemRow, t: i64) -> Result<Vec<Programme>> {
+        let portal = item.url.starts_with("stalker:");
         let (cached, fetched) = self.store().epg_short(&item.source_id, item.uid, t)?;
         let fresh = fetched.map(|f| t - f < EPG_TTL_SECS).unwrap_or(false);
         if fresh || !(item.url.starts_with("xtream:live:") || portal) {
@@ -1052,6 +1110,25 @@ impl Core {
         store.replace_epg_short(&item.source_id, item.uid, &epg_rows(entries), t, false)?;
         Ok(store.epg_short(&item.source_id, item.uid, t)?.0.into_iter().map(programme).collect())
     }
+}
+
+/// A live channel's guide corrections, for the mapping editor.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EpgSettings {
+    /// The source has an XMLTV guide the channel can be matched in.
+    pub has_guide: bool,
+    /// The automatic match: (guide id, label).
+    pub mapped: Option<(String, String)>,
+    /// The user's pick: None automatic, "" none, else a guide id.
+    pub forced: Option<String>,
+    pub forced_label: Option<String>,
+    pub shift_min: i32,
+}
+
+fn shifted(mut r: EpgRow, shift: i64) -> EpgRow {
+    r.start += shift;
+    r.stop += shift;
+    r
 }
 
 /// The system's IANA time zone ("Europe/Istanbul"), which portals expect in

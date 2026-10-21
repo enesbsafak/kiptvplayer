@@ -23,7 +23,20 @@ pub enum StoreError {
 
 pub type Result<T> = std::result::Result<T, StoreError>;
 
-const SCHEMA_VERSION: i64 = 6;
+const SCHEMA_VERSION: i64 = 7;
+
+/// v7: the user's guide corrections per channel: a guide channel of their
+/// choosing (NULL = automatic, '' = none) and a time shift in minutes.
+/// Separate from the guide files, so a guide refresh keeps them.
+const SCHEMA_V7: &str = "
+CREATE TABLE IF NOT EXISTS epg_override (
+    source_id   TEXT NOT NULL REFERENCES source(id) ON DELETE CASCADE,
+    uid         INTEGER NOT NULL,
+    xmltv_id    TEXT,
+    shift_min   INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (source_id, uid)
+);
+";
 
 /// v6: the user's own edits. Hidden and renamed channels and categories,
 /// category order and custom groups live in their own tables keyed by
@@ -366,6 +379,12 @@ impl Store {
             let tx = self.conn.transaction()?;
             tx.execute_batch(SCHEMA_V6)?;
             tx.pragma_update(None, "user_version", 6)?;
+            tx.commit()?;
+        }
+        if version < 7 {
+            let tx = self.conn.transaction()?;
+            tx.execute_batch(SCHEMA_V7)?;
+            tx.pragma_update(None, "user_version", 7)?;
             tx.commit()?;
         }
         Ok(())
@@ -771,6 +790,32 @@ impl Store {
             "SELECT orig_name FROM channel WHERE source_id = ?1 AND uid = ?2"
         };
         Ok(self.conn.query_row(sql, params![source_id, uid], |r| r.get(0)).optional()?.flatten())
+    }
+
+    /// The user's guide channel ([None] automatic, "" none) and shift.
+    pub fn epg_override(&self, source_id: &str, uid: i64) -> Result<(Option<String>, i32)> {
+        Ok(self
+            .conn
+            .query_row(
+                "SELECT xmltv_id, shift_min FROM epg_override WHERE source_id = ?1 AND uid = ?2",
+                params![source_id, uid],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()?
+            .unwrap_or((None, 0)))
+    }
+
+    pub fn set_epg_override(&self, source_id: &str, uid: i64, xmltv_id: Option<&str>, shift_min: i32) -> Result<()> {
+        if xmltv_id.is_none() && shift_min == 0 {
+            self.conn.execute("DELETE FROM epg_override WHERE source_id = ?1 AND uid = ?2", params![source_id, uid])?;
+        } else {
+            self.conn.execute(
+                "INSERT INTO epg_override (source_id, uid, xmltv_id, shift_min) VALUES (?1, ?2, ?3, ?4)
+                 ON CONFLICT (source_id, uid) DO UPDATE SET xmltv_id = excluded.xmltv_id, shift_min = excluded.shift_min",
+                params![source_id, uid, xmltv_id.map(|i| i.trim().to_lowercase()), shift_min],
+            )?;
+        }
+        Ok(())
     }
 
     // ---- custom groups ------------------------------------------------

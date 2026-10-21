@@ -6,6 +6,7 @@ import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../l10n/l10n.dart';
+import 'epg_settings.dart';
 
 /// The user's own channel list: hide, rename, reorder categories and keep
 /// custom groups. Everything is stored by stable id in the core and laid
@@ -178,6 +179,7 @@ Future<void> showChannelMenu(BuildContext context, {required Offset at, required
       await lib.hideChannel(item.id, hidden: true);
       app.editsChanged();
     }),
+    (LucideIcons.calendarClock, l10n.epgMenu, () => showEpgSettings(context, item)),
     null,
     if (groupId != null) ...[
       (LucideIcons.arrowUp, l10n.editMoveUp, () async {

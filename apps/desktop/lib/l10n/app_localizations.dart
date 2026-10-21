@@ -2359,6 +2359,102 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Bunlar listelerde ve aramada görünmez; eşitlemeden sonra da gizli kalır.'**
   String get editHiddenBody;
+
+  /// No description provided for @epgMenu.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yayın akışı ayarı…'**
+  String get epgMenu;
+
+  /// No description provided for @epgSettingsTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yayın akışı: {name}'**
+  String epgSettingsTitle(String name);
+
+  /// No description provided for @epgShift.
+  ///
+  /// In tr, this message translates to:
+  /// **'Saat kaydırma'**
+  String get epgShift;
+
+  /// No description provided for @epgShiftBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Programlar gerçek saatinden önce ya da sonra görünüyorsa kaydırın. Geçmiş yayınlar da düzeltilmiş saatlerle açılır.'**
+  String get epgShiftBody;
+
+  /// No description provided for @epgShiftNone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaydırma yok'**
+  String get epgShiftNone;
+
+  /// No description provided for @epgHours.
+  ///
+  /// In tr, this message translates to:
+  /// **'{n} sa'**
+  String epgHours(int n);
+
+  /// No description provided for @epgMinutes.
+  ///
+  /// In tr, this message translates to:
+  /// **'{n} dk'**
+  String epgMinutes(int n);
+
+  /// No description provided for @epgMatch.
+  ///
+  /// In tr, this message translates to:
+  /// **'Eşleşen yayın akışı kanalı'**
+  String get epgMatch;
+
+  /// No description provided for @epgAuto.
+  ///
+  /// In tr, this message translates to:
+  /// **'Otomatik'**
+  String get epgAuto;
+
+  /// No description provided for @epgNoGuideShort.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yayın akışı yok'**
+  String get epgNoGuideShort;
+
+  /// No description provided for @epgAutoMatched.
+  ///
+  /// In tr, this message translates to:
+  /// **'Otomatik: {name}'**
+  String epgAutoMatched(String name);
+
+  /// No description provided for @epgAutoNone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Otomatik eşleşme bulunamadı; aşağıdan seçebilirsiniz.'**
+  String get epgAutoNone;
+
+  /// No description provided for @epgNoGuide.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu kanalda yayın akışı gösterilmiyor.'**
+  String get epgNoGuide;
+
+  /// No description provided for @epgPicked.
+  ///
+  /// In tr, this message translates to:
+  /// **'Elle seçildi: {name}'**
+  String epgPicked(String name);
+
+  /// No description provided for @epgFindHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Yayın akışında kanal ara'**
+  String get epgFindHint;
+
+  /// No description provided for @epgSave.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaydet'**
+  String get epgSave;
 }
 
 class _AppLocalizationsDelegate

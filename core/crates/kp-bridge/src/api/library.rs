@@ -401,6 +401,50 @@ pub fn move_category(source_id: String, kind: Kind, uid: i64, delta: i32) -> Res
     Ok(core()?.move_category(&source_id, kind.into(), uid, delta)?)
 }
 
+/// A live channel's guide corrections (the mapping editor).
+#[derive(Debug, Clone)]
+pub struct EpgSettings {
+    /// The source has an XMLTV guide to pick a channel from.
+    pub has_guide: bool,
+    /// The automatic match.
+    pub mapped: Option<GuideEntry>,
+    /// The user's pick: None automatic, "" none, else a guide id.
+    pub forced: Option<String>,
+    pub forced_label: Option<String>,
+    pub shift_minutes: i32,
+}
+
+/// A channel of the XMLTV guide.
+#[derive(Debug, Clone)]
+pub struct GuideEntry {
+    pub id: String,
+    pub label: String,
+}
+
+pub fn epg_settings(item_id: i64) -> Result<EpgSettings> {
+    let s = core()?.epg_settings(item_id)?;
+    Ok(EpgSettings {
+        has_guide: s.has_guide,
+        mapped: s.mapped.map(|(id, label)| GuideEntry { id, label }),
+        forced: s.forced,
+        forced_label: s.forced_label,
+        shift_minutes: s.shift_min,
+    })
+}
+
+/// [forced]: None automatic, Some("") no guide, Some(id) that guide channel.
+pub fn set_epg_settings(item_id: i64, forced: Option<String>, shift_minutes: i32) -> Result<()> {
+    Ok(core()?.set_epg_settings(item_id, forced.as_deref(), shift_minutes)?)
+}
+
+pub fn find_guide_channels(source_id: String, query: String) -> Result<Vec<GuideEntry>> {
+    Ok(core()?
+        .find_guide_channels(&source_id, &query, 40)?
+        .into_iter()
+        .map(|(id, label)| GuideEntry { id, label })
+        .collect())
+}
+
 /// What the user hid, to bring back.
 #[derive(Debug, Clone)]
 pub struct HiddenItems {

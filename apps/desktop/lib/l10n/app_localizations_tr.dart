@@ -1266,4 +1266,64 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get editHiddenBody =>
       'Bunlar listelerde ve aramada görünmez; eşitlemeden sonra da gizli kalır.';
+
+  @override
+  String get epgMenu => 'Yayın akışı ayarı…';
+
+  @override
+  String epgSettingsTitle(String name) {
+    return 'Yayın akışı: $name';
+  }
+
+  @override
+  String get epgShift => 'Saat kaydırma';
+
+  @override
+  String get epgShiftBody =>
+      'Programlar gerçek saatinden önce ya da sonra görünüyorsa kaydırın. Geçmiş yayınlar da düzeltilmiş saatlerle açılır.';
+
+  @override
+  String get epgShiftNone => 'Kaydırma yok';
+
+  @override
+  String epgHours(int n) {
+    return '$n sa';
+  }
+
+  @override
+  String epgMinutes(int n) {
+    return '$n dk';
+  }
+
+  @override
+  String get epgMatch => 'Eşleşen yayın akışı kanalı';
+
+  @override
+  String get epgAuto => 'Otomatik';
+
+  @override
+  String get epgNoGuideShort => 'Yayın akışı yok';
+
+  @override
+  String epgAutoMatched(String name) {
+    return 'Otomatik: $name';
+  }
+
+  @override
+  String get epgAutoNone =>
+      'Otomatik eşleşme bulunamadı; aşağıdan seçebilirsiniz.';
+
+  @override
+  String get epgNoGuide => 'Bu kanalda yayın akışı gösterilmiyor.';
+
+  @override
+  String epgPicked(String name) {
+    return 'Elle seçildi: $name';
+  }
+
+  @override
+  String get epgFindHint => 'Yayın akışında kanal ara';
+
+  @override
+  String get epgSave => 'Kaydet';
 }

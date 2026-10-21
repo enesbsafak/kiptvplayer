@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::io::BufRead;
 use std::path::Path;
 
-use rusqlite::{params, Connection, OpenFlags};
+use rusqlite::{params, Connection, OpenFlags, OptionalExtension};
 
 use crate::store::EpgRow;
 use crate::text::fold;
@@ -63,6 +63,11 @@ CREATE TABLE programme (
     title TEXT NOT NULL,
     descr TEXT NOT NULL
 );
+-- The first display-name, for people choosing a guide channel by hand.
+CREATE TABLE xlabel (
+    key   INTEGER PRIMARY KEY,
+    label TEXT NOT NULL
+);
 -- Playlist channel uid -> guide channel.
 CREATE TABLE map (
     uid   INTEGER PRIMARY KEY,
@@ -104,6 +109,7 @@ fn build_into(tmp: &Path, input: impl BufRead, channels: &[GuideChannel], now: i
             keys: HashMap<String, i64>,
             add_channel: rusqlite::Statement<'c>,
             add_name: rusqlite::Statement<'c>,
+            add_label: rusqlite::Statement<'c>,
             add_prog: rusqlite::Statement<'c>,
             programmes: u64,
             failure: Option<rusqlite::Error>,
@@ -126,6 +132,7 @@ fn build_into(tmp: &Path, input: impl BufRead, channels: &[GuideChannel], now: i
             keys: HashMap::new(),
             add_channel: tx.prepare("INSERT INTO xchannel (key, id) VALUES (?1, ?2)")?,
             add_name: tx.prepare("INSERT INTO xname (name, key) VALUES (?1, ?2)")?,
+            add_label: tx.prepare("INSERT OR IGNORE INTO xlabel (key, label) VALUES (?1, ?2)")?,
             add_prog: tx.prepare("INSERT INTO programme (key, start, stop, title, descr) VALUES (?1, ?2, ?3, ?4, ?5)")?,
             programmes: 0,
             failure: None,
@@ -141,6 +148,9 @@ fn build_into(tmp: &Path, input: impl BufRead, channels: &[GuideChannel], now: i
                 let r = st.key(&c.id).and_then(|k| {
                     for n in &c.names {
                         st.add_name.execute(params![match_name(n), k])?;
+                    }
+                    if let Some(first) = c.names.first() {
+                        st.add_label.execute(params![k, first.trim()])?;
                     }
                     Ok(())
                 });
@@ -239,13 +249,20 @@ impl Guide {
     }
 
     /// Programmes of playlist channel [uid] overlapping [from]..[to].
-    /// [shift] (tvg-shift, seconds) moves the guide's times for this channel.
-    pub fn programmes(&self, uid: i64, from: i64, to: i64, shift: i64, limit: u32) -> Result<Vec<EpgRow>> {
+    /// [shift] (seconds: tvg-shift plus the user's) moves the guide's times
+    /// for this channel; [forced] is the user's own pick of guide channel
+    /// ("" for none) instead of the automatic match.
+    pub fn programmes(&self, uid: i64, from: i64, to: i64, shift: i64, limit: u32, forced: Option<&str>) -> Result<Vec<EpgRow>> {
+        if forced == Some("") {
+            return Ok(Vec::new());
+        }
         let mut stmt = self.conn.prepare_cached(
-            "SELECT p.start, p.stop, p.title, p.descr FROM programme p JOIN map m ON m.key = p.key
-             WHERE m.uid = ?1 AND p.stop > ?2 AND p.start < ?3 ORDER BY p.start LIMIT ?4",
+            "SELECT p.start, p.stop, p.title, p.descr FROM programme p
+             WHERE p.key = CASE WHEN ?5 IS NULL THEN (SELECT key FROM map WHERE uid = ?1)
+                                ELSE (SELECT key FROM xchannel WHERE id = lower(?5)) END
+               AND p.stop > ?2 AND p.start < ?3 ORDER BY p.start LIMIT ?4",
         )?;
-        let rows = stmt.query_map(params![uid, from - shift, to - shift, limit], |r| {
+        let rows = stmt.query_map(params![uid, from - shift, to - shift, limit, forced], |r| {
             Ok(EpgRow {
                 start: r.get::<_, i64>(0)? + shift,
                 stop: r.get::<_, i64>(1)? + shift,
@@ -255,6 +272,54 @@ impl Guide {
             })
         })?;
         Ok(rows.collect::<std::result::Result<_, _>>()?)
+    }
+}
+
+impl Guide {
+    fn has_labels(&self) -> bool {
+        self.conn
+            .query_row("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'xlabel'", [], |_| Ok(()))
+            .is_ok()
+    }
+
+    fn label_sql(&self) -> &'static str {
+        // Guides built before labels were kept show their ids.
+        if self.has_labels() {
+            "SELECT x.id, coalesce(l.label, x.id) FROM xchannel x LEFT JOIN xlabel l ON l.key = x.key"
+        } else {
+            "SELECT x.id, x.id FROM xchannel x"
+        }
+    }
+
+    /// The guide channel the automatic match picked for [uid]: (id, label).
+    pub fn mapped(&self, uid: i64) -> Result<Option<(String, String)>> {
+        let sql = format!("{} JOIN map m ON m.key = x.key WHERE m.uid = ?1", self.label_sql());
+        Ok(self.conn.query_row(&sql, [uid], |r| Ok((r.get(0)?, r.get(1)?))).optional()?)
+    }
+
+    /// The label of guide channel [id].
+    pub fn label(&self, id: &str) -> Result<Option<String>> {
+        let sql = format!("{} WHERE x.id = lower(?1)", self.label_sql());
+        Ok(self.conn.query_row(&sql, [id], |r| r.get(1)).optional()?)
+    }
+
+    /// Guide channels whose label or id contains [query] (accents and case
+    /// ignored), for choosing one by hand.
+    pub fn find_channels(&self, query: &str, limit: usize) -> Result<Vec<(String, String)>> {
+        let q = fold(query.trim());
+        let mut stmt = self.conn.prepare(&format!("{} ORDER BY 2", self.label_sql()))?;
+        let mut out = Vec::new();
+        let mut rows = stmt.query([])?;
+        while let Some(r) = rows.next()? {
+            let (id, label): (String, String) = (r.get(0)?, r.get(1)?);
+            if q.is_empty() || fold(&label).contains(&q) || id.contains(&q) {
+                out.push((id, label));
+                if out.len() >= limit {
+                    break;
+                }
+            }
+        }
+        Ok(out)
     }
 }
 
@@ -300,18 +365,25 @@ mod tests {
         assert!(!path.with_extension("sqlite.tmp").exists());
 
         let g = Guide::open(&path).unwrap().unwrap();
-        let trt = g.programmes(1, now, now + 86_400, 0, 10).unwrap();
+        let trt = g.programmes(1, now, now + 86_400, 0, 10, None).unwrap();
         let titles: Vec<_> = trt.iter().map(|p| p.title.as_str()).collect();
         assert_eq!(titles, vec!["Şimdi", "Sonra", "Gece"], "tvg-id matched case-insensitively");
         assert_eq!(trt[1].stop, now + 3600, "missing stop filled from the next programme");
-        assert_eq!(g.programmes(2, now, now + 86_400, 0, 10).unwrap()[0].title, "Dizi", "matched by display-name");
-        assert!(g.programmes(3, now, now + 86_400, 0, 10).unwrap().is_empty());
+        assert_eq!(g.programmes(2, now, now + 86_400, 0, 10, None).unwrap()[0].title, "Dizi", "matched by display-name");
+        assert!(g.programmes(3, now, now + 86_400, 0, 10, None).unwrap().is_empty());
 
         // tvg-shift=+1: the guide's times move an hour later for this channel.
-        let shifted = g.programmes(1, now, now + 86_400, 3600, 10).unwrap();
+        let shifted = g.programmes(1, now, now + 86_400, 3600, 10, None).unwrap();
         assert_eq!(shifted[0].start, now - 600 + 3600);
-        let past = g.programmes(1, now - 86_400, now, 0, 10).unwrap();
+        let past = g.programmes(1, now - 86_400, now, 0, 10, None).unwrap();
         assert_eq!(past[0].title, "Eski");
+
+        // The user's own pick wins over the automatic match; "" means none.
+        assert_eq!(g.programmes(3, now, now + 86_400, 0, 10, Some("TRT1.tr")).unwrap()[0].title, "Şimdi");
+        assert!(g.programmes(1, now, now + 86_400, 0, 10, Some("")).unwrap().is_empty());
+        assert_eq!(g.mapped(2).unwrap(), Some(("fox.tr".into(), "FOX".into())));
+        assert_eq!(g.find_channels("trt", 10).unwrap(), vec![("trt1.tr".to_string(), "TRT 1".to_string())]);
+        assert_eq!(g.label("TRT1.tr").unwrap().as_deref(), Some("TRT 1"));
     }
 
     #[test]
@@ -325,7 +397,7 @@ mod tests {
         assert!(build(&path, "<html>hata</html>".as_bytes(), &ch, now).is_err());
         assert!(!path.with_extension("sqlite.tmp").exists(), "a failed build leaves nothing behind");
         let g = Guide::open(&path).unwrap().unwrap();
-        assert!(!g.programmes(1, now, now + 86_400, 0, 10).unwrap().is_empty());
+        assert!(!g.programmes(1, now, now + 86_400, 0, 10, None).unwrap().is_empty());
     }
 
     #[test]

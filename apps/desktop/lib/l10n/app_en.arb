@@ -376,5 +376,21 @@
   "editShow": "Show",
   "editHiddenTitle": "Hidden channels and categories",
   "editHiddenNone": "Nothing is hidden. Right-click a channel or category to hide or rename it, or to build your own groups; they stay after a sync.",
-  "editHiddenBody": "These stay out of lists and search, also after a sync."
+  "editHiddenBody": "These stay out of lists and search, also after a sync.",
+  "epgMenu": "Guide settings…",
+  "epgSettingsTitle": "Guide: {name}",
+  "epgShift": "Time shift",
+  "epgShiftBody": "Shift when programmes show earlier or later than they air. Catch-up opens at the corrected times too.",
+  "epgShiftNone": "No shift",
+  "epgHours": "{n} h",
+  "epgMinutes": "{n} min",
+  "epgMatch": "Guide channel",
+  "epgAuto": "Automatic",
+  "epgNoGuideShort": "No guide",
+  "epgAutoMatched": "Automatic: {name}",
+  "epgAutoNone": "No automatic match; pick one below.",
+  "epgNoGuide": "No guide is shown for this channel.",
+  "epgPicked": "Picked by hand: {name}",
+  "epgFindHint": "Find a channel in the guide",
+  "epgSave": "Save"
 }

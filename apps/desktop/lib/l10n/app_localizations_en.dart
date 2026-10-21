@@ -1289,4 +1289,63 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get editHiddenBody =>
       'These stay out of lists and search, also after a sync.';
+
+  @override
+  String get epgMenu => 'Guide settings…';
+
+  @override
+  String epgSettingsTitle(String name) {
+    return 'Guide: $name';
+  }
+
+  @override
+  String get epgShift => 'Time shift';
+
+  @override
+  String get epgShiftBody =>
+      'Shift when programmes show earlier or later than they air. Catch-up opens at the corrected times too.';
+
+  @override
+  String get epgShiftNone => 'No shift';
+
+  @override
+  String epgHours(int n) {
+    return '$n h';
+  }
+
+  @override
+  String epgMinutes(int n) {
+    return '$n min';
+  }
+
+  @override
+  String get epgMatch => 'Guide channel';
+
+  @override
+  String get epgAuto => 'Automatic';
+
+  @override
+  String get epgNoGuideShort => 'No guide';
+
+  @override
+  String epgAutoMatched(String name) {
+    return 'Automatic: $name';
+  }
+
+  @override
+  String get epgAutoNone => 'No automatic match; pick one below.';
+
+  @override
+  String get epgNoGuide => 'No guide is shown for this channel.';
+
+  @override
+  String epgPicked(String name) {
+    return 'Picked by hand: $name';
+  }
+
+  @override
+  String get epgFindHint => 'Find a channel in the guide';
+
+  @override
+  String get epgSave => 'Save';
 }

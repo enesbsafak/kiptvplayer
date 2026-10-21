@@ -726,5 +726,56 @@
   "editShow": "Göster",
   "editHiddenTitle": "Gizlenen kanallar ve kategoriler",
   "editHiddenNone": "Gizlenen bir şey yok. Kanal veya kategori listesinde sağ tıklayarak gizleyebilir, yeniden adlandırabilir ya da kendi gruplarınızı kurabilirsiniz; eşitlemeden sonra da kalırlar.",
-  "editHiddenBody": "Bunlar listelerde ve aramada görünmez; eşitlemeden sonra da gizli kalır."
+  "editHiddenBody": "Bunlar listelerde ve aramada görünmez; eşitlemeden sonra da gizli kalır.",
+  "epgMenu": "Yayın akışı ayarı…",
+  "epgSettingsTitle": "Yayın akışı: {name}",
+  "@epgSettingsTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "epgShift": "Saat kaydırma",
+  "epgShiftBody": "Programlar gerçek saatinden önce ya da sonra görünüyorsa kaydırın. Geçmiş yayınlar da düzeltilmiş saatlerle açılır.",
+  "epgShiftNone": "Kaydırma yok",
+  "epgHours": "{n} sa",
+  "@epgHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "epgMinutes": "{n} dk",
+  "@epgMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "epgMatch": "Eşleşen yayın akışı kanalı",
+  "epgAuto": "Otomatik",
+  "epgNoGuideShort": "Yayın akışı yok",
+  "epgAutoMatched": "Otomatik: {name}",
+  "@epgAutoMatched": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "epgAutoNone": "Otomatik eşleşme bulunamadı; aşağıdan seçebilirsiniz.",
+  "epgNoGuide": "Bu kanalda yayın akışı gösterilmiyor.",
+  "epgPicked": "Elle seçildi: {name}",
+  "@epgPicked": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "epgFindHint": "Yayın akışında kanal ara",
+  "epgSave": "Kaydet"
 }

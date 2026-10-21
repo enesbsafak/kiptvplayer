@@ -10,7 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `cats`, `core`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
@@ -100,6 +100,28 @@ Future<void> moveCategory({
   kind: kind,
   uid: uid,
   delta: delta,
+);
+
+Future<EpgSettings> epgSettings({required PlatformInt64 itemId}) =>
+    RustLib.instance.api.crateApiLibraryEpgSettings(itemId: itemId);
+
+/// [forced]: None automatic, Some("") no guide, Some(id) that guide channel.
+Future<void> setEpgSettings({
+  required PlatformInt64 itemId,
+  String? forced,
+  required int shiftMinutes,
+}) => RustLib.instance.api.crateApiLibrarySetEpgSettings(
+  itemId: itemId,
+  forced: forced,
+  shiftMinutes: shiftMinutes,
+);
+
+Future<List<GuideEntry>> findGuideChannels({
+  required String sourceId,
+  required String query,
+}) => RustLib.instance.api.crateApiLibraryFindGuideChannels(
+  sourceId: sourceId,
+  query: query,
 );
 
 Future<HiddenItems> hiddenItems({required String sourceId}) =>
@@ -466,6 +488,47 @@ class ContinueItem {
           durationMs == other.durationMs;
 }
 
+/// A live channel's guide corrections (the mapping editor).
+class EpgSettings {
+  /// The source has an XMLTV guide to pick a channel from.
+  final bool hasGuide;
+
+  /// The automatic match.
+  final GuideEntry? mapped;
+
+  /// The user's pick: None automatic, "" none, else a guide id.
+  final String? forced;
+  final String? forcedLabel;
+  final int shiftMinutes;
+
+  const EpgSettings({
+    required this.hasGuide,
+    this.mapped,
+    this.forced,
+    this.forcedLabel,
+    required this.shiftMinutes,
+  });
+
+  @override
+  int get hashCode =>
+      hasGuide.hashCode ^
+      mapped.hashCode ^
+      forced.hashCode ^
+      forcedLabel.hashCode ^
+      shiftMinutes.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is EpgSettings &&
+          runtimeType == other.runtimeType &&
+          hasGuide == other.hasGuide &&
+          mapped == other.mapped &&
+          forced == other.forced &&
+          forcedLabel == other.forcedLabel &&
+          shiftMinutes == other.shiftMinutes;
+}
+
 class EpisodeInfo {
   final PlatformInt64 extId;
   final int season;
@@ -515,6 +578,25 @@ class EpisodeInfo {
           durationSecs == other.durationSecs &&
           container == other.container &&
           progressMs == other.progressMs;
+}
+
+/// A channel of the XMLTV guide.
+class GuideEntry {
+  final String id;
+  final String label;
+
+  const GuideEntry({required this.id, required this.label});
+
+  @override
+  int get hashCode => id.hashCode ^ label.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is GuideEntry &&
+          runtimeType == other.runtimeType &&
+          id == other.id &&
+          label == other.label;
 }
 
 /// The last XMLTV guide download of an M3U source.

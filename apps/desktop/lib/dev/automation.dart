@@ -9,6 +9,7 @@ import '../app/app_state.dart';
 import '../app/library.dart';
 import '../player/media_track.dart';
 import '../player/player_controller.dart';
+import '../screens/epg_settings.dart';
 import '../shell/command_palette.dart';
 
 /// Development driver:
@@ -209,6 +210,14 @@ class Automation {
         app.editsChanged();
         app.go(Section.live);
         await shot('live-edited', wait: const Duration(milliseconds: 1500));
+        // A channel's guide settings, matched in the XMLTV guide.
+        await app.library.setEpgSettings(live[2].id, shiftMinutes: 90);
+        final ctx = rootNavigator.currentContext;
+        if (ctx != null && ctx.mounted) {
+          unawaited(showEpgSettings(ctx, live[2]));
+          await shot('epg-settings', wait: const Duration(milliseconds: 1200));
+          rootNavigator.currentState?.pop();
+        }
       }
     }
     await quit();
