@@ -67,6 +67,6 @@ tools\release.ps1 -Version 0.2.0      # dist\: kurulum dosyası + latest.json
 
 ## Bilinen sorunlar
 
-- **Kanal değişimi başına ~0.7 MB bellek geri verilmiyor** (tools/soak.ps1: 60 dk, dakikada bir kanal değişimi → 522 → 569 MB; 8 dk, 10 sn'de bir → +31 MB). Çökme yok, kapanış temiz. Dart tarafındaki önbellekler (media_kit `Media` önbelleği, EPG, resimler) sınırlı; şüpheli mpv/FFmpeg'in açılış başına yerel ayırmaları (donanım kod çözücü havuzu). Sonraki adım: UMDH (Windows Debugging Tools) ile yerel yığın karşılaştırması.
+- **Bellek, kanal değişimi:** sızıntı yok. Bellek oynayan kanala göre ±200 MB oynar (4K yayın 720p'den fazla çözücü ve önbellek tamponu tutar); bu yüzden tek tek örnekler yanıltır. `tools/soak.ps1` artık her beşte birlik dilimdeki en düşük değeri (tabanı) karşılaştırır. 20 dk, 5 sn'de bir kanal değişimi (~240 değişim): taban ısınmadan sonra 630–670 MB'ta düz (−2 MB). Daha önce yazılan "değişim başına ~0.7 MB" bu salınımın tekil örneklerle okunmasıydı. Darlaştırmak için: `-Channels 2` (az sayıda kanal), `-Mpv "hwdec=no;vid=no"` (mpv ayarı).
 - **Zaman kaydırma tamponu diske yazar**: canlı kanal izlenirken yayın, seçilen boyuta kadar (varsayılan 2 GB) veri klasöründeki `timeshift` altına geçici olarak yazılır; kanal değişince ve kapanışta silinir. Tercihler'den kapatılabilir.
 - **Ebeveyn PIN'i ekranı korur, dosyayı değil**: PIN tuzlu ve özetlenmiş saklanır, art arda 5 yanlış denemeden sonra 30 sn beklenir; ama 4-6 haneli bir kod, kütüphane dosyasına erişen birine karşı koruma değildir.

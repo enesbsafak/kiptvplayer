@@ -167,6 +167,11 @@ class MediaKitEngine implements PlayerEngine {
       await _native.setProperty(e.key, e.value);
     }
     await video.platform.future;
+    // Diagnostics (tools/soak.ps1 -Mpv): "hwdec=no;vid=no" after the defaults.
+    for (final pair in (Platform.environment['KP_MPV_EXTRA'] ?? '').split(';')) {
+      final i = pair.indexOf('=');
+      if (i > 0) await _native.setProperty(pair.substring(0, i).trim(), pair.substring(i + 1).trim());
+    }
   }
 
   NativePlayer get _native => _player.platform as NativePlayer;

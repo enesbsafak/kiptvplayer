@@ -260,7 +260,9 @@ class Automation {
   Future<void> _soak(AppState app, PlayerController player, Duration length, {required Duration every}) async {
     final sid = app.activeSource?.id;
     if (sid == null) return;
-    final channels = await app.library.page(sid, Kind.live, limit: 40);
+    // --kp-soak-channels=<n>: cycle through fewer channels (default 40).
+    final count = int.tryParse(_arg('kp-soak-channels') ?? '') ?? 40;
+    final channels = await app.library.page(sid, Kind.live, limit: count);
     if (channels.isEmpty) return;
     final end = DateTime.now().add(length);
     app.go(Section.live);
