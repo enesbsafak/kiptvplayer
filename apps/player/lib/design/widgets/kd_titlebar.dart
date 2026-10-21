@@ -165,19 +165,12 @@ class _GlowLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // app.css:43 — drop-shadow(0 0 6px rgba(255,138,31,.45)).
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(color: KdColors.accentAlpha(0.45), blurRadius: 6),
-        ],
-      ),
-      child: Image.asset(
-        'assets/brand/logo.png',
-        width: size,
-        height: size,
-        filterQuality: FilterQuality.medium,
-      ),
+    // The mark carries its own glow.
+    return Image.asset(
+      'assets/brand/logo.png',
+      width: size,
+      height: size,
+      filterQuality: FilterQuality.medium,
     );
   }
 }

@@ -20,3 +20,6 @@ tools/mock-iptv/media/
 
 # Release output (tools/release.ps1)
 dist/
+
+# Node tools (tools/icon)
+node_modules/

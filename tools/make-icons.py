@@ -1,11 +1,13 @@
-"""App icons for Android, iOS and macOS from design/brand/app-icon-512.png.
+"""Every platform's icons from the vector icon's renders in design/brand
+(tools/icon/app-icon.js): app-icon-1024.png (on its space background) and
+app-icon-foreground-1024.png (transparent).
 
     python tools/make-icons.py
 
-Android: legacy launcher PNGs and an adaptive icon (the glow on the app's
-background, inside the 66% safe zone). iOS: opaque squares (the App Store
-refuses transparency). macOS: the rounded square macOS draws icons in.
-Windows keeps windows/runner/resources/app_icon.ico (same artwork).
+Android: launcher PNGs and an adaptive icon (the foreground inside the safe
+zone on the app's background). iOS: opaque squares, the system rounds them.
+macOS: a rounded square on Apple's icon grid. Windows: app_icon.ico. The app:
+assets/brand/logo.png.
 """
 
 import json
@@ -15,25 +17,27 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parent.parent
 APP = ROOT / 'apps' / 'player'
-SOURCE = Image.open(ROOT / 'design' / 'brand' / 'app-icon-512.png').convert('RGBA')
-BG = (11, 11, 16, 255)  # --bg, #0b0b10
+BRAND = ROOT / 'design' / 'brand'
+FULL = Image.open(BRAND / 'app-icon-1024.png').convert('RGBA')
+FOREGROUND = Image.open(BRAND / 'app-icon-foreground-1024.png').convert('RGBA')
 
 
-def glow(size: int, scale: float = 1.0) -> Image.Image:
-    """The artwork at [size], shrunk by [scale] and centred on transparency."""
-    inner = max(1, round(size * scale))
-    art = SOURCE.resize((inner, inner), Image.LANCZOS)
+def rounded(size: int, radius: float, inset: float = 0) -> Image.Image:
+    """The full icon as a rounded square, [inset] of the canvas left clear."""
+    inner = round(size * (1 - 2 * inset))
+    art = FULL.resize((inner, inner), Image.LANCZOS)
+    s = 4
+    mask = Image.new('L', (inner * s, inner * s), 0)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, inner * s - 1, inner * s - 1), radius=inner * s * radius, fill=255)
     out = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    out.alpha_composite(art, ((size - inner) // 2, (size - inner) // 2))
+    out.paste(art, ((size - inner) // 2,) * 2, mask.resize((inner, inner), Image.LANCZOS))
     return out
 
 
-def on_background(size: int, scale: float, radius: float = 0) -> Image.Image:
+def foreground(size: int, scale: float) -> Image.Image:
+    inner = round(size * scale)
     out = Image.new('RGBA', (size, size), (0, 0, 0, 0))
-    mask = Image.new('L', (size, size), 0)
-    ImageDraw.Draw(mask).rounded_rectangle((0, 0, size - 1, size - 1), radius=round(size * radius), fill=255)
-    out.paste(Image.new('RGBA', (size, size), BG), (0, 0), mask)
-    out.alpha_composite(glow(size, scale))
+    out.alpha_composite(FOREGROUND.resize((inner, inner), Image.LANCZOS), ((size - inner) // 2,) * 2)
     return out
 
 
@@ -42,9 +46,9 @@ def android() -> None:
     for density, dp in {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}.items():
         folder = res / f'mipmap-{density}'
         folder.mkdir(parents=True, exist_ok=True)
-        on_background(round(48 * dp), 0.92, radius=0.22).save(folder / 'ic_launcher.png')
-        # 108 dp canvas; launchers show the middle 72 dp, so the art fills ~66%.
-        glow(round(108 * dp), 0.62).save(folder / 'ic_launcher_foreground.png')
+        rounded(round(48 * dp), 0.22).save(folder / 'ic_launcher.png')
+        # 108 dp canvas; launchers show about the middle 72 dp.
+        foreground(round(108 * dp), 0.74).save(folder / 'ic_launcher_foreground.png')
     anydpi = res / 'mipmap-anydpi-v26'
     anydpi.mkdir(exist_ok=True)
     (anydpi / 'ic_launcher.xml').write_text(
@@ -62,23 +66,30 @@ def android() -> None:
     )
 
 
-def apple(contents: Path, opaque: bool, radius: float) -> None:
+def apple(contents: Path, mac: bool) -> None:
     spec = json.loads(contents.read_text(encoding='utf-8'))
     for image in spec['images']:
         if 'filename' not in image:
             continue
-        points = float(image['size'].split('x')[0])
-        px = round(points * int(image['scale'].rstrip('x')))
-        icon = on_background(px, 0.92 if opaque else 0.8, radius=radius)
-        if opaque:
-            icon = icon.convert('RGB')
-        icon.save(contents.parent / image['filename'])
+        px = round(float(image['size'].split('x')[0]) * int(image['scale'].rstrip('x')))
+        if mac:
+            # Apple's grid: an 824 px rounded square inside 1024.
+            rounded(px, 0.2237, inset=0.0977).save(contents.parent / image['filename'])
+        else:
+            FULL.convert('RGB').resize((px, px), Image.LANCZOS).save(contents.parent / image['filename'])
+
+
+def windows() -> None:
+    sizes = [16, 24, 32, 48, 64, 128, 256]
+    images = [rounded(s, 0.22) for s in sizes]
+    images[-1].save(APP / 'windows' / 'runner' / 'resources' / 'app_icon.ico', sizes=[(s, s) for s in sizes], append_images=images[:-1])
 
 
 if __name__ == '__main__':
     android()
-    # iOS rounds the corners itself and wants no alpha.
-    apple(APP / 'ios' / 'Runner' / 'Assets.xcassets' / 'AppIcon.appiconset' / 'Contents.json', opaque=True, radius=0)
-    # macOS shows the file as is: a rounded square inside the canvas.
-    apple(APP / 'macos' / 'Runner' / 'Assets.xcassets' / 'AppIcon.appiconset' / 'Contents.json', opaque=False, radius=0.18)
+    apple(APP / 'ios' / 'Runner' / 'Assets.xcassets' / 'AppIcon.appiconset' / 'Contents.json', mac=False)
+    apple(APP / 'macos' / 'Runner' / 'Assets.xcassets' / 'AppIcon.appiconset' / 'Contents.json', mac=True)
+    windows()
+    # In the app (titlebar, first run, About): the mark without its square.
+    foreground(256, 1.0).save(APP / 'assets' / 'brand' / 'logo.png')
     print('icons written')

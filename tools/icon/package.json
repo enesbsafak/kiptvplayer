@@ -1,0 +1,8 @@
+{
+  "name": "karadelik-player-icon",
+  "private": true,
+  "description": "Renders design/brand/app-icon*.png from the vector icon (app-icon.js)",
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2"
+  }
+}

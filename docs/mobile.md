@@ -26,7 +26,7 @@ captures every screen at that size, off-screen, with the mock provider.
   Both are permanent once the app is in a store; change them before the
   first upload if a different domain is wanted.
 - Display name: "Karadelik". Icons: `python tools/make-icons.py` regenerates
-  them from `design/brand/app-icon-512.png`.
+  them from the vector icon in `design/brand` (`tools/icon/app-icon.js`).
 
 ## Before publishing to Google Play
 

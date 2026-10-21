@@ -17,7 +17,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = Path(__file__).resolve().parent.parent
-ICON = ROOT / 'design' / 'brand' / 'app-icon-512.png'
+ICON = ROOT / 'design' / 'brand' / 'app-icon-foreground-1024.png'
+FULL_ICON = ROOT / 'design' / 'brand' / 'app-icon-1024.png'
 FONTS = Path('C:/Windows/Fonts')
 BG = (11, 11, 16)
 LINE = (38, 38, 51)
@@ -55,13 +56,13 @@ def font(bold: bool, size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.truetype(str(FONTS / ('seguisb.ttf' if bold else 'segoeui.ttf')), size)
 
 
-def background(w: int, h: int, glow_at: tuple[float, float], radius: float) -> Image.Image:
+def background(w: int, h: int, glow_at: tuple[float, float], radius: float, strength: int = 110) -> Image.Image:
     """The app's background with a soft orange glow, like the icon's ring."""
     img = Image.new('RGB', (w, h), BG)
     glow = Image.new('L', (w, h), 0)
     cx, cy = glow_at[0] * w, glow_at[1] * h
     r = radius * max(w, h)
-    ImageDraw.Draw(glow).ellipse((cx - r, cy - r, cx + r, cy + r), fill=110)
+    ImageDraw.Draw(glow).ellipse((cx - r, cy - r, cx + r, cy + r), fill=strength)
     glow = glow.filter(ImageFilter.GaussianBlur(r * 0.45))
     img.paste(Image.new('RGB', (w, h), ACCENT), (0, 0), glow)
     return img
@@ -113,9 +114,10 @@ def framed(shot: Image.Image, headline: str, sub: str, w: int, h: int) -> Image.
 
 def feature(title: str, sub: str) -> Image.Image:
     w, h = 1024, 500
-    img = background(w, h, (0.78, 0.5), 0.3)
-    icon = Image.open(ICON).convert('RGBA').resize((440, 440), Image.LANCZOS)
-    img.paste(icon, (w - 440 - 40, (h - 440) // 2), icon)
+    # The mark brings its own light: only a faint glow behind it.
+    img = background(w, h, (0.8, 0.5), 0.22, strength=40)
+    icon = Image.open(ICON).convert('RGBA').resize((520, 520), Image.LANCZOS)
+    img.paste(icon, (w - 520 + 10, (h - 520) // 2), icon)
     draw = ImageDraw.Draw(img)
     draw.text((64, 188), title, font=font(True, 66), fill=TEXT, anchor='ls')
     y = 232
@@ -135,7 +137,7 @@ def main(shots: Path, out: Path) -> None:
                 framed(Image.open(src / f'{name}.png'), headline, sub, *size).save(dest / f'{n:02}-{name}.png', optimize=True)
     for lang, (title, sub) in FEATURE.items():
         feature(title, sub).save(out / f'feature-graphic-{lang}.png', optimize=True)
-    Image.open(ICON).convert('RGBA').resize((512, 512)).save(out / 'icon-512.png')
+    Image.open(FULL_ICON).convert('RGB').resize((512, 512), Image.LANCZOS).save(out / 'icon-512.png')
     print('written to', out)
 
 

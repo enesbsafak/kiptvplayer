@@ -456,13 +456,7 @@ class OnboardingScreen extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      boxShadow: [BoxShadow(color: KdColors.accentAlpha(0.5), blurRadius: 10)],
-                    ),
-                    child: Image.asset('assets/brand/logo.png', width: 44, height: 44),
-                  ),
+                  Image.asset('assets/brand/logo.png', width: 52, height: 52),
                   const SizedBox(width: 14),
                   Expanded(
                     child: Column(
