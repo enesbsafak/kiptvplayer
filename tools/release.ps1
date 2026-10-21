@@ -6,7 +6,7 @@
 #                     [-Configuration Release|Profile]
 #
 # -Feed bakes the address the updater checks into the app (default: the
-# public releases repo's latest release).
+# latest release of this repository).
 #
 # Output in dist\: KaradelikIPTVPlayer-Setup-<version>.exe and latest.json.
 #
@@ -20,7 +20,7 @@
 # Without it the build is unsigned and SmartScreen will warn.
 param(
   [string]$Version,
-  [string]$BaseUrl = 'https://github.com/enesbsafak/kiptvplayer-releases/releases/download/v{0}',
+  [string]$BaseUrl = 'https://github.com/enesbsafak/kiptvplayer/releases/download/v{0}',
   [string]$Feed,
   [string]$Configuration = 'Release'
 )

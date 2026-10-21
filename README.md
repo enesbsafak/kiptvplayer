@@ -3,6 +3,8 @@
 Windows (sonra macOS ve mobil) için hızlı, native hisli IPTV oynatıcı. KaradelikDev tasarım dili, Türkçe ve İngilizce.
 İçerik sağlamaz; kullanıcı kendi yetkili kaynağını ekler (Xtream, M3U, Stalker portalı).
 
+Açık kaynak, [MPL-2.0](LICENSE). İndirme: [Releases](https://github.com/enesbsafak/kiptvplayer/releases).
+
 ## Yapı
 
 | Klasör | İçerik |
@@ -48,10 +50,10 @@ tools\release.ps1 -Version 0.2.0      # dist\: kurulum dosyası + latest.json
 
 - `v0.2.0` etiketi gönderilince GitHub Actions (`.github/workflows/release.yml`) aynısını yapar ve GitHub sürümü olarak yayınlar.
 - Uygulama içi güncelleyici `latest.json`'u okur, kurulumu indirir, SHA-256'yı doğrular, sessiz kurar ve uygulamayı yeniden açar; bir önceki kurulum saklanır, “önceki sürüme dön” mümkündür.
-- **Herkese açık indirme:** bu depo özel olduğundan güncelleyici sürümlerini okuyamaz. Yalnızca sürümleri tutan herkese açık bir depo `enesbsafak/kiptvplayer-releases` üzerinden yayınlanır: bu depoda `KP_RELEASES_REPO` değişkeni tanımlı; `KP_RELEASES_TOKEN` sırrı (o depoda Contents: okuma-yazma yetkili ince ayarlı token) eklenince kurulum, `latest.json` ve uygulamaya gömülen besleme adresi oraya yönelir. Değişken yoksa sürümler burada kalır.
+- **İndirme:** sürümler bu deponun [Releases](https://github.com/enesbsafak/kiptvplayer/releases) sayfasından yayınlanır; güncelleyici `releases/latest/download/latest.json` adresini okur. `native-deps` ön sürümü yalnızca derleme bağımlılıklarını tutar, "latest" sayılmaz.
 - **İmza:** `KP_SIGN_CMD` ortam değişkeni / depo sırrı (ör. Azure Trusted Signing) tanımlıysa exe ve kurulum imzalanır; yoksa imzasızdır ve SmartScreen uyarır.
-- **Yerel bağımlılıklar:** libmpv/ANGLE arşivleri `native-deps` sürümünde (özel depo) aynalanıyor; kaynak adres silinirse derleme oradan indirir (`gh` bu depoya erişebilen hesapla oturum açmış olmalı: `gh auth switch --user enesbsafak`, CI'da otomatik).
-- **Yayın öncesi yapılacaklar:** GitHub deposu ve sürümleri (güncelleme adresi `enesbsafak/kiptvplayer` varsayılıyor; `--dart-define=KP_UPDATE_FEED=...` ile değişir), imza sertifikası, libmpv arşivinin kendi sürümümüze aynalanması (kaynak 30 gün saklıyor; `packages/karadelik_mpv_libs/manifest.json`).
+- **Yerel bağımlılıklar:** libmpv/ANGLE arşivleri ve LGPL kaynakları `native-deps` sürümünde aynalanır; upstream adres silinirse derleme oradan indirir (giriş gerekmez).
+- **Açık:** imza sertifikası.
 
 ## Fazlar
 
@@ -70,3 +72,10 @@ tools\release.ps1 -Version 0.2.0      # dist\: kurulum dosyası + latest.json
 - **Bellek, kanal değişimi:** sızıntı yok. Bellek oynayan kanala göre ±200 MB oynar (4K yayın 720p'den fazla çözücü ve önbellek tamponu tutar); bu yüzden tek tek örnekler yanıltır. `tools/soak.ps1` artık her beşte birlik dilimdeki en düşük değeri (tabanı) karşılaştırır. 20 dk, 5 sn'de bir kanal değişimi (~240 değişim): taban ısınmadan sonra 630–670 MB'ta düz (−2 MB). Daha önce yazılan "değişim başına ~0.7 MB" bu salınımın tekil örneklerle okunmasıydı. Darlaştırmak için: `-Channels 2` (az sayıda kanal), `-Mpv "hwdec=no;vid=no"` (mpv ayarı).
 - **Zaman kaydırma tamponu diske yazar**: canlı kanal izlenirken yayın, seçilen boyuta kadar (varsayılan 2 GB) veri klasöründeki `timeshift` altına geçici olarak yazılır; kanal değişince ve kapanışta silinir. Tercihler'den kapatılabilir.
 - **Ebeveyn PIN'i ekranı korur, dosyayı değil**: PIN tuzlu ve özetlenmiş saklanır, art arda 5 yanlış denemeden sonra 30 sn beklenir; ama 4-6 haneli bir kod, kütüphane dosyasına erişen birine karşı koruma değildir.
+
+## Lisans, katkı, güvenlik
+
+- **Lisans:** [Mozilla Public License 2.0](LICENSE). Değiştirdiğiniz dosyalar MPL altında açık kalır; başka kodla birleştirip dağıtabilirsiniz. Üçüncü taraf bileşenler: [THIRD_PARTY.md](THIRD_PARTY.md).
+- **Ad ve logo:** "Karadelik" adı ve `assets/brand` altındaki logo lisansa dahil değildir (MPL-2.0 §2.3). Çatallar kendi ad ve logolarıyla dağıtılmalıdır.
+- **İçerik:** uygulama yayın, liste veya abonelik içermez ve satmaz. Kullanıcı yalnızca erişim hakkı olduğu kaynakları ekler.
+- **Katkı:** [CONTRIBUTING.md](CONTRIBUTING.md). **Güvenlik açığı:** herkese açık issue yerine [SECURITY.md](SECURITY.md).

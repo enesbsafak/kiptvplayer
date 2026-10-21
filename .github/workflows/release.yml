@@ -5,13 +5,6 @@
 # Signing: add a repository secret KP_SIGN_CMD (see tools/release.ps1); the
 # signing tool it names must be available on the runner. Without it the
 # release is unsigned and SmartScreen warns on first run.
-#
-# Public downloads: this repository is private, so the updater cannot read its
-# releases. Set the repository variable KP_RELEASES_REPO (e.g.
-# enesbsafak/kiptvplayer-releases, a public repo holding only releases) and a
-# secret KP_RELEASES_TOKEN (fine-grained token, Contents: read and write on
-# that repo). The installer, latest.json and the feed address baked into the
-# app then all point there. Without the variable, releases stay here.
 name: Release
 
 on:
@@ -44,21 +37,19 @@ jobs:
         shell: pwsh
         env:
           KP_SIGN_CMD: ${{ secrets.KP_SIGN_CMD }}
-          RELEASES_REPO: ${{ vars.KP_RELEASES_REPO || github.repository }}
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
-          $base = "https://github.com/$env:RELEASES_REPO/releases"
+          $base = "https://github.com/${{ github.repository }}/releases"
           ./tools/release.ps1 -Version $version -BaseUrl "$base/download/v{0}" -Feed "$base/latest/download/latest.json"
 
       - name: Publish the release
         shell: pwsh
         env:
-          GH_TOKEN: ${{ vars.KP_RELEASES_REPO && secrets.KP_RELEASES_TOKEN || github.token }}
-          RELEASES_REPO: ${{ vars.KP_RELEASES_REPO || github.repository }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
           $notes = "tools/release-notes/$version.tr.txt"
           if (-not (Test-Path $notes)) { $notes = $null }
-          $ghArgs = @('${{ github.ref_name }}', "dist/KaradelikIPTVPlayer-Setup-$version.exe", 'dist/latest.json', '--title', "Karadelik IPTV Player $version", '--repo', $env:RELEASES_REPO)
+          $ghArgs = @('${{ github.ref_name }}', "dist/KaradelikIPTVPlayer-Setup-$version.exe", 'dist/latest.json', '--title', "Karadelik IPTV Player $version")
           if ($notes) { $ghArgs += @('--notes-file', $notes) } else { $ghArgs += @('--notes', '') }
           gh release create @ghArgs

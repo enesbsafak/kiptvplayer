@@ -13,7 +13,7 @@
       "mpv_commit": "e471496c56",
       "license": "LGPL-2.1-or-later (mpv -Dgpl=false; FFmpeg without --enable-gpl)",
       "source": "Build scripts: https://github.com/zhongfly/mpv-winbuild (mpv-dev-lgpl). mpv and FFmpeg sources at the commits above; see THIRD_PARTY.md.",
-      "distribution": "Mirrored to the native-deps release of enesbsafak/kiptvplayer (see \"mirror\"); the build falls back to it when zhongfly prunes the build (30 days). A public download for end users still needs a public release location."
+      "distribution": "Mirrored to the public native-deps release of enesbsafak/kiptvplayer (see \"mirror\"); the build falls back to it when zhongfly prunes the build (30 days)."
     },
     "angle": {
       "file": "ANGLE.7z",

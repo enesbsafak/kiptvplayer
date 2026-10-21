@@ -1,8 +1,8 @@
-# Private-repo minutes count 1x on Linux, 2x on Windows, 10x on macOS, so:
-# - every push: tests on Linux (Rust, end-to-end against the mock provider,
-#   Flutter analyze + headless tests; none of them need Windows)
-# - pull requests and manual runs: the Windows release build
-# - manual runs: the data core on macOS (the later port stays cheap)
+# - every push and pull request: tests on Linux (Rust, end-to-end against the
+#   mock provider, Flutter analyze + headless tests; none of them need Windows)
+# - pull requests, pushes to main and manual runs: the Windows release build
+# - manual runs: the data core on macOS
+# Pull requests from forks get a read-only token and no secrets.
 name: CI
 
 on:
@@ -12,9 +12,12 @@ on:
   workflow_dispatch:
     inputs:
       macos:
-        description: Also test the data core on macOS (10x minutes)
+        description: Also test the data core on macOS
         type: boolean
         default: false
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -58,7 +61,6 @@ jobs:
           flutter test
 
   windows-build:
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     timeout-minutes: 75
     steps:
@@ -73,8 +75,6 @@ jobs:
       - name: Windows release build
         working-directory: apps/desktop
         env:
-          # The native-deps mirror (private release) when upstream pruned a pin.
-          GH_TOKEN: ${{ github.token }}
         run: flutter build windows --release
       - uses: actions/upload-artifact@v4
         with:

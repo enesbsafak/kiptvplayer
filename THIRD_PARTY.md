@@ -19,9 +19,11 @@ The exact archives, with SHA-256 checksums, are pinned in
 
 - libmpv is linked dynamically: users can replace `libmpv-2.dll` in the
   install folder with their own compatible build.
-- The corresponding source is named above and in the app. Before a public
-  release the pinned archive is mirrored to this project's own GitHub
-  release (upstream keeps builds for 30 days), with the build recipe.
+- The corresponding source is in the `native-deps` release of this
+  repository (https://github.com/enesbsafak/kiptvplayer/releases/tag/native-deps):
+  mpv `e471496c56`, FFmpeg `1c767fe664` (`N-127798-g1c767fe66`), the
+  mpv-winbuild scripts used (`8a39c5134b`) and the binary archive itself, with
+  `SOURCES.txt`. Upstream keeps builds for 30 days; the release keeps them.
 - The app makes no attempt to prevent replacing or reverse-engineering
   these libraries for debugging such modifications.
 
