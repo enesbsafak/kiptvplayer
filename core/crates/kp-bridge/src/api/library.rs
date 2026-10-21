@@ -820,6 +820,59 @@ pub struct TmdbEpisodeInfo {
     pub air_date: Option<String>,
 }
 
+/// One subtitle file found on OpenSubtitles.
+#[derive(Debug, Clone)]
+pub struct SubtitleResult {
+    pub file_id: i64,
+    pub language: String,
+    pub release: String,
+    pub file_name: String,
+    pub downloads: i64,
+    pub hearing_impaired: bool,
+    pub machine: bool,
+    pub trusted: bool,
+}
+
+/// A downloaded subtitle: its path, and downloads left today if known.
+#[derive(Debug, Clone)]
+pub struct SubtitleFile {
+    pub path: String,
+    pub remaining: Option<i64>,
+}
+
+pub fn opensubs_configured() -> Result<bool> {
+    Ok(core()?.opensubs_configured())
+}
+
+/// Checks the key with OpenSubtitles and saves it in the OS keyring; None removes it.
+pub fn set_opensubs_key(key: Option<String>) -> Result<()> {
+    Ok(core()?.set_opensubs_key(key.as_deref())?)
+}
+
+/// Subtitles for a film, or (season, episode) of a series.
+pub fn subtitle_search(item_id: i64, season: Option<i32>, episode: Option<i32>) -> Result<Vec<SubtitleResult>> {
+    let ep = season.zip(episode);
+    Ok(core()?
+        .subtitle_search(item_id, ep)?
+        .into_iter()
+        .map(|r| SubtitleResult {
+            file_id: r.file_id,
+            language: r.language,
+            release: r.release,
+            file_name: r.file_name,
+            downloads: r.downloads,
+            hearing_impaired: r.hearing_impaired,
+            machine: r.machine,
+            trusted: r.trusted,
+        })
+        .collect())
+}
+
+pub fn subtitle_download(file_id: i64) -> Result<SubtitleFile> {
+    let (path, remaining) = core()?.subtitle_download(file_id)?;
+    Ok(SubtitleFile { path, remaining })
+}
+
 pub fn tmdb_status() -> Result<TmdbStatus> {
     let s = core()?.tmdb_status()?;
     Ok(TmdbStatus { configured: s.configured, language: s.language })

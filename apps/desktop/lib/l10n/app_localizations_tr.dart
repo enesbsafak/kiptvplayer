@@ -1379,4 +1379,41 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get backupPasswordMismatch => 'Parolalar aynı değil';
+
+  @override
+  String get subsFind => 'İnternette altyazı ara…';
+
+  @override
+  String get subsTitle => 'OpenSubtitles';
+
+  @override
+  String get subsNoKey =>
+      'Altyazı aramak için Ayarlar > Tercihler\'e kendi OpenSubtitles API anahtarınızı girin. Anahtar yalnızca bu bilgisayarın kimlik deposunda tutulur.';
+
+  @override
+  String get subsOpenSettings => 'Ayarlara git';
+
+  @override
+  String get subsNone => 'Bu içerik için altyazı bulunamadı.';
+
+  @override
+  String subsDownloads(String n) {
+    return '$n indirme';
+  }
+
+  @override
+  String get subsMachine => 'Makine çevirisi';
+
+  @override
+  String get subsSettingsTitle => 'OpenSubtitles altyazıları';
+
+  @override
+  String get subsSettingsBody =>
+      'Film ve dizilerde oynatıcıdan altyazı aramak için opensubtitles.com\'dan ücretsiz bir API anahtarı alıp buraya girin. Anahtarınız işletim sisteminin kimlik deposunda saklanır; aramalar doğrudan OpenSubtitles\'a gider. Günlük indirme hakkı OpenSubtitles\'ın kurallarına bağlıdır.';
+
+  @override
+  String get subsKeyHint => 'OpenSubtitles API anahtarı';
+
+  @override
+  String get subsWhereLink => 'Anahtar al (opensubtitles.com)';
 }

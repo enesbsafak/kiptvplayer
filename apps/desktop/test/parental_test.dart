@@ -25,6 +25,8 @@ void main() {
     await tester.tap(find.text('Tercihler'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('PIN belirle'), 200, scrollable: find.byType(Scrollable).last);
+    await tester.ensureVisible(find.text('PIN belirle'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('PIN belirle'));
     await tester.pumpAndSettle();
 
@@ -36,6 +38,8 @@ void main() {
     expect(h.state.parental.locked, isTrue);
     expect(find.text('Kilitli: yetişkin içerik gizli.'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('PIN\'i kaldır'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('PIN\'i kaldır'));
     await tester.pumpAndSettle();
     await _enter(tester, '0000');

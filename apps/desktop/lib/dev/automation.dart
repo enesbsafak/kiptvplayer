@@ -10,6 +10,7 @@ import '../app/library.dart';
 import '../player/media_track.dart';
 import '../player/player_controller.dart';
 import '../screens/epg_settings.dart';
+import '../screens/subtitle_search.dart';
 import '../shell/command_palette.dart';
 
 /// Development driver:
@@ -176,6 +177,25 @@ class Automation {
         player.tracksPanelRequest.value = true;
         await shot('player-tracks', wait: const Duration(milliseconds: 600));
         await File('$dir${Platform.pathSeparator}position.txt').writeAsString('${player.position.value.inMilliseconds}');
+        // OpenSubtitles (the mock's): the dialog, then a download turned on.
+        if (Platform.environment['KP_OPENSUBS_BASE'] != null) {
+          await app.library.setOpensubsKey('kp-mock-os-key');
+          final ctx = rootNavigator.currentContext;
+          if (ctx != null && ctx.mounted) {
+            unawaited(showSubtitleSearch(ctx, player));
+            await shot('subtitle-search', wait: const Duration(milliseconds: 1500));
+            rootNavigator.currentState?.pop();
+          }
+          final found = await app.library.subtitleSearch(movies.first.id);
+          final file = await app.library.subtitleDownload(found.first.fileId);
+          await player.addSubtitleFile(file.path, title: 'OpenSubtitles', language: found.first.language);
+          await Future<void>.delayed(const Duration(milliseconds: 800));
+          final subs = player.tracks.where((t) => t.kind == TrackKind.subtitle);
+          final nl = String.fromCharCode(10);
+          await File('$dir${Platform.pathSeparator}opensubs.txt').writeAsString(
+            '${file.path}$nl${subs.map((t) => '${t.selected ? '*' : ' '} ${t.lang} ${t.title ?? ''}').join(nl)}',
+          );
+        }
         await player.stop();
       }
       final series = await app.library.page(sid, Kind.series, limit: 5);

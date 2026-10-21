@@ -12,6 +12,12 @@
   "repository": "https://github.com/oyvindln/adler2"
  },
  {
+  "name": "aead",
+  "version": "0.5.2",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/traits"
+ },
+ {
   "name": "ahash",
   "version": "0.8.12",
   "license": "MIT OR Apache-2.0",
@@ -54,6 +60,12 @@
   "repository": "https://github.com/dtolnay/anyhow"
  },
  {
+  "name": "argon2",
+  "version": "0.5.3",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/password-hashes/tree/master/argon2"
+ },
+ {
   "name": "async-compression",
   "version": "0.4.51",
   "license": "MIT OR Apache-2.0",
@@ -90,10 +102,22 @@
   "repository": "https://github.com/marshallpierce/rust-base64"
  },
  {
+  "name": "base64ct",
+  "version": "1.8.3",
+  "license": "Apache-2.0 OR MIT",
+  "repository": "https://github.com/RustCrypto/formats"
+ },
+ {
   "name": "bitflags",
   "version": "2.13.2",
   "license": "MIT OR Apache-2.0",
   "repository": "https://github.com/bitflags/bitflags"
+ },
+ {
+  "name": "blake2",
+  "version": "0.10.6",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/hashes"
  },
  {
   "name": "block-buffer",
@@ -132,6 +156,18 @@
   "repository": "https://github.com/rust-lang/cfg-if"
  },
  {
+  "name": "chacha20",
+  "version": "0.9.1",
+  "license": "Apache-2.0 OR MIT",
+  "repository": "https://github.com/RustCrypto/stream-ciphers"
+ },
+ {
+  "name": "chacha20poly1305",
+  "version": "0.10.1",
+  "license": "Apache-2.0 OR MIT",
+  "repository": "https://github.com/RustCrypto/AEADs/tree/master/chacha20poly1305"
+ },
+ {
   "name": "chrono",
   "version": "0.4.45",
   "license": "MIT OR Apache-2.0",
@@ -142,6 +178,12 @@
   "version": "0.10.4",
   "license": "MIT OR Apache-2.0",
   "repository": "https://github.com/chronotope/chrono-tz"
+ },
+ {
+  "name": "cipher",
+  "version": "0.4.4",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/traits"
  },
  {
   "name": "compression-codecs",
@@ -178,6 +220,12 @@
   "version": "0.8.7",
   "license": "MIT OR Apache-2.0",
   "repository": "https://github.com/servo/core-foundation-rs"
+ },
+ {
+  "name": "cpufeatures",
+  "version": "0.2.17",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/utils"
  },
  {
   "name": "crc32fast",
@@ -349,6 +397,12 @@
  },
  {
   "name": "getrandom",
+  "version": "0.2.17",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/rust-random/getrandom"
+ },
+ {
+  "name": "getrandom",
   "version": "0.4.3",
   "license": "MIT OR Apache-2.0",
   "repository": "https://github.com/rust-random/getrandom"
@@ -498,6 +552,12 @@
   "repository": "https://github.com/hsivonen/idna_adapter"
  },
  {
+  "name": "inout",
+  "version": "0.1.4",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/utils"
+ },
+ {
   "name": "ipnet",
   "version": "2.12.2",
   "license": "MIT OR Apache-2.0",
@@ -624,6 +684,12 @@
   "repository": "https://github.com/matklad/once_cell"
  },
  {
+  "name": "opaque-debug",
+  "version": "0.3.1",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/utils"
+ },
+ {
   "name": "openssl",
   "version": "0.10.81",
   "license": "Apache-2.0",
@@ -660,6 +726,12 @@
   "repository": "https://github.com/Amanieu/parking_lot"
  },
  {
+  "name": "password-hash",
+  "version": "0.5.0",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/traits/tree/master/password-hash"
+ },
+ {
   "name": "percent-encoding",
   "version": "2.3.2",
   "license": "MIT OR Apache-2.0",
@@ -682,6 +754,12 @@
   "version": "0.2.17",
   "license": "Apache-2.0 OR MIT",
   "repository": "https://github.com/taiki-e/pin-project-lite"
+ },
+ {
+  "name": "poly1305",
+  "version": "0.8.0",
+  "license": "Apache-2.0 OR MIT",
+  "repository": "https://github.com/RustCrypto/universal-hashes"
  },
  {
   "name": "portable-atomic",
@@ -718,6 +796,12 @@
   "version": "6.0.0",
   "license": "MIT OR Apache-2.0 OR LGPL-2.1-or-later",
   "repository": "https://github.com/r-efi/r-efi"
+ },
+ {
+  "name": "rand_core",
+  "version": "0.6.4",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/rust-random/rand"
  },
  {
   "name": "redox_syscall",
@@ -840,6 +924,12 @@
   "repository": "https://github.com/nox/serde_urlencoded"
  },
  {
+  "name": "sha2",
+  "version": "0.10.9",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/hashes"
+ },
+ {
   "name": "simd-adler32",
   "version": "0.3.10",
   "license": "MIT",
@@ -874,6 +964,12 @@
   "version": "1.2.1",
   "license": "MIT OR Apache-2.0",
   "repository": "https://github.com/storyyeller/stable_deref_trait"
+ },
+ {
+  "name": "subtle",
+  "version": "2.6.1",
+  "license": "BSD-3-Clause",
+  "repository": "https://github.com/dalek-cryptography/subtle"
  },
  {
   "name": "syn",
@@ -1018,6 +1114,12 @@
   "version": "0.1.26",
   "license": "(MIT OR Apache-2.0) AND Unicode-3.0",
   "repository": "https://github.com/unicode-rs/unicode-normalization"
+ },
+ {
+  "name": "universal-hash",
+  "version": "0.5.1",
+  "license": "MIT OR Apache-2.0",
+  "repository": "https://github.com/RustCrypto/traits"
  },
  {
   "name": "url",

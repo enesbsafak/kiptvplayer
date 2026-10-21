@@ -154,6 +154,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SourceInfo> dco_decode_list_source_info(dynamic raw);
 
   @protected
+  List<SubtitleResult> dco_decode_list_subtitle_result(dynamic raw);
+
+  @protected
   List<TmdbEpisodeInfo> dco_decode_list_tmdb_episode_info(dynamic raw);
 
   @protected
@@ -229,6 +232,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SourceType dco_decode_source_type(dynamic raw);
+
+  @protected
+  SubtitleFile dco_decode_subtitle_file(dynamic raw);
+
+  @protected
+  SubtitleResult dco_decode_subtitle_result(dynamic raw);
 
   @protected
   SyncEvent dco_decode_sync_event(dynamic raw);
@@ -403,6 +412,11 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   List<SourceInfo> sse_decode_list_source_info(SseDeserializer deserializer);
 
   @protected
+  List<SubtitleResult> sse_decode_list_subtitle_result(
+    SseDeserializer deserializer,
+  );
+
+  @protected
   List<TmdbEpisodeInfo> sse_decode_list_tmdb_episode_info(
     SseDeserializer deserializer,
   );
@@ -488,6 +502,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   SourceType sse_decode_source_type(SseDeserializer deserializer);
+
+  @protected
+  SubtitleFile sse_decode_subtitle_file(SseDeserializer deserializer);
+
+  @protected
+  SubtitleResult sse_decode_subtitle_result(SseDeserializer deserializer);
 
   @protected
   SyncEvent sse_decode_sync_event(SseDeserializer deserializer);
@@ -706,6 +726,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_list_subtitle_result(
+    List<SubtitleResult> self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_list_tmdb_episode_info(
     List<TmdbEpisodeInfo> self,
     SseSerializer serializer,
@@ -812,6 +838,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_source_type(SourceType self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_subtitle_file(SubtitleFile self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_subtitle_result(
+    SubtitleResult self,
+    SseSerializer serializer,
+  );
 
   @protected
   void sse_encode_sync_event(SyncEvent self, SseSerializer serializer);

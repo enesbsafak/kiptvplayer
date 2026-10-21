@@ -10,7 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
 // These functions are ignored because they are not marked as `pub`: `cats`, `core`, `counts`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
-// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
@@ -404,6 +404,27 @@ Future<List<Programme>> epg({required PlatformInt64 itemId}) =>
 /// Past programmes that can be replayed, newest first.
 Future<List<Programme>> archive({required PlatformInt64 itemId}) =>
     RustLib.instance.api.crateApiLibraryArchive(itemId: itemId);
+
+Future<bool> opensubsConfigured() =>
+    RustLib.instance.api.crateApiLibraryOpensubsConfigured();
+
+/// Checks the key with OpenSubtitles and saves it in the OS keyring; None removes it.
+Future<void> setOpensubsKey({String? key}) =>
+    RustLib.instance.api.crateApiLibrarySetOpensubsKey(key: key);
+
+/// Subtitles for a film, or (season, episode) of a series.
+Future<List<SubtitleResult>> subtitleSearch({
+  required PlatformInt64 itemId,
+  int? season,
+  int? episode,
+}) => RustLib.instance.api.crateApiLibrarySubtitleSearch(
+  itemId: itemId,
+  season: season,
+  episode: episode,
+);
+
+Future<SubtitleFile> subtitleDownload({required PlatformInt64 fileId}) =>
+    RustLib.instance.api.crateApiLibrarySubtitleDownload(fileId: fileId);
 
 Future<TmdbStatus> tmdbStatus() =>
     RustLib.instance.api.crateApiLibraryTmdbStatus();
@@ -1194,6 +1215,73 @@ enum SourceType {
 
   /// Stalker / Ministra portal (MAC address).
   stalker,
+}
+
+/// A downloaded subtitle: its path, and downloads left today if known.
+class SubtitleFile {
+  final String path;
+  final PlatformInt64? remaining;
+
+  const SubtitleFile({required this.path, this.remaining});
+
+  @override
+  int get hashCode => path.hashCode ^ remaining.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SubtitleFile &&
+          runtimeType == other.runtimeType &&
+          path == other.path &&
+          remaining == other.remaining;
+}
+
+/// One subtitle file found on OpenSubtitles.
+class SubtitleResult {
+  final PlatformInt64 fileId;
+  final String language;
+  final String release;
+  final String fileName;
+  final PlatformInt64 downloads;
+  final bool hearingImpaired;
+  final bool machine;
+  final bool trusted;
+
+  const SubtitleResult({
+    required this.fileId,
+    required this.language,
+    required this.release,
+    required this.fileName,
+    required this.downloads,
+    required this.hearingImpaired,
+    required this.machine,
+    required this.trusted,
+  });
+
+  @override
+  int get hashCode =>
+      fileId.hashCode ^
+      language.hashCode ^
+      release.hashCode ^
+      fileName.hashCode ^
+      downloads.hashCode ^
+      hearingImpaired.hashCode ^
+      machine.hashCode ^
+      trusted.hashCode;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is SubtitleResult &&
+          runtimeType == other.runtimeType &&
+          fileId == other.fileId &&
+          language == other.language &&
+          release == other.release &&
+          fileName == other.fileName &&
+          downloads == other.downloads &&
+          hearingImpaired == other.hearingImpaired &&
+          machine == other.machine &&
+          trusted == other.trusted;
 }
 
 @freezed

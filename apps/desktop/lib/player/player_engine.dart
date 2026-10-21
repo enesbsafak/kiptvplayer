@@ -65,8 +65,9 @@ abstract interface class PlayerEngine {
   Future<void> setAspect(String? aspect);
   Future<void> setSpeed(double speed);
 
-  /// Loads a subtitle file from disk and selects it.
-  Future<void> addSubtitleFile(String path);
+  /// Loads a subtitle file from disk and selects it; [title] and
+  /// [language] name it in the track list.
+  Future<void> addSubtitleFile(String path, {String? title, String? language});
 
   /// A snapshot of codec, decoder, bitrate, cache and dropped-frame
   /// numbers for the statistics panel (read on demand, never observed).
@@ -359,8 +360,9 @@ class MediaKitEngine implements PlayerEngine {
   }
 
   @override
-  Future<void> addSubtitleFile(String path) async {
-    await _native.command(['sub-add', path, 'select']);
+  Future<void> addSubtitleFile(String path, {String? title, String? language}) async {
+    final name = title ?? path.split(RegExp(r'[\/]')).last;
+    await _native.command(['sub-add', path, 'select', name, language ?? '']);
     await _refreshTracks();
   }
 

@@ -2545,6 +2545,72 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Parolalar aynı değil'**
   String get backupPasswordMismatch;
+
+  /// No description provided for @subsFind.
+  ///
+  /// In tr, this message translates to:
+  /// **'İnternette altyazı ara…'**
+  String get subsFind;
+
+  /// No description provided for @subsTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'OpenSubtitles'**
+  String get subsTitle;
+
+  /// No description provided for @subsNoKey.
+  ///
+  /// In tr, this message translates to:
+  /// **'Altyazı aramak için Ayarlar > Tercihler\'e kendi OpenSubtitles API anahtarınızı girin. Anahtar yalnızca bu bilgisayarın kimlik deposunda tutulur.'**
+  String get subsNoKey;
+
+  /// No description provided for @subsOpenSettings.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ayarlara git'**
+  String get subsOpenSettings;
+
+  /// No description provided for @subsNone.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu içerik için altyazı bulunamadı.'**
+  String get subsNone;
+
+  /// No description provided for @subsDownloads.
+  ///
+  /// In tr, this message translates to:
+  /// **'{n} indirme'**
+  String subsDownloads(String n);
+
+  /// No description provided for @subsMachine.
+  ///
+  /// In tr, this message translates to:
+  /// **'Makine çevirisi'**
+  String get subsMachine;
+
+  /// No description provided for @subsSettingsTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'OpenSubtitles altyazıları'**
+  String get subsSettingsTitle;
+
+  /// No description provided for @subsSettingsBody.
+  ///
+  /// In tr, this message translates to:
+  /// **'Film ve dizilerde oynatıcıdan altyazı aramak için opensubtitles.com\'dan ücretsiz bir API anahtarı alıp buraya girin. Anahtarınız işletim sisteminin kimlik deposunda saklanır; aramalar doğrudan OpenSubtitles\'a gider. Günlük indirme hakkı OpenSubtitles\'ın kurallarına bağlıdır.'**
+  String get subsSettingsBody;
+
+  /// No description provided for @subsKeyHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'OpenSubtitles API anahtarı'**
+  String get subsKeyHint;
+
+  /// No description provided for @subsWhereLink.
+  ///
+  /// In tr, this message translates to:
+  /// **'Anahtar al (opensubtitles.com)'**
+  String get subsWhereLink;
 }
 
 class _AppLocalizationsDelegate

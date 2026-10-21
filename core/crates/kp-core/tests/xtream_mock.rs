@@ -242,3 +242,31 @@ fn stalker_portal_end_to_end() {
     assert!(play.url.contains("/stalker/play/vod-"), "{}", play.url);
     assert!(!play.is_live);
 }
+
+#[test]
+#[ignore = "needs tools/mock-iptv running"]
+fn opensubtitles_search_and_download() {
+    std::env::set_var("KP_OPENSUBS_BASE", format!("{}/os/api/v1", mock_url()));
+    let core = Core::open_in_memory(Box::new(MemorySecrets::default())).unwrap();
+    let (source, _) = core.add_source(xtream("demo"), &|_| {}).unwrap();
+    let film = core.page(&source.id, ContentKind::Movie, None, None, 1).unwrap().remove(0);
+
+    assert!(core.subtitle_search(film.id, None).unwrap_err().to_string().contains("anahtar"), "no key yet");
+    assert!(core.set_opensubs_key(Some("yanlis")).unwrap_err().to_string().contains("reddedildi"));
+    core.set_opensubs_key(Some("kp-mock-os-key")).unwrap();
+    assert!(core.opensubs_configured());
+
+    let found = core.subtitle_search(film.id, None).unwrap();
+    assert_eq!(found.len(), 3);
+    assert_eq!((found[0].language.as_str(), found[0].downloads), ("tr", 4200), "most downloaded first");
+    let (path, left) = core.subtitle_download(found[0].file_id).unwrap();
+    let text = std::fs::read_to_string(&path).unwrap();
+    assert!(text.contains("OpenSubtitles test altyazısı 9001") && text.contains("çğıöşü"), "{text}");
+    assert_eq!(left, Some(19));
+
+    let series = core.page(&source.id, ContentKind::Series, None, None, 1).unwrap().remove(0);
+    let ep = core.subtitle_search(series.id, Some((1, 2))).unwrap();
+    assert!(ep[0].release.contains(".E02."), "{}", ep[0].release);
+    core.set_opensubs_key(None).unwrap();
+    assert!(!core.opensubs_configured());
+}

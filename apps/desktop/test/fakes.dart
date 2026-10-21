@@ -146,6 +146,28 @@ class FakeLibrary implements LibraryApi {
   @override
   Future<List<Item>> groupItems(int groupId) async => [for (final id in groups[groupId]!.$2) ?_find(id)].map(_named).toList();
 
+  String? opensubsKey;
+  final subtitleSearches = <(int, int?, int?)>[];
+  @override
+  Future<bool> opensubsConfigured() async => opensubsKey != null;
+  @override
+  Future<void> setOpensubsKey(String? key) async {
+    if (key != null && key != 'os-key') throw AnyhowException('OpenSubtitles anahtarı reddedildi');
+    opensubsKey = key;
+  }
+
+  @override
+  Future<List<SubtitleResult>> subtitleSearch(int itemId, {int? season, int? episode}) async {
+    subtitleSearches.add((itemId, season, episode));
+    return const [
+      SubtitleResult(fileId: 1, language: 'tr', release: 'Film.1080p.WEB', fileName: 'a.srt', downloads: 4200, hearingImpaired: false, machine: false, trusted: true),
+      SubtitleResult(fileId: 2, language: 'en', release: 'Film.1080p.BluRay', fileName: 'b.srt', downloads: 90, hearingImpaired: true, machine: false, trusted: true),
+    ];
+  }
+
+  @override
+  Future<SubtitleFile> subtitleDownload(int fileId) async => SubtitleFile(path: 'C:/subs/$fileId.srt', remaining: 19);
+
   final backupFiles = <String, String>{};
   @override
   Future<BackupCounts> exportBackup(String path, String password) async {
@@ -461,7 +483,10 @@ class FakeEngine implements PlayerEngine {
   @override
   Future<void> setSpeed(double speed) async => adjustments['speed'] = speed;
   @override
-  Future<void> addSubtitleFile(String path) async => adjustments['subFile'] = path;
+  Future<void> addSubtitleFile(String path, {String? title, String? language}) async {
+    adjustments['subFile'] = path;
+    adjustments['subFileName'] = (title, language);
+  }
   @override
   Future<void> setSubtitlePosition(int percent) async => subtitlePositions.add(percent);
   @override

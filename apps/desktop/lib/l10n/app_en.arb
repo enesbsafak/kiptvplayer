@@ -407,5 +407,16 @@
   "backupPassword": "Password",
   "backupPasswordAgain": "Password (again)",
   "backupPasswordShort": "At least 8 characters",
-  "backupPasswordMismatch": "The passwords do not match"
+  "backupPasswordMismatch": "The passwords do not match",
+  "subsFind": "Find subtitles online…",
+  "subsTitle": "OpenSubtitles",
+  "subsNoKey": "To search for subtitles, enter your own OpenSubtitles API key in Settings > Preferences. The key stays in this computer's credential store.",
+  "subsOpenSettings": "Open Settings",
+  "subsNone": "No subtitles found for this title.",
+  "subsDownloads": "{n} downloads",
+  "subsMachine": "Machine translated",
+  "subsSettingsTitle": "OpenSubtitles subtitles",
+  "subsSettingsBody": "Get a free API key from opensubtitles.com and enter it here to search for subtitles from the player in films and series. The key is kept in the OS credential store; searches go straight to OpenSubtitles. Daily downloads follow OpenSubtitles' rules.",
+  "subsKeyHint": "OpenSubtitles API key",
+  "subsWhereLink": "Get a key (opensubtitles.com)"
 }

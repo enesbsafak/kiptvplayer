@@ -1402,4 +1402,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupPasswordMismatch => 'The passwords do not match';
+
+  @override
+  String get subsFind => 'Find subtitles online…';
+
+  @override
+  String get subsTitle => 'OpenSubtitles';
+
+  @override
+  String get subsNoKey =>
+      'To search for subtitles, enter your own OpenSubtitles API key in Settings > Preferences. The key stays in this computer\'s credential store.';
+
+  @override
+  String get subsOpenSettings => 'Open Settings';
+
+  @override
+  String get subsNone => 'No subtitles found for this title.';
+
+  @override
+  String subsDownloads(String n) {
+    return '$n downloads';
+  }
+
+  @override
+  String get subsMachine => 'Machine translated';
+
+  @override
+  String get subsSettingsTitle => 'OpenSubtitles subtitles';
+
+  @override
+  String get subsSettingsBody =>
+      'Get a free API key from opensubtitles.com and enter it here to search for subtitles from the player in films and series. The key is kept in the OS credential store; searches go straight to OpenSubtitles. Daily downloads follow OpenSubtitles\' rules.';
+
+  @override
+  String get subsKeyHint => 'OpenSubtitles API key';
+
+  @override
+  String get subsWhereLink => 'Get a key (opensubtitles.com)';
 }

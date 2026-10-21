@@ -828,5 +828,23 @@
   "backupPassword": "Parola",
   "backupPasswordAgain": "Parola (tekrar)",
   "backupPasswordShort": "En az 8 karakter",
-  "backupPasswordMismatch": "Parolalar aynı değil"
+  "backupPasswordMismatch": "Parolalar aynı değil",
+  "subsFind": "İnternette altyazı ara…",
+  "subsTitle": "OpenSubtitles",
+  "subsNoKey": "Altyazı aramak için Ayarlar > Tercihler'e kendi OpenSubtitles API anahtarınızı girin. Anahtar yalnızca bu bilgisayarın kimlik deposunda tutulur.",
+  "subsOpenSettings": "Ayarlara git",
+  "subsNone": "Bu içerik için altyazı bulunamadı.",
+  "subsDownloads": "{n} indirme",
+  "@subsDownloads": {
+    "placeholders": {
+      "n": {
+        "type": "String"
+      }
+    }
+  },
+  "subsMachine": "Makine çevirisi",
+  "subsSettingsTitle": "OpenSubtitles altyazıları",
+  "subsSettingsBody": "Film ve dizilerde oynatıcıdan altyazı aramak için opensubtitles.com'dan ücretsiz bir API anahtarı alıp buraya girin. Anahtarınız işletim sisteminin kimlik deposunda saklanır; aramalar doğrudan OpenSubtitles'a gider. Günlük indirme hakkı OpenSubtitles'ın kurallarına bağlıdır.",
+  "subsKeyHint": "OpenSubtitles API anahtarı",
+  "subsWhereLink": "Anahtar al (opensubtitles.com)"
 }

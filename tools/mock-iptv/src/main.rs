@@ -20,7 +20,7 @@ use axum::body::Body;
 use axum::extract::{Path, Query, Request, State};
 use axum::http::{header, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
-use axum::routing::get;
+use axum::routing::{get, post};
 use axum::{Json, Router};
 use base64::Engine as _;
 use serde_json::{json, Value};
@@ -94,6 +94,11 @@ async fn main() {
         .route("/3/tv/{id}", get(tmdb_tv))
         .route("/3/tv/{id}/season/{season}", get(tmdb_season))
         .route("/t/p/{size}/{file}", get(tmdb_image))
+        // OpenSubtitles stand-in: key kp-mock-os-key.
+        .route("/os/api/v1/infos/formats", get(os_formats))
+        .route("/os/api/v1/subtitles", get(os_search))
+        .route("/os/api/v1/download", post(os_download))
+        .route("/os/file/{id}", get(os_file))
         .nest_service("/media", ServeDir::new(&media))
         .with_state(state);
 
@@ -426,6 +431,58 @@ fn tmdb_denied() -> Response {
         Json(json!({"status_code": 7, "status_message": "Invalid API key: You must be granted a valid key.", "success": false})),
     )
         .into_response()
+}
+
+const OS_KEY: &str = "kp-mock-os-key";
+
+fn os_ok(headers: &axum::http::HeaderMap) -> bool {
+    headers.get("api-key").and_then(|v| v.to_str().ok()) == Some(OS_KEY)
+        && headers.get(header::USER_AGENT).and_then(|v| v.to_str().ok()).is_some_and(|ua| ua.starts_with("Karadelik"))
+}
+
+async fn os_formats(headers: axum::http::HeaderMap) -> Response {
+    if !os_ok(&headers) {
+        return (StatusCode::UNAUTHORIZED, Json(json!({"message": "Invalid API key"}))).into_response();
+    }
+    Json(json!({"data": {"output_formats": ["srt", "vtt"]}})).into_response()
+}
+
+/// Two Turkish and one English file for any film or episode asked for.
+async fn os_search(Query(q): Query<HashMap<String, String>>, headers: axum::http::HeaderMap) -> Response {
+    if !os_ok(&headers) {
+        return (StatusCode::UNAUTHORIZED, Json(json!({"message": "Invalid API key"}))).into_response();
+    }
+    let what = q.get("tmdb_id").or(q.get("parent_tmdb_id")).or(q.get("query")).cloned().unwrap_or_default();
+    let episode = q.get("episode_number").map(|e| format!(".E{e:0>2}")).unwrap_or_default();
+    let item = |id: i64, lang: &str, downloads: i64, sdh: bool| {
+        json!({"id": id.to_string(), "type": "subtitle", "attributes": {
+            "language": lang, "download_count": downloads, "hearing_impaired": sdh, "from_trusted": true,
+            "release": format!("{what}{episode}.1080p.WEB-DL.{lang}"),
+            "files": [{"file_id": id, "file_name": format!("{what}{episode}.{lang}.srt")}]}})
+    };
+    Json(json!({"total_count": 3, "page": 1, "data": [item(9001, "tr", 4200, false), item(9002, "en", 900, false), item(9003, "tr", 150, true)]}))
+        .into_response()
+}
+
+async fn os_download(State(s): State<AppState>, headers: axum::http::HeaderMap, Json(body): Json<Value>) -> Response {
+    if !os_ok(&headers) {
+        return (StatusCode::UNAUTHORIZED, Json(json!({"message": "Invalid API key"}))).into_response();
+    }
+    let id = body.get("file_id").and_then(Value::as_i64).unwrap_or(0);
+    Json(json!({"link": format!("{}/os/file/{id}", s.base), "file_name": format!("{id}.srt"), "requests": 1, "remaining": 19}))
+        .into_response()
+}
+
+async fn os_file(Path(id): Path<String>) -> Response {
+    let text = format!("1
+00:00:01,000 --> 00:00:04,000
+OpenSubtitles test altyazısı {id}
+
+2
+00:00:05,000 --> 00:00:09,000
+İkinci satır: çğıöşü
+");
+    ([(header::CONTENT_TYPE, "application/x-subrip")], text).into_response()
 }
 
 async fn tmdb_auth(Query(q): Query<HashMap<String, String>>, headers: axum::http::HeaderMap) -> Response {

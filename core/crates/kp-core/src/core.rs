@@ -130,6 +130,7 @@ pub struct Detail {
 const TMDB_TTL_SECS: i64 = 14 * 86_400;
 const TMDB_MISS_TTL_SECS: i64 = 7 * 86_400;
 const TMDB_KEY: &str = "tmdb:api-key";
+const OPENSUBS_KEY: &str = "opensubtitles:api-key";
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TmdbStatus {
@@ -827,8 +828,10 @@ impl Core {
                 secrets.insert(password_key(&s.id), Value::String(p));
             }
         }
-        if let Some(k) = self.secrets.get(TMDB_KEY) {
-            secrets.insert(TMDB_KEY.into(), Value::String(k));
+        for key in [TMDB_KEY, OPENSUBS_KEY] {
+            if let Some(k) = self.secrets.get(key) {
+                secrets.insert(key.into(), Value::String(k));
+            }
         }
         let counts = crate::store::ImportCounts {
             sources: data["sources"].as_array().map_or(0, Vec::len) as u32,
@@ -997,6 +1000,74 @@ impl Core {
             }
         }
         Ok(())
+    }
+
+    // ---- OpenSubtitles --------------------------------------------------
+
+    fn opensubs(&self) -> Result<Option<crate::opensubs::OpenSubs>> {
+        let Some(key) = self.secrets.get(OPENSUBS_KEY) else { return Ok(None) };
+        Ok(Some(crate::opensubs::OpenSubs::new(&key, opensubs_base().as_deref(), env!("CARGO_PKG_VERSION")).map_err(opensubs_error)?))
+    }
+
+    pub fn opensubs_configured(&self) -> bool {
+        self.secrets.get(OPENSUBS_KEY).is_some()
+    }
+
+    /// Saves (after checking it) or, with None, forgets the user's API key.
+    pub fn set_opensubs_key(&self, key: Option<&str>) -> Result<()> {
+        match key.map(str::trim).filter(|k| !k.is_empty()) {
+            None => self.secrets.delete(OPENSUBS_KEY),
+            Some(k) => {
+                crate::opensubs::OpenSubs::new(k, opensubs_base().as_deref(), env!("CARGO_PKG_VERSION"))
+                    .and_then(|c| c.validate())
+                    .map_err(opensubs_error)?;
+                self.secrets.set(OPENSUBS_KEY, k).map_err(|e| msg(format!("{}: {e}", t("Anahtar kaydedilemedi", "Could not save the key"))))?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Subtitles for a film, or an episode ([episode] = season, number) of
+    /// a series: by TMDB id when the title is matched, else by its name.
+    pub fn subtitle_search(&self, item_id: i64, episode: Option<(i32, i32)>) -> Result<Vec<crate::opensubs::SubResult>> {
+        let Some(client) = self.opensubs()? else {
+            return Err(msg(t("OpenSubtitles anahtarı girilmemiş", "No OpenSubtitles key is set")));
+        };
+        let item = self.item(item_id)?;
+        // A matched title searches exactly; a failing TMDB only costs precision.
+        let tmdb = self.tmdb_for(item_id).ok().flatten().map(|d| d.id);
+        let (title, year) = crate::tmdb::clean_title(&item.name);
+        let languages = if crate::lang::is_english() { "en,tr" } else { "tr,en" };
+        let series = item.kind == ContentKind::Series;
+        let q = crate::opensubs::SubQuery {
+            tmdb_id: if series { None } else { tmdb },
+            parent_tmdb_id: if series { tmdb } else { None },
+            query: Some(title),
+            year: year.or(item.year),
+            season: episode.map(|e| e.0),
+            episode: episode.map(|e| e.1),
+            languages: languages.into(),
+        };
+        client.search(&q).map_err(opensubs_error)
+    }
+
+    /// Downloads a subtitle beside the library; returns its path and the
+    /// downloads left today. Files older than a month are cleared away.
+    pub fn subtitle_download(&self, file_id: i64) -> Result<(String, Option<i64>)> {
+        let Some(client) = self.opensubs()? else {
+            return Err(msg(t("OpenSubtitles anahtarı girilmemiş", "No OpenSubtitles key is set")));
+        };
+        let dir = self.dir.join("subtitles");
+        if let Ok(entries) = std::fs::read_dir(&dir) {
+            let month = std::time::Duration::from_secs(30 * 86_400);
+            for e in entries.flatten() {
+                if e.metadata().and_then(|m| m.modified()).ok().and_then(|m| m.elapsed().ok()).is_some_and(|age| age > month) {
+                    let _ = std::fs::remove_file(e.path());
+                }
+            }
+        }
+        let (path, left) = client.download(file_id, &dir).map_err(opensubs_error)?;
+        Ok((path.display().to_string(), left))
     }
 
     pub fn set_tmdb_language(&self, language: &str) -> Result<()> {
@@ -1273,6 +1344,20 @@ fn decode_guide_status(s: &str) -> Option<GuideStatus> {
 }
 
 /// Development and tests only: points TMDB at tools/mock-iptv.
+fn opensubs_base() -> Option<String> {
+    std::env::var("KP_OPENSUBS_BASE").ok().filter(|b| !b.is_empty())
+}
+
+fn opensubs_error(e: crate::opensubs::OpenSubsError) -> CoreError {
+    use crate::opensubs::OpenSubsError as E;
+    msg(match e {
+        E::BadKey => t("OpenSubtitles anahtarı reddedildi", "OpenSubtitles refused the key").to_string(),
+        E::Limit => t("OpenSubtitles bugünkü indirme hakkı doldu", "The OpenSubtitles download limit for today is reached").to_string(),
+        E::Network(m) => format!("{}: {m}", t("OpenSubtitles'a ulaşılamadı", "Could not reach OpenSubtitles")),
+        other => format!("OpenSubtitles: {other}"),
+    })
+}
+
 fn tmdb_base() -> Option<String> {
     std::env::var("KP_TMDB_BASE").ok().filter(|b| !b.is_empty())
 }

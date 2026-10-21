@@ -17,6 +17,7 @@ import 'add_source.dart';
 import 'parental.dart';
 import 'edits.dart';
 import 'backup.dart';
+import 'subtitle_search.dart';
 
 enum _Tab { sources, preferences, shortcuts, about }
 
@@ -535,6 +536,10 @@ class _PreferencesTabState extends State<_PreferencesTab> {
         const Divider(height: 1, color: KdColors.line),
         const SizedBox(height: 22),
         const TmdbSettings(),
+        const SizedBox(height: 28),
+        const Divider(height: 1, color: KdColors.line),
+        const SizedBox(height: 22),
+        const OpenSubsSettings(),
         const SizedBox(height: 28),
         const Divider(height: 1, color: KdColors.line),
         const SizedBox(height: 22),

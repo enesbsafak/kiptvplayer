@@ -17,6 +17,7 @@ import '../player/playback_stats.dart';
 import '../player/player_controller.dart';
 import '../player/reconnect_banner.dart';
 import '../player/stats_panel.dart';
+import 'subtitle_search.dart';
 
 enum _Panel { none, tracks, channels }
 
@@ -819,6 +820,13 @@ class _TracksPanel extends StatelessWidget {
                 kind: KdButtonKind.ghost,
                 onPressed: () => _pickSubtitle(player),
               ),
+              if (!(player.now?.isLive ?? true) && !(player.now?.isCatchup ?? false))
+                KdButton(
+                  label: l10n.subsFind,
+                  icon: LucideIcons.globe,
+                  kind: KdButtonKind.ghost,
+                  onPressed: () => showSubtitleSearch(context, player),
+                ),
             ]),
             const SizedBox(width: 18),
             _AdjustColumn(player: player),

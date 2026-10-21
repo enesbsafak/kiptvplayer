@@ -506,7 +506,8 @@ class PlayerController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addSubtitleFile(String path) => engine.addSubtitleFile(path);
+  Future<void> addSubtitleFile(String path, {String? title, String? language}) =>
+      engine.addSubtitleFile(path, title: title, language: language);
 
   /// Stops playback after [after]; null switches the timer off.
   void setSleepTimer(Duration? after) {

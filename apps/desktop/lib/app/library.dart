@@ -25,6 +25,8 @@ export '../src/rust/api/library.dart'
         Reminder,
         SourceHealth,
         SourceInfo,
+        SubtitleFile,
+        SubtitleResult,
         SourceType,
         SyncEvent,
         SyncEvent_Connecting,
@@ -73,6 +75,13 @@ abstract interface class LibraryApi {
   Future<void> removeFromGroup(int groupId, int itemId);
   Future<void> moveInGroup(int groupId, int itemId, int delta);
   Future<List<rust.Item>> groupItems(int groupId);
+
+  /// OpenSubtitles with the user's key: search for a film or an episode,
+  /// download into the library folder.
+  Future<bool> opensubsConfigured();
+  Future<void> setOpensubsKey(String? key);
+  Future<List<rust.SubtitleResult>> subtitleSearch(int itemId, {int? season, int? episode});
+  Future<rust.SubtitleFile> subtitleDownload(int fileId);
 
   /// Encrypted backup of everything the user made, and restoring it.
   Future<rust.BackupCounts> exportBackup(String path, String password);
@@ -205,6 +214,15 @@ class RustLibrary implements LibraryApi {
   Future<void> moveInGroup(int groupId, int itemId, int delta) => rust.moveInGroup(groupId: groupId, itemId: itemId, delta: delta);
   @override
   Future<List<rust.Item>> groupItems(int groupId) => rust.groupItems(groupId: groupId);
+  @override
+  Future<bool> opensubsConfigured() => rust.opensubsConfigured();
+  @override
+  Future<void> setOpensubsKey(String? key) => rust.setOpensubsKey(key: key);
+  @override
+  Future<List<rust.SubtitleResult>> subtitleSearch(int itemId, {int? season, int? episode}) =>
+      rust.subtitleSearch(itemId: itemId, season: season, episode: episode);
+  @override
+  Future<rust.SubtitleFile> subtitleDownload(int fileId) => rust.subtitleDownload(fileId: fileId);
   @override
   Future<rust.BackupCounts> exportBackup(String path, String password) => rust.exportBackup(path: path, password: password);
   @override
