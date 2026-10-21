@@ -536,5 +536,43 @@
   "historyClearAll": "İzleme geçmişini temizle",
   "historyClearBody": "Bu kaynağın son izlenen kanalları ve yarım kalan film/dizi kayıtları silinir. Favoriler kalır.",
   "historyCleared": "İzleme geçmişi temizlendi.",
-  "historyTitle": "İzleme geçmişi"
+  "historyTitle": "İzleme geçmişi",
+  "adjTitle": "Ayarlar",
+  "adjSubtitleDelay": "Altyazı gecikmesi",
+  "adjAudioDelay": "Ses gecikmesi",
+  "adjSubtitleSize": "Altyazı boyutu",
+  "adjAspect": "Görüntü oranı",
+  "adjAspectAuto": "Otomatik",
+  "adjAspectFill": "Doldur",
+  "adjSpeed": "Oynatma hızı",
+  "adjSleep": "Uyku zamanlayıcısı",
+  "adjSleepOff": "Kapalı",
+  "adjMinutes": "{n} dk",
+  "@adjMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "adjSleepProgrammeEnd": "Program bitince",
+  "adjSleepTag": "Uyku {time}",
+  "@adjSleepTag": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "adjAddSubtitle": "Altyazı dosyası ekle…",
+  "adjSubtitleFiles": "Altyazı dosyaları",
+  "adjSubtitleDelayNote": "Altyazı gecikmesi {value}",
+  "@adjSubtitleDelayNote": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "keySubtitleDelay": "Altyazıyı 0,1 sn erken / geç göster"
 }

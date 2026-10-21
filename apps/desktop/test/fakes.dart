@@ -277,7 +277,8 @@ class FakeEngine implements PlayerEngine {
   }
 
   @override
-  Future<void> stop() async {}
+  Future<void> stop() async => stops++;
+  int stops = 0;
   @override
   Future<void> togglePause() async => toggles++;
   @override
@@ -288,6 +289,19 @@ class FakeEngine implements PlayerEngine {
   Future<void> selectTrack(TrackKind kind, String? id) async => selections.add((kind, id));
 
   final subtitlePositions = <int>[];
+  final adjustments = <String, Object?>{};
+  @override
+  Future<void> setSubtitleDelay(double seconds) async => adjustments['subDelay'] = seconds;
+  @override
+  Future<void> setAudioDelay(double seconds) async => adjustments['audioDelay'] = seconds;
+  @override
+  Future<void> setSubtitleScale(double scale) async => adjustments['subScale'] = scale;
+  @override
+  Future<void> setAspect(String? aspect) async => adjustments['aspect'] = aspect;
+  @override
+  Future<void> setSpeed(double speed) async => adjustments['speed'] = speed;
+  @override
+  Future<void> addSubtitleFile(String path) async => adjustments['subFile'] = path;
   @override
   Future<void> setSubtitlePosition(int percent) async => subtitlePositions.add(percent);
   @override

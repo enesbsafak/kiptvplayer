@@ -923,4 +923,61 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyTitle => 'Watch history';
+
+  @override
+  String get adjTitle => 'Adjust';
+
+  @override
+  String get adjSubtitleDelay => 'Subtitle delay';
+
+  @override
+  String get adjAudioDelay => 'Audio delay';
+
+  @override
+  String get adjSubtitleSize => 'Subtitle size';
+
+  @override
+  String get adjAspect => 'Aspect ratio';
+
+  @override
+  String get adjAspectAuto => 'Auto';
+
+  @override
+  String get adjAspectFill => 'Fill';
+
+  @override
+  String get adjSpeed => 'Playback speed';
+
+  @override
+  String get adjSleep => 'Sleep timer';
+
+  @override
+  String get adjSleepOff => 'Off';
+
+  @override
+  String adjMinutes(int n) {
+    return '$n min';
+  }
+
+  @override
+  String get adjSleepProgrammeEnd => 'When the show ends';
+
+  @override
+  String adjSleepTag(String time) {
+    return 'Sleep $time';
+  }
+
+  @override
+  String get adjAddSubtitle => 'Add subtitle file…';
+
+  @override
+  String get adjSubtitleFiles => 'Subtitle files';
+
+  @override
+  String adjSubtitleDelayNote(String value) {
+    return 'Subtitle delay $value';
+  }
+
+  @override
+  String get keySubtitleDelay => 'Show subtitles 0.1 s earlier / later';
 }

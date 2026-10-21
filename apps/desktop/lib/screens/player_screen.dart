@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -31,6 +32,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
   Timer? _hide;
   _Panel _panel = _Panel.none;
 
+  /// A short note for key-driven changes without a panel ("Altyazı +0.3 s").
+  String? _flash;
+  Timer? _flashTimer;
+
+  void _note(String text) {
+    _flashTimer?.cancel();
+    setState(() => _flash = text);
+    _flashTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted) setState(() => _flash = null);
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -40,6 +53,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void dispose() {
     _hide?.cancel();
+    _flashTimer?.cancel();
     _focus.dispose();
     // Back to the usual place for the preview and the next video.
     _player?.engine.setSubtitlePosition(100);
@@ -134,6 +148,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
       p.typeDigit(digitOf(k)!);
     } else if (live && p.zapDigits.isNotEmpty && (k == LogicalKeyboardKey.enter || k == LogicalKeyboardKey.numpadEnter)) {
       p.commitDigits();
+    } else if (k == LogicalKeyboardKey.keyZ || k == LogicalKeyboardKey.keyX) {
+      p.nudgeSubtitleDelay(k == LogicalKeyboardKey.keyZ ? -0.1 : 0.1).then((_) {
+        if (mounted) _note(l10n.adjSubtitleDelayNote(seconds(p.subtitleDelay)));
+      });
     } else if (k == LogicalKeyboardKey.keyM) {
       p.setVolume(p.volume > 0 ? 0 : 100);
     } else if (live && k == LogicalKeyboardKey.arrowUp) {
@@ -213,6 +231,23 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   ),
                 ),
                 Positioned(top: 70, right: 24, child: ZapDigits(player: player)),
+                if (_flash case final f?)
+                  Positioned(
+                    top: 70,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: KdColors.bg2.withValues(alpha: 0.92),
+                          border: Border.all(color: KdColors.line),
+                          borderRadius: BorderRadius.circular(KdRadius.card),
+                        ),
+                        child: Text(f, style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
+                      ),
+                    ),
+                  ),
                 if (_panel == _Panel.tracks)
                   Positioned(right: 20, bottom: 110, child: _TracksPanel(player: player)),
                 if (_panel == _Panel.channels && now != null)
@@ -279,6 +314,10 @@ class _TopBar extends StatelessWidget {
                       if (n.isLive) KdTag(l10n.tagLive),
                       if (n.isCatchup) KdTag(l10n.tagCatchup),
                       if (player.backupName != null) ...[const SizedBox(width: 6), KdTag(l10n.tagBackup)],
+                      if (player.sleepAt case final at?) ...[
+                        const SizedBox(width: 6),
+                        KdTag(l10n.adjSleepTag(kdClock(at.millisecondsSinceEpoch ~/ 1000))),
+                      ],
                       if (player.videoHeight case final h? when h > 0) ...[
                         const SizedBox(width: 6),
                         KdTag(h >= 2000 ? '4K' : h >= 1000 ? 'FHD' : h >= 700 ? 'HD' : 'SD', ok: true),
@@ -603,7 +642,8 @@ class _TracksPanel extends StatelessWidget {
     );
     return Container(
       padding: const EdgeInsets.all(16),
-      constraints: const BoxConstraints(maxHeight: 340),
+      // Between the top bar and the bottom bar, whatever the window height.
+      constraints: BoxConstraints(maxHeight: (MediaQuery.sizeOf(context).height - 200).clamp(240, 520)),
       decoration: BoxDecoration(
         color: KdColors.bg2.withValues(alpha: 0.96),
         border: Border.all(color: KdColors.line),
@@ -627,9 +667,118 @@ class _TracksPanel extends StatelessWidget {
                 ),
               for (final (i, t) in subs.indexed)
                 _TrackRow(label: subLabels[i], selected: t.selected, onTap: () => player.setSubtitle(t)),
+              const SizedBox(height: 8),
+              KdButton(
+                label: l10n.adjAddSubtitle,
+                icon: LucideIcons.filePlus,
+                kind: KdButtonKind.ghost,
+                onPressed: () => _pickSubtitle(player),
+              ),
             ]),
+            const SizedBox(width: 18),
+            _AdjustColumn(player: player),
           ],
         ),
+      ),
+    );
+  }
+}
+
+Future<void> _pickSubtitle(PlayerController player) async {
+  final file = await openFile(
+    acceptedTypeGroups: [
+      XTypeGroup(label: l10n.adjSubtitleFiles, extensions: const ['srt', 'ass', 'ssa', 'vtt', 'sub']),
+    ],
+  );
+  if (file != null) await player.addSubtitleFile(file.path);
+}
+
+/// "+0.3 s", "0.0 s", "−0.2 s" for delays.
+String seconds(double v) {
+  final s = v.abs().toStringAsFixed(1);
+  return v > 0.04 ? '+$s s' : v < -0.04 ? '−$s s' : '0.0 s';
+}
+
+/// Delays, subtitle size, aspect, speed (files) and the sleep timer.
+class _AdjustColumn extends StatelessWidget {
+  const _AdjustColumn({required this.player});
+
+  final PlayerController player;
+
+  static const _scales = [0.8, 1.0, 1.25, 1.5];
+  static const _speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
+  static const _sleeps = [15, 30, 60, 90];
+
+  @override
+  Widget build(BuildContext context) {
+    final n = player.now;
+    final live = n?.isLive ?? false;
+    final programme = live && n != null ? context.epg.now(n.item.id) : null;
+    Widget label(String text) => Padding(
+      padding: const EdgeInsets.only(top: 10, bottom: 6),
+      child: Text(text, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small)),
+    );
+    Widget pills(List<Widget> children) => Wrap(spacing: 6, runSpacing: 6, children: children);
+    // Label on the left, − value + on the right: two delays in two lines.
+    Widget stepper(String text, double value, ValueChanged<double> nudge) => Row(
+      children: [
+        Expanded(child: Text(text, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small))),
+        _OsdButton(icon: LucideIcons.minus, onTap: () => nudge(-0.1)),
+        SizedBox(
+          width: 64,
+          child: Text(
+            seconds(value),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()]),
+          ),
+        ),
+        _OsdButton(icon: LucideIcons.plus, onTap: () => nudge(0.1)),
+      ],
+    );
+    final sleeping = player.sleepAt != null;
+    return SizedBox(
+      width: 300,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          KdSectionLabel(l10n.adjTitle),
+          const SizedBox(height: 8),
+          stepper(l10n.adjSubtitleDelay, player.subtitleDelay, player.nudgeSubtitleDelay),
+          const SizedBox(height: 6),
+          stepper(l10n.adjAudioDelay, player.audioDelay, player.nudgeAudioDelay),
+          label(l10n.adjSubtitleSize),
+          pills([
+            for (final s in _scales)
+              KdPill(label: '${(s * 100).round()}%', selected: (player.subtitleScale - s).abs() < 0.01, onTap: () => player.setSubtitleScale(s)),
+          ]),
+          label(l10n.adjAspect),
+          pills([
+            for (final (value, name) in [
+              (null, l10n.adjAspectAuto),
+              ('16:9', '16:9'),
+              ('4:3', '4:3'),
+              ('21:9', '21:9'),
+              ('fill', l10n.adjAspectFill),
+            ])
+              KdPill(label: name, selected: player.aspect == value, onTap: () => player.setAspect(value)),
+          ]),
+          if (!live) ...[
+            label(l10n.adjSpeed),
+            pills([
+              for (final s in _speeds)
+                KdPill(label: '${s.toString().replaceAll(RegExp(r'\.0$'), '')}×', selected: player.speed == s, onTap: () => player.setSpeed(s)),
+            ]),
+          ],
+          label(l10n.adjSleep),
+          pills([
+            KdPill(label: l10n.adjSleepOff, selected: !sleeping, onTap: () => player.setSleepTimer(null)),
+            for (final m in _sleeps)
+              KdPill(label: l10n.adjMinutes(m), selected: false, onTap: () => player.setSleepTimer(Duration(minutes: m))),
+            if (programme != null)
+              KdPill(label: l10n.adjSleepProgrammeEnd, selected: false, onTap: () => player.sleepAtProgrammeEnd(programme.stop)),
+          ]),
+        ],
       ),
     );
   }

@@ -266,5 +266,22 @@
   "historyClearAll": "Clear watch history",
   "historyClearBody": "This source's recently watched channels and unfinished movies and episodes are removed. Favorites stay.",
   "historyCleared": "Watch history cleared.",
-  "historyTitle": "Watch history"
+  "historyTitle": "Watch history",
+  "adjTitle": "Adjust",
+  "adjSubtitleDelay": "Subtitle delay",
+  "adjAudioDelay": "Audio delay",
+  "adjSubtitleSize": "Subtitle size",
+  "adjAspect": "Aspect ratio",
+  "adjAspectAuto": "Auto",
+  "adjAspectFill": "Fill",
+  "adjSpeed": "Playback speed",
+  "adjSleep": "Sleep timer",
+  "adjSleepOff": "Off",
+  "adjMinutes": "{n} min",
+  "adjSleepProgrammeEnd": "When the show ends",
+  "adjSleepTag": "Sleep {time}",
+  "adjAddSubtitle": "Add subtitle file…",
+  "adjSubtitleFiles": "Subtitle files",
+  "adjSubtitleDelayNote": "Subtitle delay {value}",
+  "keySubtitleDelay": "Show subtitles 0.1 s earlier / later"
 }

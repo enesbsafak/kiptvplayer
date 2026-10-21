@@ -901,4 +901,61 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get historyTitle => 'İzleme geçmişi';
+
+  @override
+  String get adjTitle => 'Ayarlar';
+
+  @override
+  String get adjSubtitleDelay => 'Altyazı gecikmesi';
+
+  @override
+  String get adjAudioDelay => 'Ses gecikmesi';
+
+  @override
+  String get adjSubtitleSize => 'Altyazı boyutu';
+
+  @override
+  String get adjAspect => 'Görüntü oranı';
+
+  @override
+  String get adjAspectAuto => 'Otomatik';
+
+  @override
+  String get adjAspectFill => 'Doldur';
+
+  @override
+  String get adjSpeed => 'Oynatma hızı';
+
+  @override
+  String get adjSleep => 'Uyku zamanlayıcısı';
+
+  @override
+  String get adjSleepOff => 'Kapalı';
+
+  @override
+  String adjMinutes(int n) {
+    return '$n dk';
+  }
+
+  @override
+  String get adjSleepProgrammeEnd => 'Program bitince';
+
+  @override
+  String adjSleepTag(String time) {
+    return 'Uyku $time';
+  }
+
+  @override
+  String get adjAddSubtitle => 'Altyazı dosyası ekle…';
+
+  @override
+  String get adjSubtitleFiles => 'Altyazı dosyaları';
+
+  @override
+  String adjSubtitleDelayNote(String value) {
+    return 'Altyazı gecikmesi $value';
+  }
+
+  @override
+  String get keySubtitleDelay => 'Altyazıyı 0,1 sn erken / geç göster';
 }

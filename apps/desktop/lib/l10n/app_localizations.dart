@@ -1699,6 +1699,108 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'İzleme geçmişi'**
   String get historyTitle;
+
+  /// No description provided for @adjTitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ayarlar'**
+  String get adjTitle;
+
+  /// No description provided for @adjSubtitleDelay.
+  ///
+  /// In tr, this message translates to:
+  /// **'Altyazı gecikmesi'**
+  String get adjSubtitleDelay;
+
+  /// No description provided for @adjAudioDelay.
+  ///
+  /// In tr, this message translates to:
+  /// **'Ses gecikmesi'**
+  String get adjAudioDelay;
+
+  /// No description provided for @adjSubtitleSize.
+  ///
+  /// In tr, this message translates to:
+  /// **'Altyazı boyutu'**
+  String get adjSubtitleSize;
+
+  /// No description provided for @adjAspect.
+  ///
+  /// In tr, this message translates to:
+  /// **'Görüntü oranı'**
+  String get adjAspect;
+
+  /// No description provided for @adjAspectAuto.
+  ///
+  /// In tr, this message translates to:
+  /// **'Otomatik'**
+  String get adjAspectAuto;
+
+  /// No description provided for @adjAspectFill.
+  ///
+  /// In tr, this message translates to:
+  /// **'Doldur'**
+  String get adjAspectFill;
+
+  /// No description provided for @adjSpeed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Oynatma hızı'**
+  String get adjSpeed;
+
+  /// No description provided for @adjSleep.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uyku zamanlayıcısı'**
+  String get adjSleep;
+
+  /// No description provided for @adjSleepOff.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kapalı'**
+  String get adjSleepOff;
+
+  /// No description provided for @adjMinutes.
+  ///
+  /// In tr, this message translates to:
+  /// **'{n} dk'**
+  String adjMinutes(int n);
+
+  /// No description provided for @adjSleepProgrammeEnd.
+  ///
+  /// In tr, this message translates to:
+  /// **'Program bitince'**
+  String get adjSleepProgrammeEnd;
+
+  /// No description provided for @adjSleepTag.
+  ///
+  /// In tr, this message translates to:
+  /// **'Uyku {time}'**
+  String adjSleepTag(String time);
+
+  /// No description provided for @adjAddSubtitle.
+  ///
+  /// In tr, this message translates to:
+  /// **'Altyazı dosyası ekle…'**
+  String get adjAddSubtitle;
+
+  /// No description provided for @adjSubtitleFiles.
+  ///
+  /// In tr, this message translates to:
+  /// **'Altyazı dosyaları'**
+  String get adjSubtitleFiles;
+
+  /// No description provided for @adjSubtitleDelayNote.
+  ///
+  /// In tr, this message translates to:
+  /// **'Altyazı gecikmesi {value}'**
+  String adjSubtitleDelayNote(String value);
+
+  /// No description provided for @keySubtitleDelay.
+  ///
+  /// In tr, this message translates to:
+  /// **'Altyazıyı 0,1 sn erken / geç göster'**
+  String get keySubtitleDelay;
 }
 
 class _AppLocalizationsDelegate

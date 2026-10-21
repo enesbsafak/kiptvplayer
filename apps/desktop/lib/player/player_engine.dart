@@ -43,6 +43,18 @@ abstract interface class PlayerEngine {
   /// Subtitle baseline as a percentage of the picture height (100 = the
   /// usual bottom): raised while the player controls cover the bottom.
   Future<void> setSubtitlePosition(int percent);
+
+  /// Playback adjustments, all per mpv property: seconds of subtitle and
+  /// audio delay, subtitle size (1.0 = default), aspect ("16:9", "4:3",
+  /// "fill" or null for the stream's own), and speed (VOD).
+  Future<void> setSubtitleDelay(double seconds);
+  Future<void> setAudioDelay(double seconds);
+  Future<void> setSubtitleScale(double scale);
+  Future<void> setAspect(String? aspect);
+  Future<void> setSpeed(double speed);
+
+  /// Loads a subtitle file from disk and selects it.
+  Future<void> addSubtitleFile(String path);
   Future<void> dispose();
 }
 
@@ -223,6 +235,30 @@ class MediaKitEngine implements PlayerEngine {
   Future<void> setVolume(double percent) => _player.setVolume(percent);
   @override
   Future<void> setSubtitlePosition(int percent) => _native.setProperty('sub-pos', '$percent').catchError((_) {});
+
+  Future<void> _set(String name, String value) => _native.setProperty(name, value).catchError((_) {});
+
+  @override
+  Future<void> setSubtitleDelay(double seconds) => _set('sub-delay', seconds.toStringAsFixed(2));
+  @override
+  Future<void> setAudioDelay(double seconds) => _set('audio-delay', seconds.toStringAsFixed(2));
+  @override
+  Future<void> setSubtitleScale(double scale) => _set('sub-scale', scale.toStringAsFixed(2));
+  @override
+  Future<void> setAspect(String? aspect) async {
+    // "fill" crops to the window (panscan); the others override the ratio
+    // and letterbox like any other stream.
+    await _set('panscan', aspect == 'fill' ? '1.0' : '0.0');
+    await _set('video-aspect-override', aspect == null || aspect == 'fill' ? '-1' : aspect);
+  }
+
+  @override
+  Future<void> setSpeed(double speed) => _player.setRate(speed);
+  @override
+  Future<void> addSubtitleFile(String path) async {
+    await _native.command(['sub-add', path, 'select']);
+    await _refreshTracks();
+  }
 
   @override
   Future<void> selectTrack(TrackKind kind, String? id) async {

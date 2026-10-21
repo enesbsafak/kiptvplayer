@@ -98,6 +98,18 @@ class PlayerController extends ChangeNotifier {
     return n == null || o == null || n.item.id == o.id ? null : n.item.name;
   }
 
+  /// Playback adjustments shown in the player's settings column. Delays
+  /// belong to one stream and reset on the next; size, aspect stay.
+  double subtitleDelay = 0;
+  double audioDelay = 0;
+  double subtitleScale = 1;
+  String? aspect;
+  double speed = 1;
+
+  /// When the sleep timer stops playback; null when off.
+  DateTime? sleepAt;
+  Timer? _sleepTimer;
+
   /// Number-key channel entry: digits typed so far, shown on screen.
   String zapDigits = '';
   Timer? _digitTimer;
@@ -172,6 +184,7 @@ class PlayerController extends ChangeNotifier {
         start: resume == null ? null : Duration(milliseconds: resume),
       );
       if (token != _openToken) return;
+      await _applyAdjustments(newStream: !retry);
       if (retry) _clearReconnect();
       lastZapMs = took.inMilliseconds;
       perf.record('zap_first_frame', took.inMilliseconds, {'kind': programme != null ? 'catchup' : kind.name});
@@ -404,6 +417,74 @@ class PlayerController extends ChangeNotifier {
   /// Null turns subtitles off.
   Future<void> setSubtitle(MediaTrack? t) => engine.selectTrack(TrackKind.subtitle, t?.id);
 
+  /// Delays are per stream: a new one starts at zero; speed applies to
+  /// files only (live always plays at 1x).
+  Future<void> _applyAdjustments({required bool newStream}) async {
+    if (newStream) {
+      subtitleDelay = 0;
+      audioDelay = 0;
+    }
+    if (now?.isLive ?? true) speed = 1;
+    await engine.setSubtitleDelay(subtitleDelay);
+    await engine.setAudioDelay(audioDelay);
+    await engine.setSubtitleScale(subtitleScale);
+    await engine.setAspect(aspect);
+    await engine.setSpeed(speed);
+  }
+
+  Future<void> nudgeSubtitleDelay(double by) async {
+    subtitleDelay = double.parse((subtitleDelay + by).toStringAsFixed(1));
+    await engine.setSubtitleDelay(subtitleDelay);
+    notifyListeners();
+  }
+
+  Future<void> nudgeAudioDelay(double by) async {
+    audioDelay = double.parse((audioDelay + by).toStringAsFixed(1));
+    await engine.setAudioDelay(audioDelay);
+    notifyListeners();
+  }
+
+  Future<void> setSubtitleScale(double scale) async {
+    subtitleScale = scale.clamp(0.5, 2.5).toDouble();
+    await engine.setSubtitleScale(subtitleScale);
+    notifyListeners();
+  }
+
+  Future<void> setAspect(String? value) async {
+    aspect = value;
+    await engine.setAspect(value);
+    notifyListeners();
+  }
+
+  Future<void> setSpeed(double value) async {
+    if (now?.isLive ?? true) return;
+    speed = value;
+    await engine.setSpeed(value);
+    notifyListeners();
+  }
+
+  Future<void> addSubtitleFile(String path) => engine.addSubtitleFile(path);
+
+  /// Stops playback after [after]; null switches the timer off.
+  void setSleepTimer(Duration? after) {
+    _sleepTimer?.cancel();
+    _sleepTimer = null;
+    sleepAt = after == null ? null : DateTime.now().add(after);
+    if (after != null) {
+      _sleepTimer = Timer(after, () {
+        sleepAt = null;
+        stop();
+      });
+    }
+    notifyListeners();
+  }
+
+  /// Sleep at the end of the programme now on air (live TV with a guide).
+  void sleepAtProgrammeEnd(int stopUnix) {
+    final left = DateTime.fromMillisecondsSinceEpoch(stopUnix * 1000).difference(DateTime.now());
+    if (left > Duration.zero) setSleepTimer(left);
+  }
+
   @override
   void dispose() {
     for (final s in _subs) {
@@ -413,6 +494,7 @@ class PlayerController extends ChangeNotifier {
     _stallTimer?.cancel();
     _retryTimer?.cancel();
     _digitTimer?.cancel();
+    _sleepTimer?.cancel();
     position.dispose();
     tracksPanelRequest.dispose();
     super.dispose();
