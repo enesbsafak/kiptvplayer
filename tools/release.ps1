@@ -75,18 +75,27 @@ $setup = Join-Path $dist "KaradelikIPTVPlayer-Setup-$Version.exe"
 
 # 3. Update feed.
 $sha = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
-$feed = [pscustomobject][ordered]@{
-  version   = $Version
-  url       = ($BaseUrl -f $Version) + "/KaradelikIPTVPlayer-Setup-$Version.exe"
-  sha256    = $sha
-  notes     = [pscustomobject][ordered]@{ tr = (Read-Notes 'tr'); en = (Read-Notes 'en') }
-  published = (Get-Date -Format 'yyyy-MM-dd')
+# Written by hand: ConvertTo-Json differs between PowerShell versions (the
+# runner's pwsh wrote objects as their type name or "@{...}" strings).
+function ConvertTo-JsonString([string]$s) {
+  $s = $s.Replace('\', '\\').Replace('"', '\"').Replace("`r", '').Replace("`n", '\n').Replace("`t", '\t')
+  '"' + $s + '"'
 }
-# -InputObject, not the pipeline: newer pwsh wrote a piped OrderedDictionary
-# as its type name ("System.Collections.Specialized.OrderedDictionary").
-$json = ConvertTo-Json -InputObject $feed -Depth 3
+$url = ($BaseUrl -f $Version) + "/KaradelikIPTVPlayer-Setup-$Version.exe"
+$json = @(
+  '{'
+  '  "version": ' + (ConvertTo-JsonString $Version) + ','
+  '  "url": ' + (ConvertTo-JsonString $url) + ','
+  '  "sha256": ' + (ConvertTo-JsonString $sha) + ','
+  '  "notes": {'
+  '    "tr": ' + (ConvertTo-JsonString (Read-Notes 'tr')) + ','
+  '    "en": ' + (ConvertTo-JsonString (Read-Notes 'en'))
+  '  },'
+  '  "published": ' + (ConvertTo-JsonString (Get-Date -Format 'yyyy-MM-dd'))
+  '}'
+) -join "`n"
 $check = $json | ConvertFrom-Json
-if ($check.version -ne $Version -or $check.sha256 -ne $sha -or -not $check.url) { throw "latest.json is malformed: $json" }
+if ($check.version -ne $Version -or $check.sha256 -ne $sha -or $check.url -ne $url) { throw "latest.json is malformed: $json" }
 [IO.File]::WriteAllText((Join-Path $dist 'latest.json'), $json, [Text.UTF8Encoding]::new($false))
 
 "installer: $setup ($([math]::Round((Get-Item $setup).Length / 1MB, 1)) MB)"
