@@ -129,10 +129,11 @@ fn tmdb_enriches_films_and_series() {
     assert_eq!(eps.len(), 8);
     assert!(eps[0].name.as_deref().unwrap().starts_with("1. Sezon 1. Bölüm"));
 
-    // Cached: a second look needs no network (same answer, instantly).
-    let t = Instant::now();
-    assert!(core.tmdb_for(movie.id).unwrap().is_some());
-    assert!(t.elapsed().as_millis() < 50, "served from cache");
+    // Cached: a second look needs no network. Proven with TMDB unreachable,
+    // not by timing (a slow CI runner made a 50 ms bound flaky).
+    std::env::set_var("KP_TMDB_BASE", "http://127.0.0.1:9");
+    assert!(core.tmdb_for(movie.id).unwrap().is_some(), "served from cache");
+    std::env::set_var("KP_TMDB_BASE", mock_url());
 }
 
 #[test]

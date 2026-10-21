@@ -11,7 +11,7 @@ Windows (sonra macOS ve mobil) için hızlı, native hisli IPTV oynatıcı. Kara
 | `core/crates/kp-core` | Rust veri çekirdeği: Xtream / M3U / Stalker, SQLite + FTS5, XMLTV, catch-up, TMDB, güncelleyici, anahtar deposu |
 | `core/crates/kp-bridge` | flutter_rust_bridge yüzeyi (`apps/desktop/lib/src/rust` buradan üretilir) |
 | `packages/karadelik_mpv_libs` | SHA-256 doğrulamalı LGPL libmpv + ANGLE (media_kit_libs_video yerine) |
-| `tools/mock-iptv` | Yerel test sağlayıcısı: Xtream, M3U + XMLTV, Stalker portalı, TMDB taklidi, test yayınları |
+| `tools/mock-iptv` | Yerel test sağlayıcısı: Xtream, M3U + XMLTV, Stalker portalı, TMDB ve OpenSubtitles taklidi, test yayınları |
 | `tools/installer` | Inno Setup betiği (kullanıcı bazlı kurulum) |
 | `design/ui-spec.md` | Tasarım kararları ve kaynakları |
 | `THIRD_PARTY.md` | Üçüncü taraf bileşenler ve lisans yükümlülükleri |
@@ -59,10 +59,13 @@ tools\release.ps1 -Version 0.2.0      # dist\: kurulum dosyası + latest.json
 | M0 Deneme | Flutter + media_kit + kendi libmpv, Rust çekirdek, ölçüm altyapısı | ✓ Soğuk açılış ~0.5 sn, ilk kare ~0.3 sn, kanal değiştirme < 0.1 sn (yerel). Snap Layouts. LGPL libmpv. |
 | M1 Temel | Tasarım sistemi, kabuk, kaynak ekleme, SQLite katalog, anahtar deposu, dil | ✓ TR/EN, tek örnek. Açık: tray |
 | M2 Canlı + oynatıcı | Önizleme, OSD, zap, ses/altyazı, mini oynatıcı, favoriler | ✓ Yedek yayına geçme, numarayla kanal, medya tuşları (SMTC), ayırt edilebilir ses/altyazı listesi. Açık: 4 saatlik uzun süre testi |
-| M3 EPG + catch-up | XMLTV, eşleştirme, grid, catch-up | ✓ XMLTV (250 MB rehber 3.4 sn, 53 MB bellek), tvg-id/ad eşleştirme, tvg-shift, catch-up (Xtream + M3U). Açık: elle eşleştirme tablosu |
+| M3 EPG + catch-up | XMLTV, eşleştirme, grid, catch-up | ✓ XMLTV (250 MB rehber 3.4 sn, 53 MB bellek), tvg-id/ad eşleştirme, tvg-shift, catch-up (Xtream + M3U), kanal başına elle eşleştirme ve saat kaydırma, program hatırlatmaları |
 | M4 VOD / arama / Stalker / TMDB | Film/dizi, devam et, arama, Stalker, TMDB | ✓ Stalker canlı TV ve filmler, TMDB (anahtar ayarlardan). Açık: Stalker dizileri |
+| M4+ Rakip farkları | Yerel zaman kaydırma, liste düzenleme, kilit, yedek, araçlar | ✓ Canlı yayını durdurma/geri sarma (disk tamponu), kanal gizleme/adlandırma, kategori sırası, kendi gruplar, ebeveyn PIN'i, şifreli yedek/geri yükleme (Argon2id + XChaCha20-Poly1305), istatistik ve "neden donuyor" paneli, oynatıcı ayarları (gecikme, boyut, oran, hız, uyku), Ctrl+K komut paleti, OpenSubtitles araması |
 | M5 Yayın | Güncelleyici, kurulum, imza, CI | ◐ Güncelleyici, Inno kurulum, CI ve sürüm iş akışı hazır. Açık: imza sertifikası, GitHub deposu, çökme raporu |
 
 ## Bilinen sorunlar
 
 - **Kanal değişimi başına ~0.7 MB bellek geri verilmiyor** (tools/soak.ps1: 60 dk, dakikada bir kanal değişimi → 522 → 569 MB; 8 dk, 10 sn'de bir → +31 MB). Çökme yok, kapanış temiz. Dart tarafındaki önbellekler (media_kit `Media` önbelleği, EPG, resimler) sınırlı; şüpheli mpv/FFmpeg'in açılış başına yerel ayırmaları (donanım kod çözücü havuzu). Sonraki adım: UMDH (Windows Debugging Tools) ile yerel yığın karşılaştırması.
+- **Zaman kaydırma tamponu diske yazar**: canlı kanal izlenirken yayın, seçilen boyuta kadar (varsayılan 2 GB) veri klasöründeki `timeshift` altına geçici olarak yazılır; kanal değişince ve kapanışta silinir. Tercihler'den kapatılabilir.
+- **Ebeveyn PIN'i ekranı korur, dosyayı değil**: PIN tuzlu ve özetlenmiş saklanır, art arda 5 yanlış denemeden sonra 30 sn beklenir; ama 4-6 haneli bir kod, kütüphane dosyasına erişen birine karşı koruma değildir.
