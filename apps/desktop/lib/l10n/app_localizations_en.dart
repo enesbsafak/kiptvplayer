@@ -173,7 +173,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tipSearchTitle => 'Quick search';
 
   @override
-  String get tipSearchHint => 'Search channels, movies and series with Ctrl K.';
+  String get tipSearchHint =>
+      'Ctrl K: commands, channels, films and series in one box.';
 
   @override
   String get goToLive => 'Go to Live TV';
@@ -1103,4 +1104,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reminderStarted => 'On now';
+
+  @override
+  String get paletteHint =>
+      'A command, channel, film or series… (a number opens that channel)';
+
+  @override
+  String get paletteNothing => 'Nothing matches';
+
+  @override
+  String get paletteCommands => 'Commands';
+
+  @override
+  String get paletteChannelNumber => 'Channel number';
+
+  @override
+  String get paletteGoTo => 'Go to';
+
+  @override
+  String get paletteFullPlayer => 'Open the full player';
+
+  @override
+  String get paletteStop => 'Stop playback';
+
+  @override
+  String paletteSwitchSource(String name) {
+    return 'Switch to $name';
+  }
+
+  @override
+  String get paletteLanguage => 'Interface language';
+
+  @override
+  String get paletteUpdates => 'Updates and version';
+
+  @override
+  String get paletteAddSource => 'Add or edit sources';
 }

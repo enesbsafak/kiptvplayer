@@ -383,7 +383,7 @@ abstract class AppLocalizations {
   /// No description provided for @tipSearchHint.
   ///
   /// In tr, this message translates to:
-  /// **'Ctrl K ile kanal, film ve dizilerde arayın.'**
+  /// **'Ctrl K: komutlar, kanallar, filmler ve diziler tek kutuda.'**
   String get tipSearchHint;
 
   /// No description provided for @goToLive.
@@ -2017,6 +2017,72 @@ abstract class AppLocalizations {
   /// In tr, this message translates to:
   /// **'Başladı'**
   String get reminderStarted;
+
+  /// No description provided for @paletteHint.
+  ///
+  /// In tr, this message translates to:
+  /// **'Komut, kanal, film veya dizi… (numara yazınca kanal açılır)'**
+  String get paletteHint;
+
+  /// No description provided for @paletteNothing.
+  ///
+  /// In tr, this message translates to:
+  /// **'Eşleşen bir şey yok'**
+  String get paletteNothing;
+
+  /// No description provided for @paletteCommands.
+  ///
+  /// In tr, this message translates to:
+  /// **'Komutlar'**
+  String get paletteCommands;
+
+  /// No description provided for @paletteChannelNumber.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kanal numarası'**
+  String get paletteChannelNumber;
+
+  /// No description provided for @paletteGoTo.
+  ///
+  /// In tr, this message translates to:
+  /// **'Git'**
+  String get paletteGoTo;
+
+  /// No description provided for @paletteFullPlayer.
+  ///
+  /// In tr, this message translates to:
+  /// **'Oynatıcıyı tam aç'**
+  String get paletteFullPlayer;
+
+  /// No description provided for @paletteStop.
+  ///
+  /// In tr, this message translates to:
+  /// **'Oynatmayı durdur'**
+  String get paletteStop;
+
+  /// No description provided for @paletteSwitchSource.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaynağa geç: {name}'**
+  String paletteSwitchSource(String name);
+
+  /// No description provided for @paletteLanguage.
+  ///
+  /// In tr, this message translates to:
+  /// **'Arayüz dili'**
+  String get paletteLanguage;
+
+  /// No description provided for @paletteUpdates.
+  ///
+  /// In tr, this message translates to:
+  /// **'Güncellemeler ve sürüm'**
+  String get paletteUpdates;
+
+  /// No description provided for @paletteAddSource.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kaynak ekle veya düzenle'**
+  String get paletteAddSource;
 }
 
 class _AppLocalizationsDelegate

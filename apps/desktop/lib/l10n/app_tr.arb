@@ -99,7 +99,7 @@
   "tipLiveHint": "↑ ↓ ile kanal değiştirin, Enter ile tam ekrana geçin.",
   "tipFavoritesHint": "Sık izlediğiniz kanalları yıldızlayın; ana sayfada görünür.",
   "tipSearchTitle": "Hızlı arama",
-  "tipSearchHint": "Ctrl K ile kanal, film ve dizilerde arayın.",
+  "tipSearchHint": "Ctrl K: komutlar, kanallar, filmler ve diziler tek kutuda.",
   "goToLive": "Canlı TV'ye git",
   "agoMinutes": "{n} dk önce",
   "@agoMinutes": {
@@ -641,5 +641,23 @@
       }
     }
   },
-  "reminderStarted": "Başladı"
+  "reminderStarted": "Başladı",
+  "paletteHint": "Komut, kanal, film veya dizi… (numara yazınca kanal açılır)",
+  "paletteNothing": "Eşleşen bir şey yok",
+  "paletteCommands": "Komutlar",
+  "paletteChannelNumber": "Kanal numarası",
+  "paletteGoTo": "Git",
+  "paletteFullPlayer": "Oynatıcıyı tam aç",
+  "paletteStop": "Oynatmayı durdur",
+  "paletteSwitchSource": "Kaynağa geç: {name}",
+  "@paletteSwitchSource": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "paletteLanguage": "Arayüz dili",
+  "paletteUpdates": "Güncellemeler ve sürüm",
+  "paletteAddSource": "Kaynak ekle veya düzenle"
 }

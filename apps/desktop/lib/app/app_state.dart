@@ -147,6 +147,7 @@ class AppState extends ChangeNotifier {
     activeSourceId = id;
     catalogVersion++;
     notifyListeners();
+    unawaited(reminders.load(id));
   }
 
   /// Called when an add/sync stream finished successfully.

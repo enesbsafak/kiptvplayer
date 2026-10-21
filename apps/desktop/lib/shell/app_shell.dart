@@ -19,6 +19,7 @@ import '../screens/guide_screen.dart';
 import '../screens/home_screen.dart';
 import '../screens/live_screen.dart';
 import '../screens/player_screen.dart';
+import 'command_palette.dart';
 import 'reminder_banner.dart';
 import '../screens/search_screen.dart';
 import '../screens/settings_screen.dart';
@@ -62,7 +63,7 @@ class _AppShellState extends State<AppShell> with WindowListener {
     const SingleActivator(LogicalKeyboardKey.digit4, control: true): () => app.go(Section.movies),
     const SingleActivator(LogicalKeyboardKey.digit5, control: true): () => app.go(Section.series),
     const SingleActivator(LogicalKeyboardKey.digit6, control: true): () => app.go(Section.favorites),
-    const SingleActivator(LogicalKeyboardKey.keyK, control: true): () => app.go(Section.search),
+    const SingleActivator(LogicalKeyboardKey.keyK, control: true): () => showCommandPalette(context),
     const SingleActivator(LogicalKeyboardKey.comma, control: true): () => app.go(Section.settings),
   };
 

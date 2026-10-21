@@ -32,10 +32,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Opened from the update badge: straight to "About".
+    // Opened on a given tab (the update badge: "about", the palette).
     final app = context.app;
-    if (app.settingsTab == 'about') {
-      _tab = _Tab.about;
+    if (_Tab.values.asNameMap()[app.settingsTab] case final tab?) {
+      _tab = tab;
       app.settingsTab = null;
     }
   }

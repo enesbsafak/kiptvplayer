@@ -47,7 +47,7 @@
   "tipLiveHint": "Change channels with ↑ ↓, press Enter for full screen.",
   "tipFavoritesHint": "Star the channels you watch often; they show up on Home.",
   "tipSearchTitle": "Quick search",
-  "tipSearchHint": "Search channels, movies and series with Ctrl K.",
+  "tipSearchHint": "Ctrl K: commands, channels, films and series in one box.",
   "goToLive": "Go to Live TV",
   "agoMinutes": "{n} min ago",
   "agoHours": "{n} h ago",
@@ -319,5 +319,16 @@
   "reminderSet": "Remind me",
   "reminderRemove": "Remove reminder",
   "reminderStartsAt": "Starts at {time}",
-  "reminderStarted": "On now"
+  "reminderStarted": "On now",
+  "paletteHint": "A command, channel, film or series… (a number opens that channel)",
+  "paletteNothing": "Nothing matches",
+  "paletteCommands": "Commands",
+  "paletteChannelNumber": "Channel number",
+  "paletteGoTo": "Go to",
+  "paletteFullPlayer": "Open the full player",
+  "paletteStop": "Stop playback",
+  "paletteSwitchSource": "Switch to {name}",
+  "paletteLanguage": "Interface language",
+  "paletteUpdates": "Updates and version",
+  "paletteAddSource": "Add or edit sources"
 }

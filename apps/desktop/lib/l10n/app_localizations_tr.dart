@@ -168,7 +168,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get tipSearchTitle => 'Hızlı arama';
 
   @override
-  String get tipSearchHint => 'Ctrl K ile kanal, film ve dizilerde arayın.';
+  String get tipSearchHint =>
+      'Ctrl K: komutlar, kanallar, filmler ve diziler tek kutuda.';
 
   @override
   String get goToLive => 'Canlı TV\'ye git';
@@ -1080,4 +1081,40 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get reminderStarted => 'Başladı';
+
+  @override
+  String get paletteHint =>
+      'Komut, kanal, film veya dizi… (numara yazınca kanal açılır)';
+
+  @override
+  String get paletteNothing => 'Eşleşen bir şey yok';
+
+  @override
+  String get paletteCommands => 'Komutlar';
+
+  @override
+  String get paletteChannelNumber => 'Kanal numarası';
+
+  @override
+  String get paletteGoTo => 'Git';
+
+  @override
+  String get paletteFullPlayer => 'Oynatıcıyı tam aç';
+
+  @override
+  String get paletteStop => 'Oynatmayı durdur';
+
+  @override
+  String paletteSwitchSource(String name) {
+    return 'Kaynağa geç: $name';
+  }
+
+  @override
+  String get paletteLanguage => 'Arayüz dili';
+
+  @override
+  String get paletteUpdates => 'Güncellemeler ve sürüm';
+
+  @override
+  String get paletteAddSource => 'Kaynak ekle veya düzenle';
 }

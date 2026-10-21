@@ -23,6 +23,7 @@ import 'player/media_session.dart';
 import 'player/player_controller.dart';
 import 'player/player_engine.dart';
 import 'shell/app_shell.dart';
+import 'shell/command_palette.dart' show rootNavigator;
 import 'src/rust/api/library.dart' as rust;
 import 'src/rust/frb_generated.dart';
 
@@ -137,16 +138,16 @@ class _KaradelikPlayerAppState extends State<KaradelikPlayerApp> {
       valueListenable: widget.state.language,
       builder: (context, language, _) => MaterialApp(
         key: ValueKey(language),
+        navigatorKey: rootNavigator,
         title: 'Karadelik IPTV Player',
         debugShowCheckedModeBanner: false,
         theme: buildKdTheme(),
         locale: Locale(language),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
-        home: RepaintBoundary(
-          key: widget.boundaryKey,
-          child: const Scaffold(body: AppShell()),
-        ),
+        // Around the navigator, so captures include dialogs and menus.
+        builder: (context, child) => RepaintBoundary(key: widget.boundaryKey, child: child),
+        home: const Scaffold(body: AppShell()),
       ),
     );
   }

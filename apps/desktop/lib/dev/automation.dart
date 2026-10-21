@@ -9,6 +9,7 @@ import '../app/app_state.dart';
 import '../app/library.dart';
 import '../player/media_track.dart';
 import '../player/player_controller.dart';
+import '../shell/command_palette.dart';
 
 /// Development driver:
 /// - `--kp-add-mock=<url>` adds the local mock provider when no source exists
@@ -81,6 +82,14 @@ class Automation {
     for (final s in [Section.home, Section.live, Section.guide, Section.movies, Section.series, Section.search, Section.settings]) {
       app.go(s);
       await shot(s.name, wait: const Duration(milliseconds: 2500));
+    }
+
+    // The command palette with a query matching commands and the library.
+    final ctx = rootNavigator.currentContext;
+    if (ctx != null && ctx.mounted) {
+      unawaited(showCommandPalette(ctx, query: 'ka'));
+      await shot('palette', wait: const Duration(milliseconds: 1200));
+      rootNavigator.currentState?.pop();
     }
 
     // A reminder coming due, through the real storage, then its banner.
