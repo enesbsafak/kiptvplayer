@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/library.dart';
 import '../app/scope.dart';
+import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../l10n/l10n.dart';
@@ -129,45 +130,48 @@ class _AddSourceFormState extends State<AddSourceForm> {
     final done = _done;
     if (done != null) return _Summary(source: done, onContinue: () => widget.onDone?.call(done));
 
+    final compact = isCompact(context);
+    final cards = [
+      _TypeCard(
+        icon: LucideIcons.server,
+        title: 'Xtream Codes',
+        hint: l10n.addXtreamHint,
+        selected: _type == _Type.xtream,
+        onTap: () => setState(() => _type = _Type.xtream),
+      ),
+      _TypeCard(
+        icon: LucideIcons.link,
+        title: l10n.addM3uUrl,
+        hint: l10n.addM3uUrlHint,
+        selected: _type == _Type.m3uUrl,
+        onTap: () => setState(() => _type = _Type.m3uUrl),
+      ),
+      _TypeCard(
+        icon: LucideIcons.fileText,
+        title: l10n.addM3uFile,
+        hint: l10n.addM3uFileHint,
+        selected: _type == _Type.m3uFile,
+        onTap: () => setState(() => _type = _Type.m3uFile),
+      ),
+      _TypeCard(
+        icon: LucideIcons.router,
+        title: l10n.addStalker,
+        hint: l10n.addStalkerHint,
+        selected: _type == _Type.stalker,
+        onTap: () => setState(() => _type = _Type.stalker),
+      ),
+    ];
+    Widget row(List<Widget> c) => IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [for (final (i, w) in c.indexed) ...[if (i > 0) const SizedBox(width: 10), w]],
+      ),
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          children: [
-            _TypeCard(
-              icon: LucideIcons.server,
-              title: 'Xtream Codes',
-              hint: l10n.addXtreamHint,
-              selected: _type == _Type.xtream,
-              onTap: () => setState(() => _type = _Type.xtream),
-            ),
-            const SizedBox(width: 10),
-            _TypeCard(
-              icon: LucideIcons.link,
-              title: l10n.addM3uUrl,
-              hint: l10n.addM3uUrlHint,
-              selected: _type == _Type.m3uUrl,
-              onTap: () => setState(() => _type = _Type.m3uUrl),
-            ),
-            const SizedBox(width: 10),
-            _TypeCard(
-              icon: LucideIcons.fileText,
-              title: l10n.addM3uFile,
-              hint: l10n.addM3uFileHint,
-              selected: _type == _Type.m3uFile,
-              onTap: () => setState(() => _type = _Type.m3uFile),
-            ),
-            const SizedBox(width: 10),
-            _TypeCard(
-              icon: LucideIcons.router,
-              title: l10n.addStalker,
-              hint: l10n.addStalkerHint,
-              selected: _type == _Type.stalker,
-              onTap: () => setState(() => _type = _Type.stalker),
-            ),
-          ],
-        ),
+        if (compact) ...[row(cards.sublist(0, 2)), const SizedBox(height: 10), row(cards.sublist(2))] else row(cards),
         const SizedBox(height: 18),
         _Row(label: l10n.addName, child: KdInput(controller: _name, hint: l10n.addNameHint)),
         if (_type == _Type.xtream) ...[
@@ -191,7 +195,7 @@ class _AddSourceFormState extends State<AddSourceForm> {
             ),
           ),
         Padding(
-          padding: const EdgeInsets.only(left: 150, top: 2, bottom: 6),
+          padding: EdgeInsets.only(left: compact ? 0 : 150, top: 2, bottom: 6),
           child: GestureDetector(
             onTap: () => setState(() => _advanced = !_advanced),
             child: MouseRegion(
@@ -223,48 +227,62 @@ class _AddSourceFormState extends State<AddSourceForm> {
         const SizedBox(height: 14),
         const Divider(height: 1, color: KdColors.line),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _busy
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(_stage!, style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
-                        const SizedBox(height: 6),
-                        const SizedBox(width: 220, child: KdIndeterminate()),
-                      ],
-                    )
-                  : _error != null
-                      ? Row(
-                          children: [
-                            const Icon(LucideIcons.circleAlert, size: 14, color: KdColors.err),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(_error!, style: const TextStyle(fontSize: KdType.small, color: KdColors.err)),
-                            ),
-                          ],
-                        )
-                      : Text(
-                          l10n.addPasswordNote,
-                          style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
-                        ),
-            ),
-            if (widget.onCancel != null) ...[
-              KdButton(label: l10n.actionCancel, onPressed: _busy ? null : widget.onCancel),
-              const SizedBox(width: 8),
+        if (compact) ...[
+          _status(),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: _actions(),
+          ),
+        ] else
+          Row(
+            children: [
+              Expanded(child: _status()),
+              ..._actions(),
             ],
-            KdButton(
-              label: l10n.addConnect,
-              kind: KdButtonKind.cta,
-              large: true,
-              onPressed: _busy ? null : _submit,
-            ),
-          ],
-        ),
+          ),
       ],
     );
   }
+
+  Widget _status() {
+    return _busy
+      ? Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(_stage!, style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
+            const SizedBox(height: 6),
+            const SizedBox(width: 220, child: KdIndeterminate()),
+          ],
+        )
+      : _error != null
+          ? Row(
+              children: [
+                const Icon(LucideIcons.circleAlert, size: 14, color: KdColors.err),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(_error!, style: const TextStyle(fontSize: KdType.small, color: KdColors.err)),
+                ),
+              ],
+            )
+          : Text(
+              l10n.addPasswordNote,
+              style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
+            );
+  }
+
+  List<Widget> _actions() => [
+    if (widget.onCancel != null) ...[
+      KdButton(label: l10n.actionCancel, onPressed: _busy ? null : widget.onCancel),
+      const SizedBox(width: 8),
+    ],
+    KdButton(
+      label: l10n.addConnect,
+      kind: KdButtonKind.cta,
+      large: true,
+      onPressed: _busy ? null : _submit,
+    ),
+  ];
 }
 
 class _Row extends StatelessWidget {
@@ -275,11 +293,21 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final text = Text(label, style: const TextStyle(color: KdColors.muted));
+    if (isCompact(context)) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 5),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [if (label.isNotEmpty) ...[text, const SizedBox(height: 5)], child],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
         children: [
-          SizedBox(width: 150, child: Text(label, style: const TextStyle(color: KdColors.muted))),
+          SizedBox(width: 150, child: text),
           Expanded(child: child),
         ],
       ),
@@ -420,7 +448,7 @@ class OnboardingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.all(isCompact(context) ? 16 : 32),
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 620),
           child: Column(

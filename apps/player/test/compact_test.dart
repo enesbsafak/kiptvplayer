@@ -63,6 +63,28 @@ void main() {
     });
   }
 
+  for (final size in [const Size(390, 844), const Size(320, 640)]) {
+    testWidgets('first run (add a source) lays out at ${size.width.toInt()} px', (tester) async {
+      await setPhone(tester, size: size);
+      final h = TestHarness(FakeLibrary());
+      await h.state.load();
+      final errors = <String>[];
+      final previous = FlutterError.onError;
+      FlutterError.onError = (d) => errors.add(_where(d));
+      addTearDown(() => FlutterError.onError = previous);
+      await tester.pumpWidget(app(h, const AppShell()));
+      await tester.pumpAndSettle();
+      // Every source type, with its fields.
+      for (final type in ['M3U bağlantısı', 'M3U dosyası', 'Stalker portalı', 'Xtream Codes']) {
+        await tester.ensureVisible(find.text(type));
+        await tester.tap(find.text(type));
+        await tester.pumpAndSettle();
+      }
+      FlutterError.onError = previous;
+      expect(errors, isEmpty);
+    });
+  }
+
   testWidgets('the bottom bar and the top bar reach the sections', (tester) async {
     await setPhone(tester);
     final h = TestHarness(_library());

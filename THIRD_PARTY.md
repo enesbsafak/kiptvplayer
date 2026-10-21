@@ -27,6 +27,16 @@ The exact archives, with SHA-256 checksums, are pinned in
 - The app makes no attempt to prevent replacing or reverse-engineering
   these libraries for debugging such modifications.
 
+## Native playback (Android, iOS)
+
+| Component | License | Source |
+|---|---|---|
+| libmpv + FFmpeg, "default" (LGPL) flavor, via `media_kit_libs_android_video` | LGPL-2.1-or-later | https://github.com/media-kit/libmpv-android-video-build (v1.1.7) |
+| libmpv + FFmpeg, "default" (LGPL) flavor, via `media_kit_libs_ios_video` | LGPL-2.1-or-later | https://github.com/media-kit/libmpv-darwin-build (v0.7.2) |
+
+Both are pinned through the media_kit commit in `apps/player/pubspec.yaml`
+and loaded as shared libraries / dynamic frameworks.
+
 ## Rust crates
 
 `tools/gen-licenses.py` lists every crate linked into the core in

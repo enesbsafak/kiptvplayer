@@ -8,7 +8,7 @@ It brings no content: you add your own authorized source (Xtream Codes, M3U play
 | Platform | Status |
 |---|---|
 | Windows 10/11 (x64) | Available: installer with built-in updates |
-| Android, iOS | In preparation: builds in CI, not yet in the stores |
+| Android, iOS | In preparation: built and started on an emulator / simulator in CI, not yet in the stores ([docs/mobile.md](docs/mobile.md)) |
 | macOS | Planned |
 
 ## Features
