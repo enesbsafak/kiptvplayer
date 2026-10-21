@@ -48,7 +48,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $version = '${{ github.ref_name }}'.TrimStart('v')
-          $notes = "tools/release-notes/$version.tr.txt"
+          $notes = "tools/release-notes/$version.en.txt"
           if (-not (Test-Path $notes)) { $notes = $null }
           $ghArgs = @('${{ github.ref_name }}', "dist/KaradelikIPTVPlayer-Setup-$version.exe", 'dist/latest.json', '--title', "Karadelik IPTV Player $version")
           if ($notes) { $ghArgs += @('--notes-file', $notes) } else { $ghArgs += @('--notes', '') }
