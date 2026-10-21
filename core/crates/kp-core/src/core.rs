@@ -1298,7 +1298,7 @@ fn open_guide(url: &str, source: &SourceRow) -> Result<Box<dyn std::io::BufRead>
     if !(url.starts_with("http://") || url.starts_with("https://")) {
         return crate::xmltv::decompressing(std::fs::File::open(url).map_err(io)?).map_err(io);
     }
-    let http = reqwest::blocking::Client::builder()
+    let http = crate::net::client()
         // Big guides on slow panels: generous, but not endless.
         .timeout(Duration::from_secs(600))
         .connect_timeout(Duration::from_secs(15))
@@ -1406,7 +1406,7 @@ fn probe_playlist(source: &SourceRow) -> Result<()> {
             .map(|_| ())
             .map_err(|e| msg(format!("{}: {e}", t("Dosya okunamadı", "Could not read the file"))));
     }
-    let http = reqwest::blocking::Client::builder()
+    let http = crate::net::client()
         .timeout(Duration::from_secs(15))
         .connect_timeout(Duration::from_secs(10))
         .user_agent(source.user_agent.as_deref().unwrap_or(crate::DEFAULT_USER_AGENT))
@@ -1433,7 +1433,7 @@ fn fetch_playlist(source: &SourceRow) -> Result<String> {
         let bytes = std::fs::read(url).map_err(|e| msg(format!("{}: {e}", t("Dosya okunamadı", "Could not read the file"))))?;
         return Ok(String::from_utf8_lossy(&bytes).into_owned());
     }
-    let http = reqwest::blocking::Client::builder()
+    let http = crate::net::client()
         .timeout(Duration::from_secs(120))
         .connect_timeout(Duration::from_secs(10))
         .user_agent(source.user_agent.as_deref().unwrap_or(crate::DEFAULT_USER_AGENT))

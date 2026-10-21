@@ -8,6 +8,7 @@ import '../app/app_state.dart';
 import '../app/library.dart';
 import '../app/paging.dart';
 import '../app/scope.dart';
+import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_category_rail.dart';
 import '../design/widgets/kd_controls.dart';
@@ -188,7 +189,8 @@ class _SourceStatusState extends State<_SourceStatus> {
       padding: const EdgeInsets.only(bottom: 18),
       child: Row(
         children: [
-          Column(
+          Expanded(
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(_greeting(), style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
@@ -207,7 +209,8 @@ class _SourceStatusState extends State<_SourceStatus> {
                 Text(parts.join('  ·  '), style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
             ],
           ),
-          const Spacer(),
+          ),
+          const SizedBox(width: 12),
           KdButton(label: l10n.actionSync, icon: LucideIcons.refreshCw, onPressed: _stage == null ? _sync : null),
         ],
       ),
@@ -247,8 +250,9 @@ class _Shelf extends StatelessWidget {
         children: [
           Row(
             children: [
-              Text(title, style: const TextStyle(fontSize: KdType.title, fontWeight: FontWeight.w600)),
-              const Spacer(),
+              Expanded(
+                child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.title, fontWeight: FontWeight.w600)),
+              ),
               if (onClear != null) KdButton(label: l10n.historyClear, icon: LucideIcons.eraser, kind: KdButtonKind.ghost, onPressed: onClear),
               if (onMore != null) KdButton(label: l10n.actionAll, kind: KdButtonKind.ghost, onPressed: onMore),
             ],
@@ -364,16 +368,18 @@ class _FirstSteps extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              tip(LucideIcons.tv, l10n.navLive, l10n.tipLiveHint),
-              const SizedBox(width: 12),
-              tip(LucideIcons.star, l10n.navFavorites, l10n.tipFavoritesHint),
-              const SizedBox(width: 12),
-              tip(LucideIcons.search, l10n.tipSearchTitle, l10n.tipSearchHint),
-            ],
-          ),
-          const SizedBox(height: 14),
+          // The tips speak of keys (arrows, Ctrl+K): not for a phone.
+          if (!isCompact(context))
+            Row(
+              children: [
+                tip(LucideIcons.tv, l10n.navLive, l10n.tipLiveHint),
+                const SizedBox(width: 12),
+                tip(LucideIcons.star, l10n.navFavorites, l10n.tipFavoritesHint),
+                const SizedBox(width: 12),
+                tip(LucideIcons.search, l10n.tipSearchTitle, l10n.tipSearchHint),
+              ],
+            ),
+          if (!isCompact(context)) const SizedBox(height: 14),
           KdButton(label: l10n.goToLive, icon: LucideIcons.tv, kind: KdButtonKind.cta, large: true, onPressed: onLive),
         ],
       ),

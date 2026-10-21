@@ -48,11 +48,17 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(24, 18, 24, 12),
-          child: Row(
+          // Wraps on a phone: the pills go under the title.
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text(l10n.navFavorites, style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
-              const SizedBox(width: 18),
-              for (final (k, label) in [(Kind.live, l10n.kindChannels), (Kind.movie, l10n.navMovies), (Kind.series, l10n.navSeries)]) ...[
+              Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Text(l10n.navFavorites, style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
+              ),
+              for (final (k, label) in [(Kind.live, l10n.kindChannels), (Kind.movie, l10n.navMovies), (Kind.series, l10n.navSeries)])
                 KdPill(
                   label: label,
                   selected: _tab == k,
@@ -61,8 +67,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                     _load();
                   },
                 ),
-                const SizedBox(width: 6),
-              ],
             ],
           ),
         ),

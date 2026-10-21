@@ -6,9 +6,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app/library.dart';
+import '../app/platform.dart';
 import '../app/scope.dart';
 import '../app/updates.dart';
 import '../app/version.dart';
+import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
@@ -51,12 +53,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Container(
           color: KdColors.bg2,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              for (final (t, label) in [(_Tab.sources, l10n.setSources), (_Tab.preferences, l10n.setPreferences), (_Tab.shortcuts, l10n.setShortcuts), (_Tab.about, l10n.setAbout)])
-                _TabButton(label: label, active: _tab == t, onTap: () => setState(() => _tab = t)),
-            ],
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                for (final (t, label) in [(_Tab.sources, l10n.setSources), (_Tab.preferences, l10n.setPreferences), (_Tab.shortcuts, l10n.setShortcuts), (_Tab.about, l10n.setAbout)])
+                  _TabButton(label: label, active: _tab == t, onTap: () => setState(() => _tab = t)),
+              ],
+            ),
           ),
         ),
         const Divider(height: 1, color: KdColors.line),
@@ -219,6 +224,14 @@ class _SourceRowState extends State<_SourceRow> {
   @override
   Widget build(BuildContext context) {
     final s = widget.source;
+    final actions = [
+      if (s.kind == SourceType.m3U && s.epgUrl != null)
+        KdButton(label: l10n.guideButton, icon: LucideIcons.calendarSync, onPressed: _stage == null ? _refreshGuide : null),
+      if (!widget.active) KdButton(label: l10n.sourceActivate, onPressed: () => context.app.selectSource(s.id)),
+      KdButton(label: l10n.actionSync, icon: LucideIcons.refreshCw, onPressed: _stage == null ? _sync : null),
+      KdButton(label: l10n.actionDelete, icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _stage == null ? _remove : null),
+    ];
+    final compact = isCompact(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
@@ -237,7 +250,7 @@ class _SourceRowState extends State<_SourceRow> {
               children: [
                 Row(
                   children: [
-                    Text(s.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Flexible(child: Text(s.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600))),
                     const SizedBox(width: 8),
                     KdTag(switch (s.kind) { SourceType.xtream => 'Xtream', SourceType.m3U => 'M3U', SourceType.stalker => 'Stalker' }),
                     if (widget.active) ...[const SizedBox(width: 6), KdTag(l10n.sourceActive, ok: true)],
@@ -266,18 +279,13 @@ class _SourceRowState extends State<_SourceRow> {
                   Text(s.lastError!, style: const TextStyle(fontSize: KdType.chip, color: KdColors.err)),
                 ],
                 if (s.kind == SourceType.m3U && _stage == null) ...[const SizedBox(height: 4), _GuideLine(source: s)],
+                if (compact) ...[const SizedBox(height: 10), Wrap(spacing: 6, runSpacing: 6, children: actions)],
               ],
             ),
           ),
-          if (s.kind == SourceType.m3U && s.epgUrl != null) ...[
-            KdButton(label: l10n.guideButton, icon: LucideIcons.calendarSync, onPressed: _stage == null ? _refreshGuide : null),
-            const SizedBox(width: 6),
-          ],
-          if (!widget.active) KdButton(label: l10n.sourceActivate, onPressed: () => context.app.selectSource(s.id)),
-          const SizedBox(width: 6),
-          KdButton(label: l10n.actionSync, icon: LucideIcons.refreshCw, onPressed: _stage == null ? _sync : null),
-          const SizedBox(width: 6),
-          KdButton(label: l10n.actionDelete, icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _stage == null ? _remove : null),
+          // On a phone the actions go under the source (above), not beside it.
+          if (!compact)
+            for (final a in actions) ...[const SizedBox(width: 6), a],
         ],
       ),
     );
@@ -854,8 +862,7 @@ class _AboutTab extends StatelessWidget {
           style: const TextStyle(height: 1.5, color: KdColors.muted, fontSize: KdType.small),
         ),
         const SizedBox(height: 22),
-        const _UpdatesSection(),
-        const SizedBox(height: 22),
+        if (hasAppUpdater) ...[const _UpdatesSection(), const SizedBox(height: 22)],
         Align(
           alignment: Alignment.centerLeft,
           child: KdButton(

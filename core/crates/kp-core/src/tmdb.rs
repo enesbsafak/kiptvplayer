@@ -110,7 +110,7 @@ impl Tmdb {
     pub fn new(key: &str, language: &str, base: Option<&str>) -> Result<Self> {
         let key = key.trim();
         let auth = if key.starts_with("eyJ") { Auth::Bearer(key.to_string()) } else { Auth::Key(key.to_string()) };
-        let http = reqwest::blocking::Client::builder()
+        let http = crate::net::client()
             .timeout(Duration::from_secs(15))
             .connect_timeout(Duration::from_secs(8))
             .user_agent(crate::DEFAULT_USER_AGENT)

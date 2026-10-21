@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
@@ -11,10 +12,12 @@ import 'app/app_state.dart';
 import 'app/library.dart';
 import 'app/licenses.dart';
 import 'app/paging.dart';
+import 'app/platform.dart';
 import 'app/scope.dart';
 import 'app/shutdown.dart';
 import 'app/updates.dart';
 import 'design/theme.dart';
+import 'design/tokens.dart';
 import 'design/widgets/kd_titlebar.dart' show flashTaskbar;
 import 'dev/automation.dart';
 import 'l10n/l10n.dart';
@@ -44,15 +47,26 @@ Future<void> main(List<String> args) async {
   MediaKit.ensureInitialized();
   final offscreen = args.contains('--kp-offscreen');
 
-  // Frameless before the first frame: the runner shows the window only once
-  // Flutter has painted, so the native caption never flashes. These calls
-  // only restyle the still-hidden window, so --kp-offscreen runs get the real
-  // frame too (tools/check-snap.ps1 depends on it) without taking focus.
-  await windowManager.ensureInitialized();
-  await windowManager.setTitleBarStyle(TitleBarStyle.hidden, windowButtonVisibility: false);
-  await windowManager.setMinimumSize(const Size(1100, 680));
-  await windowManager.setTitle('Karadelik IPTV Player');
-  perf.mark('window_configured');
+  if (isDesktopOs) {
+    // Frameless before the first frame: the runner shows the window only once
+    // Flutter has painted, so the native caption never flashes. These calls
+    // only restyle the still-hidden window, so --kp-offscreen runs get the real
+    // frame too (tools/check-snap.ps1 depends on it) without taking focus.
+    await windowManager.ensureInitialized();
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden, windowButtonVisibility: false);
+    await windowManager.setMinimumSize(const Size(1100, 680));
+    await windowManager.setTitle('Karadelik IPTV Player');
+    perf.mark('window_configured');
+  } else {
+    // Dark system bars over the dark app, drawn edge to edge.
+    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Color(0x00000000),
+      systemNavigationBarColor: Color(0x00000000),
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
+  }
 
   // Mpv warms up in the background while the library opens.
   final engine = MediaKitEngine.warmUp(silent: offscreen);
@@ -65,7 +79,7 @@ Future<void> main(List<String> args) async {
   state.reminders.onDue = (_) => flashTaskbar();
   try {
     await RustLib.init();
-    await rust.openLibrary(dataDir: dataDir, ephemeralSecrets: offscreen);
+    await rust.openLibrary(dataDir: dataDir, ephemeralSecrets: offscreen, secretsKey: offscreen ? null : await secretsKey(dataDir));
     perf.mark('library_open');
     await state.load();
     perf.mark('library_loaded');
@@ -90,9 +104,9 @@ Future<void> main(List<String> args) async {
   );
   final epg = EpgCache(library);
   final shutdown = Shutdown(player);
-  await shutdown.install();
+  if (isDesktopOs) await shutdown.install();
   final updates = UpdateService(quit: shutdown.run);
-  if (!offscreen) updates.startBackgroundCheck();
+  if (!offscreen && hasAppUpdater) updates.startBackgroundCheck();
   MediaSession(player);
   var guideVersion = state.guideVersion;
   state.addListener(() {
@@ -110,7 +124,7 @@ Future<void> main(List<String> args) async {
       library: library,
       epg: epg,
       updates: updates,
-      child: KaradelikPlayerApp(boundaryKey: boundary, perf: perf, state: state),
+      child: KaradelikPlayerApp(boundaryKey: boundary, perf: perf, state: state, phone: _phoneSize(args)),
     ),
   );
 
@@ -120,12 +134,24 @@ Future<void> main(List<String> args) async {
   }
 }
 
+/// `--kp-phone=390x844` (development, with `--kp-offscreen`): lays the app
+/// out at a phone's size inside the desktop window, so tools/shots.ps1 -Phone
+/// captures the compact layout with real fonts and data.
+Size? _phoneSize(List<String> args) {
+  final v = _arg(args, 'kp-phone');
+  if (v == null || !args.contains('--kp-offscreen')) return null;
+  final parts = v.split('x').map(double.tryParse).toList();
+  if (parts.length != 2 || parts.contains(null)) return null;
+  return Size(parts[0]!, parts[1]!);
+}
+
 class KaradelikPlayerApp extends StatefulWidget {
-  const KaradelikPlayerApp({super.key, required this.boundaryKey, required this.perf, required this.state});
+  const KaradelikPlayerApp({super.key, required this.boundaryKey, required this.perf, required this.state, this.phone});
 
   final GlobalKey boundaryKey;
   final Perf perf;
   final AppState state;
+  final Size? phone;
 
   @override
   State<KaradelikPlayerApp> createState() => _KaradelikPlayerAppState();
@@ -157,7 +183,26 @@ class _KaradelikPlayerAppState extends State<KaradelikPlayerApp> {
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         // Around the navigator, so captures include dialogs and menus.
-        builder: (context, child) => RepaintBoundary(key: widget.boundaryKey, child: child),
+        builder: (context, child) {
+          final phone = widget.phone;
+          if (phone == null) return RepaintBoundary(key: widget.boundaryKey, child: child);
+          // A status bar and a home indicator, as on a real phone.
+          const insets = EdgeInsets.only(top: 24, bottom: 16);
+          return OverflowBox(
+            alignment: Alignment.topLeft,
+            minWidth: phone.width,
+            maxWidth: phone.width,
+            minHeight: phone.height,
+            maxHeight: phone.height,
+            child: RepaintBoundary(
+              key: widget.boundaryKey,
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(size: phone, padding: insets, viewPadding: insets),
+                child: ColoredBox(color: KdColors.bg, child: child),
+              ),
+            ),
+          );
+        },
         home: const Scaffold(body: AppShell()),
       ),
     );

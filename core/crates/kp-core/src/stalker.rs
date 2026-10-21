@@ -115,7 +115,7 @@ impl StalkerClient {
     /// Finds the portal's API among the usual locations and opens a session.
     pub fn connect(portal: &str, mac: &str, timezone: &str, insecure_tls: bool) -> Result<Self> {
         let mac = normalize_mac(mac)?;
-        let http = reqwest::blocking::Client::builder()
+        let http = crate::net::client()
             .timeout(Duration::from_secs(30))
             .connect_timeout(Duration::from_secs(10))
             .user_agent(MAG_UA)

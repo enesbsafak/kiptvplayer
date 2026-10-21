@@ -8,7 +8,7 @@ use std::sync::OnceLock;
 use anyhow::{anyhow, Result};
 use flutter_rust_bridge::frb;
 use kp_core::core::{Core, NewSource, SourceKind, SyncStage};
-use kp_core::secret::{MemorySecrets, OsKeyring};
+use kp_core::secret::{MemorySecrets, SealedFileSecrets};
 use kp_core::store::{CategoryRow, ChannelRow, SourceRow};
 use kp_core::ContentKind;
 
@@ -28,18 +28,35 @@ pub fn init_app() {
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
 /// keyring: for automated runs, which must never touch the user's
-/// credentials (or leave entries behind).
-pub fn open_library(data_dir: String, ephemeral_secrets: bool) -> Result<()> {
+/// credentials (or leave entries behind). [secrets_key] (32 bytes, kept by
+/// the host in the OS key store) seals them in a file instead, where native
+/// code has no credential store (Android).
+pub fn open_library(data_dir: String, ephemeral_secrets: bool, secrets_key: Option<Vec<u8>>) -> Result<()> {
     if CORE.get().is_some() {
         return Ok(());
     }
     let dir = PathBuf::from(data_dir);
     std::fs::create_dir_all(&dir)?;
-    let secrets: Box<dyn kp_core::secret::SecretStore> =
-        if ephemeral_secrets { Box::new(MemorySecrets::default()) } else { Box::new(OsKeyring) };
+    let secrets: Box<dyn kp_core::secret::SecretStore> = if ephemeral_secrets {
+        Box::new(MemorySecrets::default())
+    } else if let Some(key) = secrets_key {
+        Box::new(SealedFileSecrets::open(dir.join("secrets.bin"), &key).map_err(|e| anyhow!(e))?)
+    } else {
+        os_secrets()?
+    };
     let core = Core::open(dir.join("library.sqlite"), secrets)?;
     let _ = CORE.set(core);
     Ok(())
+}
+
+#[cfg(not(target_os = "android"))]
+fn os_secrets() -> Result<Box<dyn kp_core::secret::SecretStore>> {
+    Ok(Box::new(kp_core::secret::OsKeyring))
+}
+
+#[cfg(target_os = "android")]
+fn os_secrets() -> Result<Box<dyn kp_core::secret::SecretStore>> {
+    Err(anyhow!("no secrets key: Android keeps credentials in a sealed file"))
 }
 
 // ---- types --------------------------------------------------------------

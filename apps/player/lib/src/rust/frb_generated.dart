@@ -226,6 +226,7 @@ abstract class RustLibApi extends BaseApi {
   Future<void> crateApiLibraryOpenLibrary({
     required String dataDir,
     required bool ephemeralSecrets,
+    Uint8List? secretsKey,
   });
 
   Future<bool> crateApiLibraryOpensubsConfigured();
@@ -1525,6 +1526,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   Future<void> crateApiLibraryOpenLibrary({
     required String dataDir,
     required bool ephemeralSecrets,
+    Uint8List? secretsKey,
   }) {
     return handler.executeNormal(
       NormalTask(
@@ -1532,6 +1534,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           final serializer = SseSerializer(generalizedFrbRustBinding);
           sse_encode_String(dataDir, serializer);
           sse_encode_bool(ephemeralSecrets, serializer);
+          sse_encode_opt_list_prim_u_8_strict(secretsKey, serializer);
           pdeCallFfi(
             generalizedFrbRustBinding,
             serializer,
@@ -1544,7 +1547,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           decodeErrorData: sse_decode_AnyhowException,
         ),
         constMeta: kCrateApiLibraryOpenLibraryConstMeta,
-        argValues: [dataDir, ephemeralSecrets],
+        argValues: [dataDir, ephemeralSecrets, secretsKey],
         apiImpl: this,
       ),
     );
@@ -1552,7 +1555,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
 
   TaskConstMeta get kCrateApiLibraryOpenLibraryConstMeta => const TaskConstMeta(
     debugName: "open_library",
-    argNames: ["dataDir", "ephemeralSecrets"],
+    argNames: ["dataDir", "ephemeralSecrets", "secretsKey"],
   );
 
   @override
@@ -3229,6 +3232,12 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw == null ? null : dco_decode_list_prim_u_8_strict(raw);
+  }
+
+  @protected
   Parental dco_decode_parental(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -4207,6 +4216,17 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Uint8List? sse_decode_opt_list_prim_u_8_strict(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    if (sse_decode_bool(deserializer)) {
+      return (sse_decode_list_prim_u_8_strict(deserializer));
+    } else {
+      return null;
+    }
+  }
+
+  @protected
   Parental sse_decode_parental(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_pinSet = sse_decode_bool(deserializer);
@@ -5142,6 +5162,19 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     sse_encode_bool(self != null, serializer);
     if (self != null) {
       sse_encode_box_autoadd_update_info(self, serializer);
+    }
+  }
+
+  @protected
+  void sse_encode_opt_list_prim_u_8_strict(
+    Uint8List? self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+
+    sse_encode_bool(self != null, serializer);
+    if (self != null) {
+      sse_encode_list_prim_u_8_strict(self, serializer);
     }
   }
 

@@ -63,7 +63,7 @@ pub struct OpenSubs {
 
 impl OpenSubs {
     pub fn new(key: &str, base: Option<&str>, app_version: &str) -> Result<Self> {
-        let http = reqwest::blocking::Client::builder()
+        let http = crate::net::client()
             .timeout(Duration::from_secs(20))
             .connect_timeout(Duration::from_secs(10))
             // The API asks every client to name itself.

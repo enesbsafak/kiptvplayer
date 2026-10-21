@@ -117,6 +117,91 @@ class _KdCategoryRailState extends State<KdCategoryRail> {
   }
 }
 
+/// The compact layout's category choice: the current category on a button,
+/// the whole rail (pinned entries, filter, locked row) in a sheet.
+class KdCategoryPicker extends StatelessWidget {
+  const KdCategoryPicker({
+    super.key,
+    required this.title,
+    required this.entries,
+    required this.selected,
+    required this.onSelect,
+    this.footer,
+    this.onContext,
+  });
+
+  final String title;
+  final List<KdRailEntry> entries;
+  final int? selected;
+  final ValueChanged<int> onSelect;
+  final Widget? footer;
+  final void Function(int id, Offset at)? onContext;
+
+  void _open(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: KdColors.bg2,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(KdRadius.card * 2))),
+      builder: (sheet) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(sheet).height * 0.75,
+          child: KdCategoryRail(
+            title: title,
+            entries: entries,
+            selected: selected,
+            footer: footer,
+            onContext: onContext,
+            onSelect: (id) {
+              Navigator.of(sheet).pop();
+              onSelect(id);
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final current = entries.where((e) => e.id == selected).firstOrNull ?? entries.firstOrNull;
+    return Semantics(
+      button: true,
+      label: title,
+      child: GestureDetector(
+        onTap: () => _open(context),
+        child: Container(
+          height: 44,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: KdColors.bg2,
+            border: Border.all(color: KdColors.line),
+            borderRadius: BorderRadius.circular(KdRadius.card),
+          ),
+          child: Row(
+            children: [
+              Icon(current?.icon ?? LucideIcons.folder, size: 16, color: KdColors.accent2),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  current?.name ?? title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              if (current?.count case final n?)
+                Text('$n', style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()])),
+              const SizedBox(width: 8),
+              const Icon(LucideIcons.chevronDown, size: 16, color: KdColors.muted),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class KdCategoryRow extends StatefulWidget {
   const KdCategoryRow({
     super.key,
@@ -152,6 +237,8 @@ class _KdCategoryRowState extends State<KdCategoryRow> {
       child: GestureDetector(
         onTap: widget.onTap,
         onSecondaryTapUp: widget.onSecondaryTap == null ? null : (d) => widget.onSecondaryTap!(d.globalPosition),
+        // Touch has no right button: a long press opens the same menu.
+        onLongPressStart: widget.onSecondaryTap == null ? null : (d) => widget.onSecondaryTap!(d.globalPosition),
         child: Container(
           height: 32,
           margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),

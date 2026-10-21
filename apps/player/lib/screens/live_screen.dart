@@ -6,6 +6,7 @@ import '../app/library.dart';
 import '../app/paging.dart';
 import '../app/scope.dart';
 import '../app/text.dart';
+import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_category_rail.dart';
 import '../design/widgets/kd_controls.dart';
@@ -199,6 +200,26 @@ class _LiveScreenState extends State<LiveScreen> {
     if (_sourceId == null) {
       return KdEmpty(title: l10n.sourceNone, hint: l10n.sourceNoneHint);
     }
+    if (isCompact(context)) {
+      // A phone: the category on a button, then the channels; a tap plays.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 0),
+            child: KdCategoryPicker(
+              title: l10n.liveCategories,
+              selected: _category,
+              onSelect: _selectCategory,
+              footer: const LockedCategoriesRow(kind: Kind.live),
+              onContext: _onCategoryContext,
+              entries: _railEntries,
+            ),
+          ),
+          Expanded(child: _channelPane(compact: true)),
+        ],
+      );
+    }
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -211,31 +232,37 @@ class _LiveScreenState extends State<LiveScreen> {
     );
   }
 
-  Widget _categoryPane() {
+  List<KdRailEntry> get _railEntries {
     final total = _categories.fold<int>(0, (a, c) => a + c.count);
+    return [
+      KdRailEntry(id: _all, name: l10n.liveAllChannels, count: total, icon: LucideIcons.tv, pinned: true),
+      KdRailEntry(id: _favorites, name: l10n.navFavorites, count: _favoriteItems.length, icon: LucideIcons.star, pinned: true),
+      for (final g in _groups) KdRailEntry(id: _groupKey(g.uid), name: g.name, count: g.count, icon: LucideIcons.folderHeart, pinned: true),
+      for (final c in _categories) KdRailEntry(id: c.uid, name: c.name, count: c.count),
+    ];
+  }
+
+  void _onCategoryContext(int id, Offset at) {
+    if (_groupOf(id) case final g?) {
+      final group = _groups.where((x) => x.uid == g).firstOrNull;
+      if (group != null) showGroupMenu(context, at: at, group: group);
+    } else if (_categories.where((c) => c.uid == id).firstOrNull case final c?) {
+      showCategoryMenu(context, at: at, kind: Kind.live, category: c);
+    }
+  }
+
+  Widget _categoryPane() {
     return KdCategoryRail(
       title: l10n.liveCategories,
       selected: _category,
       onSelect: _selectCategory,
       footer: const LockedCategoriesRow(kind: Kind.live),
-      onContext: (id, at) {
-        if (_groupOf(id) case final g?) {
-          final group = _groups.where((x) => x.uid == g).firstOrNull;
-          if (group != null) showGroupMenu(context, at: at, group: group);
-        } else if (_categories.where((c) => c.uid == id).firstOrNull case final c?) {
-          showCategoryMenu(context, at: at, kind: Kind.live, category: c);
-        }
-      },
-      entries: [
-        KdRailEntry(id: _all, name: l10n.liveAllChannels, count: total, icon: LucideIcons.tv, pinned: true),
-        KdRailEntry(id: _favorites, name: l10n.navFavorites, count: _favoriteItems.length, icon: LucideIcons.star, pinned: true),
-        for (final g in _groups) KdRailEntry(id: _groupKey(g.uid), name: g.name, count: g.count, icon: LucideIcons.folderHeart, pinned: true),
-        for (final c in _categories) KdRailEntry(id: c.uid, name: c.name, count: c.count),
-      ],
+      onContext: _onCategoryContext,
+      entries: _railEntries,
     );
   }
 
-  Widget _channelPane() {
+  Widget _channelPane({bool compact = false}) {
     final items = _items;
     final pager = _pager;
     return Focus(
@@ -278,7 +305,7 @@ class _LiveScreenState extends State<LiveScreen> {
                         selected: i == _selected,
                         onTap: () {
                           _focus.requestFocus();
-                          _play(i);
+                          _play(i, full: compact);
                         },
                         onDoubleTap: () => _play(i, full: true),
                         onContext: (at) => showChannelMenu(context, at: at, item: items[i], groupId: _groupOf(_category)),
@@ -329,6 +356,7 @@ class _ChannelRowState extends State<_ChannelRow> {
         onTap: widget.onTap,
         onDoubleTap: widget.onDoubleTap,
         onSecondaryTapUp: (d) => widget.onContext(d.globalPosition),
+        onLongPressStart: (d) => widget.onContext(d.globalPosition),
         child: Container(
           margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           padding: const EdgeInsets.symmetric(horizontal: 8),

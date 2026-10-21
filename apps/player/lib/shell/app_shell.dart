@@ -5,8 +5,10 @@ import 'package:window_manager/window_manager.dart';
 
 import '../app/app_state.dart';
 import '../app/library.dart';
+import '../app/platform.dart';
 import '../app/scope.dart';
 import '../app/updates.dart';
+import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_icon_button.dart';
@@ -41,12 +43,12 @@ class _AppShellState extends State<AppShell> with WindowListener {
   @override
   void initState() {
     super.initState();
-    windowManager.addListener(this);
+    if (isDesktopOs) windowManager.addListener(this);
   }
 
   @override
   void dispose() {
-    windowManager.removeListener(this);
+    if (isDesktopOs) windowManager.removeListener(this);
     super.dispose();
   }
 
@@ -76,52 +78,109 @@ class _AppShellState extends State<AppShell> with WindowListener {
       builder: (context, _) {
         if (!app.loaded) return const ColoredBox(color: KdColors.bg);
         final full = player.view == PlayerView.full;
-        final hideChrome = full && _osFullscreen;
-        return CallbackShortcuts(
-          bindings: _shortcuts(app),
-          child: Focus(
-            autofocus: true,
-            child: DecoratedBox(
-              decoration: BoxDecoration(border: hideChrome ? null : Border.all(color: KdColors.line)),
-              child: Column(
-                children: [
-                  if (!hideChrome)
-                    KdTitlebar(
-                      actions: [
-                        if (app.sources.isNotEmpty)
-                          const _UpdateBadge(),
-                          KdIconButton(icon: LucideIcons.search, tooltip: l10n.tipSearch, onPressed: () => app.go(Section.search)),
-                        if (app.sources.isNotEmpty)
-                          KdIconButton(icon: LucideIcons.settings, tooltip: l10n.tipSettings, onPressed: () => app.go(Section.settings)),
-                      ],
-                    ),
-                  Expanded(
-                    child: app.sources.isEmpty
-                        ? const OnboardingScreen()
-                        : Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  const Sidebar(),
-                                  const VerticalDivider(width: 1, thickness: 1, color: KdColors.line),
-                                  Expanded(child: _content(app)),
-                                ],
-                              ),
-                              if (player.view == PlayerView.preview && app.section != Section.live)
-                                const Positioned(right: 18, bottom: 18, child: _MiniPlayer()),
-                              if (full) const Positioned.fill(child: PlayerScreen()),
-                              const Positioned(top: 14, right: 18, child: ReminderBanner()),
-                            ],
-                          ),
-                  ),
-                ],
-              ),
+        // Android's back: out of the player (PlayerScreen), then home, then out.
+        return PopScope(
+          canPop: !full && (app.section == Section.home || app.sources.isEmpty),
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop && !full) app.go(Section.home);
+          },
+          child: CallbackShortcuts(
+            bindings: _shortcuts(app),
+            child: Focus(
+              autofocus: true,
+              child: isCompact(context) ? _compact(app, player) : _wide(app, player),
             ),
           ),
         );
       },
+    );
+  }
+
+  /// Desktop (and tablets held sideways): titlebar, sidebar, content.
+  Widget _wide(AppState app, PlayerController player) {
+    final full = player.view == PlayerView.full;
+    final hideChrome = full && _osFullscreen;
+    final body = Column(
+      children: [
+        if (!hideChrome && isDesktopOs)
+          KdTitlebar(
+            actions: [
+              if (app.sources.isNotEmpty)
+                const _UpdateBadge(),
+                KdIconButton(icon: LucideIcons.search, tooltip: l10n.tipSearch, onPressed: () => app.go(Section.search)),
+              if (app.sources.isNotEmpty)
+                KdIconButton(icon: LucideIcons.settings, tooltip: l10n.tipSettings, onPressed: () => app.go(Section.settings)),
+            ],
+          ),
+        Expanded(
+          child: app.sources.isEmpty
+              ? const OnboardingScreen()
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Sidebar(),
+                        const VerticalDivider(width: 1, thickness: 1, color: KdColors.line),
+                        Expanded(child: _content(app)),
+                      ],
+                    ),
+                    if (player.view == PlayerView.preview && app.section != Section.live)
+                      const Positioned(right: 18, bottom: 18, child: _MiniPlayer()),
+                    if (full && isDesktopOs) const Positioned.fill(child: PlayerScreen()),
+                    const Positioned(top: 14, right: 18, child: ReminderBanner()),
+                  ],
+                ),
+        ),
+      ],
+    );
+    if (isDesktopOs) {
+      return DecoratedBox(
+        decoration: BoxDecoration(border: hideChrome ? null : Border.all(color: KdColors.line)),
+        child: body,
+      );
+    }
+    // A tablet: system bars around the app, the player over all of it.
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        SafeArea(child: body),
+        if (full) const Positioned.fill(child: PlayerScreen()),
+      ],
+    );
+  }
+
+  /// Phones and tablets held upright: top bar, one pane, bottom bar.
+  Widget _compact(AppState app, PlayerController player) {
+    final full = player.view == PlayerView.full;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Column(
+          children: [
+            SafeArea(
+              bottom: false,
+              child: app.sources.isEmpty ? const SizedBox(height: 8) : _CompactTopBar(app: app),
+            ),
+            Expanded(
+              child: app.sources.isEmpty
+                  ? const SafeArea(top: false, child: OnboardingScreen())
+                  : Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        _content(app),
+                        if (player.view == PlayerView.preview)
+                          const Positioned(right: 12, bottom: 12, child: _MiniPlayer(width: 208)),
+                        const Positioned(top: 8, left: 12, right: 12, child: Center(child: ReminderBanner())),
+                      ],
+                    ),
+            ),
+            if (app.sources.isNotEmpty) const CompactNavBar(),
+          ],
+        ),
+        if (full) const Positioned.fill(child: PlayerScreen()),
+      ],
     );
   }
 
@@ -151,7 +210,9 @@ class _AppShellState extends State<AppShell> with WindowListener {
 
 /// Keeps a stream playing in a corner while the user browses elsewhere.
 class _MiniPlayer extends StatefulWidget {
-  const _MiniPlayer();
+  const _MiniPlayer({this.width = 336});
+
+  final double width;
 
   @override
   State<_MiniPlayer> createState() => _MiniPlayerState();
@@ -168,8 +229,8 @@ class _MiniPlayerState extends State<_MiniPlayer> {
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
       child: Container(
-        width: 336,
-        height: 189,
+        width: widget.width,
+        height: widget.width * 9 / 16,
         decoration: BoxDecoration(
           color: Colors.black,
           border: Border.all(color: KdColors.line),
@@ -181,6 +242,8 @@ class _MiniPlayerState extends State<_MiniPlayer> {
           fit: StackFit.expand,
           children: [
             GestureDetector(
+              // Touch has no hover to reveal the buttons: a tap expands.
+              onTap: isMobileOs ? () => player.setView(PlayerView.full) : null,
               onDoubleTap: () => player.setView(PlayerView.full),
               child: player.engine.surface(),
             ),
@@ -213,6 +276,40 @@ class _MiniPlayerState extends State<_MiniPlayer> {
     );
   }
 }
+
+/// The compact layout's top bar: the source, then the guide, search and
+/// settings (the bottom bar holds the other sections).
+class _CompactTopBar extends StatelessWidget {
+  const _CompactTopBar({required this.app});
+
+  final AppState app;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget icon(IconData i, String tip, Section s) => KdIconButton(
+      icon: i,
+      tooltip: tip,
+      color: app.section == s ? KdColors.accent2 : null,
+      extent: 44,
+      onPressed: () => app.go(s),
+    );
+    return Container(
+      constraints: const BoxConstraints(minHeight: 56),
+      padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: KdColors.line))),
+      child: Row(
+        children: [
+          const Expanded(child: SourceSwitcher()),
+          const SizedBox(width: 6),
+          icon(LucideIcons.calendarRange, l10n.navGuide, Section.guide),
+          icon(LucideIcons.search, l10n.navSearch, Section.search),
+          icon(LucideIcons.settings, l10n.navSettings, Section.settings),
+        ],
+      ),
+    );
+  }
+}
+
 
 /// A quiet pill in the title bar while an update waits; opens Settings › About.
 class _UpdateBadge extends StatelessWidget {

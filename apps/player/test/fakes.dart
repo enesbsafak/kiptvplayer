@@ -5,6 +5,7 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge.dart' show AnyhowExcepti
 import 'package:karadelik_player/app/app_state.dart';
 import 'package:karadelik_player/app/library.dart';
 import 'package:karadelik_player/app/paging.dart';
+import 'package:karadelik_player/app/platform.dart';
 import 'package:karadelik_player/app/scope.dart';
 import 'package:karadelik_player/app/updates.dart';
 import 'package:karadelik_player/perf/perf.dart';
@@ -500,6 +501,8 @@ class TestHarness {
   TestHarness(this.library) : engine = FakeEngine() {
     // Tests read Turkish strings unless they choose otherwise.
     AppState.systemLocale = () => 'tr_TR';
+    // The Windows updater's screens are tested on every host.
+    hasAppUpdater = true;
     state = AppState(library);
     player = PlayerController(engine, library, Perf.init(const []));
     epg = EpgCache(library);

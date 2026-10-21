@@ -9,19 +9,23 @@ import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
 part 'library.freezed.dart';
 
-// These functions are ignored because they are not marked as `pub`: `cats`, `core`, `counts`, `item`, `items`, `source_info`, `stage_event`, `to_playback`, `to_programme`
+// These functions are ignored because they are not marked as `pub`: `cats`, `core`, `counts`, `item`, `items`, `os_secrets`, `source_info`, `stage_event`, `to_playback`, `to_programme`
 // These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `assert_fields_are_eq`, `assert_fields_are_eq`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `clone`, `eq`, `eq`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `fmt`, `from`, `from`
 
 /// Opens (or creates) the library under [data_dir]. Safe to call twice.
 /// [ephemeral_secrets] keeps passwords and keys in memory instead of the OS
 /// keyring: for automated runs, which must never touch the user's
-/// credentials (or leave entries behind).
+/// credentials (or leave entries behind). [secrets_key] (32 bytes, kept by
+/// the host in the OS key store) seals them in a file instead, where native
+/// code has no credential store (Android).
 Future<void> openLibrary({
   required String dataDir,
   required bool ephemeralSecrets,
+  Uint8List? secretsKey,
 }) => RustLib.instance.api.crateApiLibraryOpenLibrary(
   dataDir: dataDir,
   ephemeralSecrets: ephemeralSecrets,
+  secretsKey: secretsKey,
 );
 
 /// One light request to the source, timed; never opens a stream.

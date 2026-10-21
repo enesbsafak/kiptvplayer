@@ -49,12 +49,15 @@ abstract final class KdSize {
 
 abstract final class KdType {
   /// System UI font, like KaradelikDev: Segoe UI Variable on Windows,
-  /// SF Pro on macOS.
-  static String get family =>
-      Platform.isMacOS ? '.AppleSystemUIFont' : 'Segoe UI Variable Text';
+  /// SF Pro on Apple platforms, the system default (Roboto) on Android.
+  static String? get family => Platform.isMacOS || Platform.isIOS
+      ? '.AppleSystemUIFont'
+      : Platform.isAndroid
+          ? null
+          : 'Segoe UI Variable Text';
   static const fallback = ['Segoe UI', 'system-ui'];
   static const mono = 'Cascadia Mono';
-  static const monoFallback = ['Consolas', 'SF Mono', 'Menlo'];
+  static const monoFallback = ['Consolas', 'SF Mono', 'Menlo', 'monospace'];
 
   static const tag = 10.5;
   static const chip = 11.0;

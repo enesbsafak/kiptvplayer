@@ -203,6 +203,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   UpdateInfo? dco_decode_opt_box_autoadd_update_info(dynamic raw);
 
   @protected
+  Uint8List? dco_decode_opt_list_prim_u_8_strict(dynamic raw);
+
+  @protected
   Parental dco_decode_parental(dynamic raw);
 
   @protected
@@ -469,6 +472,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   UpdateInfo? sse_decode_opt_box_autoadd_update_info(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Uint8List? sse_decode_opt_list_prim_u_8_strict(SseDeserializer deserializer);
 
   @protected
   Parental sse_decode_parental(SseDeserializer deserializer);
@@ -799,6 +805,12 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   @protected
   void sse_encode_opt_box_autoadd_update_info(
     UpdateInfo? self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_opt_list_prim_u_8_strict(
+    Uint8List? self,
     SseSerializer serializer,
   );
 

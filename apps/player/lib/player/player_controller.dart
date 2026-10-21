@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
-import 'package:window_manager/window_manager.dart';
 
 import '../app/library.dart';
+import '../app/platform.dart';
 import '../l10n/l10n.dart';
 import '../perf/perf.dart';
 import 'media_track.dart';
@@ -153,6 +153,7 @@ class PlayerController extends ChangeNotifier {
       _backups = null;
     }
     await _saveProgress();
+    if (isMobileOs && view != this.view) setPlayerFullscreen(view == PlayerView.full);
     _set(() {
       opening = true;
       error = null;
@@ -377,13 +378,13 @@ class PlayerController extends ChangeNotifier {
 
   void setView(PlayerView v) {
     if (view == v) return;
-    if (v != PlayerView.full) windowManager.setFullScreen(false);
+    // Phones go full screen with the player; desktop windows on request.
+    if (v != PlayerView.full || isMobileOs) setPlayerFullscreen(v == PlayerView.full);
     _set(() => view = v);
   }
 
   Future<void> toggleWindowFullscreen() async {
-    final fs = await windowManager.isFullScreen();
-    await windowManager.setFullScreen(!fs);
+    await setPlayerFullscreen(!await isPlayerFullscreen());
   }
 
   Future<void> stop() async {
@@ -393,8 +394,9 @@ class PlayerController extends ChangeNotifier {
     _clearReconnect();
     await _saveProgress();
     await engine.stop();
-    // Leaving full screen is cosmetic: never let it keep the player running.
-    await windowManager.setFullScreen(false).catchError((_) {});
+    // Leaving full screen is cosmetic: never let it keep the player running
+    // (or wait on it: the window can be slow to answer, or not answer).
+    unawaited(setPlayerFullscreen(false).catchError((_) {}));
     _set(() {
       now = null;
       view = PlayerView.hidden;

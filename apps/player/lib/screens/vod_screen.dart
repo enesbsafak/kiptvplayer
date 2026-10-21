@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../app/library.dart';
 import '../app/paging.dart';
 import '../app/scope.dart';
+import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_category_rail.dart';
 import '../design/widgets/kd_controls.dart';
@@ -108,6 +109,36 @@ class _VodScreenState extends State<VodScreen> {
     }
     final total = _categories.fold<int>(0, (a, c) => a + c.count);
     final pager = _pager;
+    final entries = [
+      KdRailEntry(
+        id: _allCategories,
+        name: l10n.categoryAll,
+        count: total,
+        icon: widget.kind == Kind.movie ? LucideIcons.clapperboard : LucideIcons.layers,
+        pinned: true,
+      ),
+      for (final c in _categories) KdRailEntry(id: c.uid, name: c.name, count: c.count),
+    ];
+    void onContext(int id, Offset at) {
+      if (_categories.where((c) => c.uid == id).firstOrNull case final c?) {
+        showCategoryMenu(context, at: at, kind: widget.kind, category: c);
+      }
+    }
+
+    if (isCompact(context)) {
+      return _grid(
+        total,
+        pager,
+        picker: KdCategoryPicker(
+          title: l10n.liveCategories,
+          selected: _category ?? _allCategories,
+          onSelect: (id) => _select(id == _allCategories ? null : id),
+          footer: LockedCategoriesRow(kind: widget.kind),
+          onContext: onContext,
+          entries: entries,
+        ),
+      );
+    }
     // Categories down the left like Live TV: providers list dozens or
     // hundreds, which a row of pills cannot show (nor scroll with a wheel).
     return Row(
@@ -120,21 +151,8 @@ class _VodScreenState extends State<VodScreen> {
             selected: _category ?? _allCategories,
             onSelect: (id) => _select(id == _allCategories ? null : id),
             footer: LockedCategoriesRow(kind: widget.kind),
-            onContext: (id, at) {
-              if (_categories.where((c) => c.uid == id).firstOrNull case final c?) {
-                showCategoryMenu(context, at: at, kind: widget.kind, category: c);
-              }
-            },
-            entries: [
-              KdRailEntry(
-                id: _allCategories,
-                name: l10n.categoryAll,
-                count: total,
-                icon: widget.kind == Kind.movie ? LucideIcons.clapperboard : LucideIcons.layers,
-                pinned: true,
-              ),
-              for (final c in _categories) KdRailEntry(id: c.uid, name: c.name, count: c.count),
-            ],
+            onContext: onContext,
+            entries: entries,
           ),
         ),
         const VerticalDivider(width: 1, thickness: 1, color: KdColors.line),
@@ -143,13 +161,15 @@ class _VodScreenState extends State<VodScreen> {
     );
   }
 
-  Widget _grid(int total, ItemPager? pager) {
+  /// [picker] replaces the rail on phones, under the title.
+  Widget _grid(int total, ItemPager? pager, {Widget? picker}) {
+    final pad = picker == null ? 20.0 : 12.0;
     final name = _category == null ? null : _categories.where((c) => c.uid == _category).map((c) => c.name).firstOrNull;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+          padding: EdgeInsets.fromLTRB(pad, 16, pad, 10),
           child: Row(
             children: [
               Text(
@@ -174,9 +194,10 @@ class _VodScreenState extends State<VodScreen> {
             ],
           ),
         ),
+        if (picker != null) Padding(padding: EdgeInsets.fromLTRB(pad, 0, pad, 10), child: picker),
         const SizedBox(height: 4),
         if (pager != null && pager.loading && pager.items.isEmpty)
-          const Padding(padding: EdgeInsets.symmetric(horizontal: 20), child: KdIndeterminate()),
+          Padding(padding: EdgeInsets.symmetric(horizontal: pad), child: const KdIndeterminate()),
         Expanded(
           child: pager == null || (pager.items.isEmpty && !pager.loading)
               ? KdEmpty(icon: widget.kind == Kind.movie ? LucideIcons.clapperboard : LucideIcons.layers, title: l10n.vodEmptyCategory)
@@ -186,12 +207,12 @@ class _VodScreenState extends State<VodScreen> {
                     return false;
                   },
                   child: GridView.builder(
-                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 24),
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 170,
+                    padding: EdgeInsets.fromLTRB(pad, 6, pad, 24),
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: picker == null ? 170 : 130,
                       mainAxisSpacing: 18,
-                      crossAxisSpacing: 14,
-                      childAspectRatio: 0.58,
+                      crossAxisSpacing: picker == null ? 14 : 10,
+                      childAspectRatio: picker == null ? 0.58 : 0.5,
                     ),
                     itemCount: pager.items.length,
                     itemBuilder: (context, i) => PosterCard(item: pager.items[i], onTap: () => setState(() => _detail = pager.items[i])),
@@ -373,6 +394,7 @@ class _DetailViewState extends State<DetailView> {
     final backdrop = t?.backdrop ?? d?.backdrop;
     final plot = t?.overview ?? d?.plot;
     final makers = t != null && t.makers.isNotEmpty ? t.makers.join(', ') : d?.director;
+    final compact = isCompact(context);
     return Stack(
       children: [
         if (backdrop != null)
@@ -401,21 +423,27 @@ class _DetailViewState extends State<DetailView> {
             ),
           ),
         ListView(
-          padding: const EdgeInsets.fromLTRB(28, 16, 28, 32),
+          padding: compact ? const EdgeInsets.fromLTRB(14, 10, 14, 24) : const EdgeInsets.fromLTRB(28, 16, 28, 32),
           children: [
             Align(
               alignment: Alignment.centerLeft,
               child: KdButton(label: l10n.actionBack, icon: LucideIcons.arrowLeft, kind: KdButtonKind.ghost, onPressed: widget.onBack),
             ),
-            const SizedBox(height: 40),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                KdArt(url: t?.poster ?? item.logo, label: item.name, width: 180, height: 270, radius: KdRadius.card),
-                const SizedBox(width: 24),
-                Expanded(child: _facts(d)),
-              ],
-            ),
+            SizedBox(height: compact ? 16 : 40),
+            if (compact) ...[
+              // A phone: the poster above the facts, which need the full width.
+              KdArt(url: t?.poster ?? item.logo, label: item.name, width: 120, height: 180, radius: KdRadius.card),
+              const SizedBox(height: 16),
+              _facts(d),
+            ] else
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  KdArt(url: t?.poster ?? item.logo, label: item.name, width: 180, height: 270, radius: KdRadius.card),
+                  const SizedBox(width: 24),
+                  Expanded(child: _facts(d)),
+                ],
+              ),
             const SizedBox(height: 22),
             if (_error != null)
               Text(l10n.detailFailed(errorText(_error!)), style: const TextStyle(color: KdColors.err))

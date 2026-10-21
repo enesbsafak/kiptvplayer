@@ -41,7 +41,7 @@ class Sidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Padding(padding: EdgeInsets.fromLTRB(10, 10, 10, 6), child: _SourceSwitcher()),
+          const Padding(padding: EdgeInsets.fromLTRB(10, 10, 10, 6), child: SourceSwitcher()),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
             child: KdSectionLabel(l10n.navLibrary),
@@ -61,6 +61,64 @@ class Sidebar extends StatelessWidget {
           ),
           const SizedBox(height: 10),
         ],
+      ),
+    );
+  }
+}
+
+/// The compact layout's bottom bar: the five most used sections. The guide,
+/// search and settings sit in the top bar.
+class CompactNavBar extends StatelessWidget {
+  const CompactNavBar({super.key});
+
+  static const height = 58.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    final entries = mainNav.where((e) => e.section != Section.guide);
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        color: KdColors.bg,
+        border: Border(top: BorderSide(color: KdColors.line)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: height,
+          child: Row(
+            children: [
+              for (final e in entries)
+                Expanded(
+                  child: Semantics(
+                    button: true,
+                    selected: app.section == e.section,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => app.go(e.section),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(e.icon, size: 20, color: app.section == e.section ? KdColors.accent2 : KdColors.muted),
+                          const SizedBox(height: 4),
+                          Text(
+                            e.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: KdType.chip,
+                              color: app.section == e.section ? KdColors.accent2 : KdColors.muted,
+                              fontWeight: app.section == e.section ? FontWeight.w600 : FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -128,8 +186,8 @@ class _NavItemState extends State<_NavItem> {
 }
 
 /// Active source card; opens a menu to switch or add sources.
-class _SourceSwitcher extends StatelessWidget {
-  const _SourceSwitcher();
+class SourceSwitcher extends StatelessWidget {
+  const SourceSwitcher({super.key});
 
   @override
   Widget build(BuildContext context) {

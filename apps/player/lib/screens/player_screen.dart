@@ -1,13 +1,16 @@
 import 'dart:async';
 
 import 'package:file_selector/file_selector.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/library.dart';
 import '../app/paging.dart';
+import '../app/platform.dart';
 import '../app/scope.dart';
+import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
@@ -146,7 +149,10 @@ class _PlayerScreenState extends State<PlayerScreen> {
       setState(() => _panel = _Panel.none);
       return;
     }
-    if (player.now?.isLive ?? false) {
+    if (isCompact(context)) {
+      // No preview pane to fall back to on a phone.
+      player.stop();
+    } else if (player.now?.isLive ?? false) {
       player.setView(PlayerView.preview);
     } else if (player.now?.isCatchup ?? false) {
       // Back where the replay was picked: the channel's live preview.
@@ -206,99 +212,115 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   Widget build(BuildContext context) {
     final player = context.player;
-    return Focus(
-      focusNode: _focus,
-      autofocus: true,
-      onKeyEvent: _onKey,
-      child: MouseRegion(
-        cursor: _osd ? SystemMouseCursors.basic : SystemMouseCursors.none,
-        onHover: (_) => _poke(),
-        child: ListenableBuilder(
-          listenable: player,
-          builder: (context, _) {
-            final now = player.now;
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                const ColoredBox(color: Colors.black),
-                GestureDetector(
-                  onTap: () {
-                    _focus.requestFocus();
-                    if (_panel != _Panel.none) {
-                      setState(() => _panel = _Panel.none);
-                    } else {
-                      player.togglePause();
-                    }
-                    _poke();
-                  },
-                  onDoubleTap: player.toggleWindowFullscreen,
-                  child: player.engine.surface(),
-                ),
-                if (player.opening || player.buffering)
-                  const Center(child: SizedBox(width: 160, child: KdIndeterminate(height: 3))),
-                if (player.reconnecting)
-                  Center(child: ReconnectBanner(player: player))
-                else if (player.error != null && !player.opening)
-                  Center(child: _ErrorCard(message: player.error!, onRetry: () => _retry(player))),
-                IgnorePointer(
-                  ignoring: !_osd,
-                  child: AnimatedOpacity(
-                    opacity: _osd ? 1 : 0,
-                    duration: const Duration(milliseconds: 160),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Align(alignment: Alignment.topCenter, child: _TopBar(now: now, player: player, onBack: _exit)),
-                        Align(
-                          alignment: Alignment.bottomCenter,
-                          child: _BottomBar(
-                            player: player,
-                            onTracks: () => _togglePanel(_Panel.tracks),
-                            onStats: () => setState(() => _stats = !_stats),
-                            onChannels: () => _togglePanel(_Panel.channels),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _exit();
+      },
+      child: Focus(
+        focusNode: _focus,
+        autofocus: true,
+        onKeyEvent: _onKey,
+        child: MouseRegion(
+          cursor: _osd ? SystemMouseCursors.basic : SystemMouseCursors.none,
+          onHover: (_) => _poke(),
+          child: ListenableBuilder(
+            listenable: player,
+            builder: (context, _) {
+              final now = player.now;
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  const ColoredBox(color: Colors.black),
+                  GestureDetector(
+                    onTapUp: (d) {
+                      _focus.requestFocus();
+                      if (_panel != _Panel.none) {
+                        setState(() => _panel = _Panel.none);
+                      } else if (d.kind == PointerDeviceKind.touch) {
+                        // Touch: a tap shows or hides the controls, as on any phone player.
+                        if (_osd) {
+                          _hide?.cancel();
+                          _setOsd(false);
+                        } else {
+                          _poke();
+                        }
+                        return;
+                      } else {
+                        player.togglePause();
+                      }
+                      _poke();
+                    },
+                    onDoubleTap: isDesktopOs ? player.toggleWindowFullscreen : null,
+                    child: player.engine.surface(),
+                  ),
+                  if (player.opening || player.buffering)
+                    const Center(child: SizedBox(width: 160, child: KdIndeterminate(height: 3))),
+                  if (player.reconnecting)
+                    Center(child: ReconnectBanner(player: player))
+                  else if (player.error != null && !player.opening)
+                    Center(child: _ErrorCard(message: player.error!, onRetry: () => _retry(player))),
+                  IgnorePointer(
+                    ignoring: !_osd,
+                    child: AnimatedOpacity(
+                      opacity: _osd ? 1 : 0,
+                      duration: const Duration(milliseconds: 160),
+                      // Clear of camera cutouts and rounded corners on phones.
+                      child: SafeArea(child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Align(alignment: Alignment.topCenter, child: _TopBar(now: now, player: player, onBack: _exit)),
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: _BottomBar(
+                              player: player,
+                              onTracks: () => _togglePanel(_Panel.tracks),
+                              onStats: () => setState(() => _stats = !_stats),
+                              onChannels: () => _togglePanel(_Panel.channels),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      )),
                     ),
                   ),
-                ),
-                Positioned(top: 70, right: 24, child: ZapDigits(player: player)),
-                if (_stats && now != null)
-                  Positioned(
-                    top: 70,
-                    left: 20,
-                    child: StatsPanel(player: player, onClose: () => setState(() => _stats = false)),
-                  ),
-                if (_flash case final f?)
-                  Positioned(
-                    top: 70,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: KdColors.bg2.withValues(alpha: 0.92),
-                          border: Border.all(color: KdColors.line),
-                          borderRadius: BorderRadius.circular(KdRadius.card),
+                  Positioned(top: 70, right: 24, child: ZapDigits(player: player)),
+                  if (_stats && now != null)
+                    Positioned(
+                      top: 70,
+                      left: 20,
+                      child: StatsPanel(player: player, onClose: () => setState(() => _stats = false)),
+                    ),
+                  if (_flash case final f?)
+                    Positioned(
+                      top: 70,
+                      left: 0,
+                      right: 0,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: KdColors.bg2.withValues(alpha: 0.92),
+                            border: Border.all(color: KdColors.line),
+                            borderRadius: BorderRadius.circular(KdRadius.card),
+                          ),
+                          child: Text(f, style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
                         ),
-                        child: Text(f, style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()])),
                       ),
                     ),
-                  ),
-                if (_panel == _Panel.tracks)
-                  Positioned(right: 20, bottom: 110, child: _TracksPanel(player: player)),
-                if (_panel == _Panel.channels && now != null)
-                  Positioned(
-                    left: 0,
-                    top: 0,
-                    bottom: 0,
-                    width: 340,
-                    child: _ChannelSheet(now: now, onPick: (item) => player.play(item, Kind.live, queue: now.queue, view: PlayerView.full)),
-                  ),
-              ],
-            );
-          },
+                  if (_panel == _Panel.tracks)
+                    Positioned(right: 20, bottom: 110, child: _TracksPanel(player: player)),
+                  if (_panel == _Panel.channels && now != null)
+                    Positioned(
+                      left: 0,
+                      top: 0,
+                      bottom: 0,
+                      width: 340,
+                      child: _ChannelSheet(now: now, onPick: (item) => player.play(item, Kind.live, queue: now.queue, view: PlayerView.full)),
+                    ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -423,6 +445,27 @@ class _BottomBar extends StatelessWidget {
             )
           else
             _SeekBar(player: player),
+          if (isCompact(context))
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _OsdButton(icon: LucideIcons.subtitles, tooltip: l10n.tipTracks, onTap: onTracks),
+                _OsdButton(icon: LucideIcons.activity, tooltip: l10n.tipStats, onTap: onStats),
+                _OsdButton(
+                  icon: live ? LucideIcons.chevronsUpDown : LucideIcons.rewind,
+                  tooltip: live ? l10n.tipPrevChannel : l10n.tipBack10,
+                  onTap: () => live ? player.zap(-1) : player.seekBy(const Duration(seconds: -10)),
+                ),
+                _OsdButton(icon: player.playing ? LucideIcons.pause : LucideIcons.play, tooltip: l10n.tipPlayPauseSpace, big: true, onTap: player.togglePause),
+                _OsdButton(
+                  icon: live ? LucideIcons.skipForward : LucideIcons.fastForward,
+                  tooltip: live ? l10n.tipNextChannel : l10n.tipForward10,
+                  onTap: () => live ? player.zap(1) : player.seekBy(const Duration(seconds: 10)),
+                ),
+                if (live) _OsdButton(icon: LucideIcons.listVideo, tooltip: l10n.tipChannelList, onTap: onChannels),
+              ],
+            )
+          else
           Row(
             children: [
               Expanded(child: _NowInfo(player: player)),
@@ -458,7 +501,7 @@ class _BottomBar extends StatelessWidget {
                       _OsdButton(icon: LucideIcons.listVideo, tooltip: l10n.tipChannelList, onTap: onChannels),
                     ],
                     const SizedBox(width: 6),
-                    _OsdButton(icon: LucideIcons.maximize, tooltip: l10n.tipFullscreen, onTap: player.toggleWindowFullscreen),
+                    if (isDesktopOs) _OsdButton(icon: LucideIcons.maximize, tooltip: l10n.tipFullscreen, onTap: player.toggleWindowFullscreen),
                   ],
                 ),
               ),

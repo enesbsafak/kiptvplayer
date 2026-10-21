@@ -59,7 +59,7 @@ pub struct XtreamClient {
 
 impl XtreamClient {
     pub fn new(base: &str, username: &str, password: &str, user_agent: Option<&str>, insecure_tls: bool) -> Result<Self> {
-        let http = reqwest::blocking::Client::builder()
+        let http = crate::net::client()
             .timeout(Duration::from_secs(60))
             .connect_timeout(Duration::from_secs(10))
             .user_agent(user_agent.unwrap_or(crate::DEFAULT_USER_AGENT))

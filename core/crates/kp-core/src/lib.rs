@@ -12,6 +12,7 @@ pub mod guide;
 pub mod lang;
 pub mod parental;
 pub mod m3u;
+pub mod net;
 pub mod opensubs;
 pub mod region;
 pub mod secret;

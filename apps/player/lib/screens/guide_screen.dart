@@ -7,6 +7,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../app/library.dart';
 import '../app/paging.dart';
 import '../app/scope.dart';
+import '../design/layout.dart';
+import '../design/widgets/kd_icon_button.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_category_rail.dart';
 import '../design/widgets/kd_controls.dart';
@@ -134,6 +136,7 @@ class _GuideScreenState extends State<GuideScreen> {
     final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
     final nowX = (now - _windowStart) / 60 * _pxPerMin;
 
+    final compact = isCompact(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -141,15 +144,22 @@ class _GuideScreenState extends State<GuideScreen> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
           child: Row(
             children: [
-              Text(l10n.navGuide, style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
+              Flexible(
+                child: Text(l10n.navGuide, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.display, fontWeight: FontWeight.w600)),
+              ),
               const SizedBox(width: 12),
-              Text(_dayLabel(), style: const TextStyle(color: KdColors.muted)),
-              const Spacer(),
-              KdButton(label: l10n.guideEarlier, icon: LucideIcons.chevronLeft, onPressed: () => _shift(-_step)),
-              const SizedBox(width: 6),
-              KdButton(label: l10n.guideNow, icon: LucideIcons.clock, onPressed: _toNow),
-              const SizedBox(width: 6),
-              KdButton(label: l10n.guideLater, icon: LucideIcons.chevronRight, onPressed: () => _shift(_step)),
+              Expanded(child: Text(_dayLabel(), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: KdColors.muted))),
+              if (compact) ...[
+                KdIconButton(icon: LucideIcons.chevronLeft, tooltip: l10n.guideEarlier, extent: 40, onPressed: () => _shift(-_step)),
+                KdIconButton(icon: LucideIcons.clock, tooltip: l10n.guideNow, extent: 40, onPressed: _toNow),
+                KdIconButton(icon: LucideIcons.chevronRight, tooltip: l10n.guideLater, extent: 40, onPressed: () => _shift(_step)),
+              ] else ...[
+                KdButton(label: l10n.guideEarlier, icon: LucideIcons.chevronLeft, onPressed: () => _shift(-_step)),
+                const SizedBox(width: 6),
+                KdButton(label: l10n.guideNow, icon: LucideIcons.clock, onPressed: _toNow),
+                const SizedBox(width: 6),
+                KdButton(label: l10n.guideLater, icon: LucideIcons.chevronRight, onPressed: () => _shift(_step)),
+              ],
             ],
           ),
         ),
@@ -204,7 +214,8 @@ class _GuideScreenState extends State<GuideScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(
-                  width: _channelCol,
+                  // Narrower on a phone, so programmes keep most of the width.
+                  width: compact ? 128 : _channelCol,
                   child: Column(
                     children: [
                       Container(
@@ -414,20 +425,30 @@ class _ChannelCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // A phone's narrow column keeps the logo and the name, not the number.
+    final compact = isCompact(context);
     return InkWell(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
         decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: KdColors.rowDivider))),
         child: Row(
           children: [
-            SizedBox(
-              width: 32,
-              child: Text('${item.chno ?? index + 1}', style: const TextStyle(color: KdColors.muted, fontSize: KdType.small, fontFeatures: [FontFeature.tabularFigures()])),
+            if (!compact)
+              SizedBox(
+                width: 32,
+                child: Text('${item.chno ?? index + 1}', style: const TextStyle(color: KdColors.muted, fontSize: KdType.small, fontFeatures: [FontFeature.tabularFigures()])),
+              ),
+            KdArt(url: item.logo, label: item.name, width: compact ? 28 : 34, height: compact ? 28 : 34, contain: true),
+            SizedBox(width: compact ? 8 : 10),
+            Expanded(
+              child: Text(
+                item.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: compact ? KdType.small : null),
+              ),
             ),
-            KdArt(url: item.logo, label: item.name, width: 34, height: 34, contain: true),
-            const SizedBox(width: 10),
-            Expanded(child: Text(item.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500))),
           ],
         ),
       ),

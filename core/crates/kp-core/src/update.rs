@@ -70,7 +70,7 @@ pub fn is_newer(candidate: &str, current: &str) -> bool {
 }
 
 fn http(timeout: u64) -> Result<reqwest::blocking::Client> {
-    reqwest::blocking::Client::builder()
+    crate::net::client()
         .timeout(Duration::from_secs(timeout))
         .connect_timeout(Duration::from_secs(10))
         .user_agent(concat!("KaradelikIPTVPlayer-updater/", env!("CARGO_PKG_VERSION")))

@@ -11,12 +11,9 @@ rusqlite.workspace = true
 thiserror.workspace = true
 xxhash-rust.workspace = true
 unicode-normalization.workspace = true
-# OS TLS (schannel / Security.framework): system trust store, no extra C toolchain.
-reqwest = { version = "0.13", default-features = false, features = ["native-tls", "blocking", "json", "gzip", "query"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 base64 = "0.22"
-keyring = { version = "3", features = ["windows-native", "apple-native"] }
 percent-encoding = "2"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 chrono-tz = "0.10"
@@ -27,6 +24,18 @@ sha2 = "0.10"
 # Encrypted backups: Argon2id key, XChaCha20-Poly1305 file.
 argon2 = "0.5"
 chacha20poly1305 = "0.10"
+
+# OS TLS (schannel / Security.framework): system trust store, no extra C
+# toolchain; the OS credential store. Android has neither for native code
+# (see src/net.rs and src/secret.rs).
+[target.'cfg(not(target_os = "android"))'.dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["native-tls", "blocking", "json", "gzip", "query"] }
+keyring = { version = "3", features = ["windows-native", "apple-native"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+reqwest = { version = "0.13", default-features = false, features = ["rustls-no-provider", "blocking", "json", "gzip", "query"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-root-certs = "1"
 
 [dev-dependencies]
 tempfile = "3"
