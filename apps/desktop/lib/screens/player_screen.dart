@@ -399,26 +399,23 @@ class _BottomBar extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (live && n != null)
+            // One timeline for live TV: the programme from the guide and,
+            // with timeshift, the buffered stretch and the playhead on it.
             ListenableBuilder(
               listenable: epg,
               builder: (context, _) {
                 final p = epg.now(n.item.id);
+                if (player.canTimeshift) return _LiveBar(player: player, programme: p);
                 if (p == null) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: Row(
                     children: [
-                      Text(
-                        kdClock(p.start),
-                        style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()]),
-                      ),
+                      _Clock(p.start),
                       const SizedBox(width: 10),
                       Expanded(child: KdProgress(value: programmeProgress(p), height: 3)),
                       const SizedBox(width: 10),
-                      Text(
-                        kdClock(p.stop),
-                        style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()]),
-                      ),
+                      _Clock(p.stop),
                     ],
                   ),
                 );
@@ -426,7 +423,6 @@ class _BottomBar extends StatelessWidget {
             )
           else
             _SeekBar(player: player),
-          if (player.canTimeshift) _TimeshiftBar(player: player),
           Row(
             children: [
               Expanded(child: _NowInfo(player: player)),
@@ -517,18 +513,33 @@ class _NowInfo extends StatelessWidget {
   }
 }
 
-/// Live TV on the local buffer: how far behind live, the buffered stretch
-/// to scrub in, and the way back to live.
-class _TimeshiftBar extends StatefulWidget {
-  const _TimeshiftBar({required this.player});
+class _Clock extends StatelessWidget {
+  const _Clock(this.seconds);
 
-  final PlayerController player;
+  final int seconds;
 
   @override
-  State<_TimeshiftBar> createState() => _TimeshiftBarState();
+  Widget build(BuildContext context) => Text(
+        kdClock(seconds),
+        style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()]),
+      );
 }
 
-class _TimeshiftBarState extends State<_TimeshiftBar> {
+/// Live TV on the local buffer. With a guide the bar spans the programme
+/// (its start and end times at the ends) and shows how much has aired, the
+/// buffered stretch that can be replayed and the playhead; without one it
+/// spans the buffer. Also how far behind live, and the way back.
+class _LiveBar extends StatefulWidget {
+  const _LiveBar({required this.player, this.programme});
+
+  final PlayerController player;
+  final Programme? programme;
+
+  @override
+  State<_LiveBar> createState() => _LiveBarState();
+}
+
+class _LiveBarState extends State<_LiveBar> {
   Timer? _timer;
   (Duration, Duration)? _range;
   double? _drag;
@@ -556,16 +567,21 @@ class _TimeshiftBarState extends State<_TimeshiftBar> {
   Widget build(BuildContext context) {
     final p = widget.player;
     final range = _range;
+    final show = widget.programme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: ValueListenableBuilder<Duration>(
         valueListenable: p.position,
         builder: (context, pos, _) {
           final (start, end) = range ?? (pos, pos);
-          final span = (end - start).inMilliseconds;
           final behind = end - pos;
           final atLive = behind < const Duration(seconds: 4) && p.playing;
-          final value = _drag ?? (span > 0 ? (pos - start).inMilliseconds / span : 1.0);
+          // Wall-clock seconds: the buffer's end is now.
+          final nowS = DateTime.now().millisecondsSinceEpoch / 1000;
+          final bufferFrom = nowS - (end - start).inMilliseconds / 1000;
+          final playhead = nowS - behind.inMilliseconds / 1000;
+          final (from, to) = show != null && show.stop > show.start ? (show.start.toDouble(), show.stop.toDouble()) : (bufferFrom, nowS);
+          double frac(double t) => to > from ? ((t - from) / (to - from)).clamp(0.0, 1.0) : 1.0;
           return Row(
             children: [
               SizedBox(
@@ -579,13 +595,18 @@ class _TimeshiftBarState extends State<_TimeshiftBar> {
                   ),
                 ),
               ),
+              if (show != null) ...[_Clock(show.start), const SizedBox(width: 10)],
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, c) {
                     void at(double dx) => setState(() => _drag = (dx / c.maxWidth).clamp(0, 1));
                     void commit() {
                       final v = _drag;
-                      if (v != null && span > 0) p.seekTo(start + Duration(milliseconds: (v * span).round()));
+                      if (v != null && end > start) {
+                        // Only the buffered stretch can be reached.
+                        final t = (from + v * (to - from)).clamp(bufferFrom, nowS);
+                        p.seekTo(start + Duration(milliseconds: ((t - bufferFrom) * 1000).round()));
+                      }
                       setState(() => _drag = null);
                     }
 
@@ -595,17 +616,26 @@ class _TimeshiftBarState extends State<_TimeshiftBar> {
                       onTapUp: (_) => commit(),
                       onHorizontalDragUpdate: (d) => at(d.localPosition.dx),
                       onHorizontalDragEnd: (_) => commit(),
-                      child: SizedBox(height: 16, child: Center(child: KdProgress(value: value.toDouble(), height: 3))),
+                      child: SizedBox(
+                        key: const Key('live-bar'),
+                        height: 16,
+                        child: CustomPaint(
+                          painter: _LiveBarPainter(aired: frac(nowS), buffered: frac(bufferFrom), playhead: _drag ?? frac(playhead)),
+                        ),
+                      ),
                     );
                   },
                 ),
               ),
+              if (show != null) ...[const SizedBox(width: 10), _Clock(show.stop)],
               const SizedBox(width: 10),
-              KdButton(
-                label: l10n.timeshiftGoLive,
-                icon: LucideIcons.radio,
-                kind: atLive ? KdButtonKind.ghost : KdButtonKind.cta,
-                onPressed: atLive ? null : p.goLive,
+              // Kept in the layout at live, so the bar does not jump.
+              Visibility(
+                visible: !atLive,
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: KdButton(label: l10n.timeshiftGoLive, icon: LucideIcons.radio, kind: KdButtonKind.cta, onPressed: atLive ? null : p.goLive),
               ),
             ],
           );
@@ -619,6 +649,38 @@ class _TimeshiftBarState extends State<_TimeshiftBar> {
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '$m:$s';
   }
+}
+
+/// The track, then what has aired (muted), the replayable buffer (faint
+/// accent), what is watched up to the playhead (accent) and the playhead.
+class _LiveBarPainter extends CustomPainter {
+  _LiveBarPainter({required this.aired, required this.buffered, required this.playhead});
+
+  final double aired;
+  final double buffered;
+  final double playhead;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const h = 3.0;
+    final y = size.height / 2;
+    void bar(double a, double b, Color color) {
+      if (b <= a) return;
+      canvas.drawRRect(
+        RRect.fromLTRBR(a * size.width, y - h / 2, b * size.width, y + h / 2, const Radius.circular(KdRadius.bar)),
+        Paint()..color = color,
+      );
+    }
+
+    bar(0, 1, KdColors.line);
+    bar(0, aired, KdColors.muted.withValues(alpha: .45));
+    bar(buffered, aired, KdColors.accent.withValues(alpha: .45));
+    bar(0, playhead, KdColors.accent);
+    canvas.drawCircle(Offset(playhead * size.width, y), 5, Paint()..color = KdColors.accent);
+  }
+
+  @override
+  bool shouldRepaint(_LiveBarPainter old) => old.aired != aired || old.buffered != buffered || old.playhead != playhead;
 }
 
 class _SeekBar extends StatefulWidget {

@@ -149,12 +149,44 @@ class EpgCache extends ChangeNotifier {
   /// Archive first: it refreshes the core's cache, so the EPG call after it
   /// is served locally. Merged oldest first, the archive's copy winning.
   Future<List<Programme>> _fetch(int id, bool archive) async {
-    if (!archive) return library.epg(id);
+    if (!archive) return tidyProgrammes(await library.epg(id));
     final past = await library.archive(id);
     final upcoming = await library.epg(id);
     final starts = {for (final p in past) p.start};
-    return [...past.reversed, ...upcoming.where((p) => !starts.contains(p.start))];
+    return tidyProgrammes([...past.reversed, ...upcoming.where((p) => !starts.contains(p.start))]);
   }
+}
+
+/// One channel's programmes in order with no overlaps. Providers that merge
+/// two guides send each show twice, 10-15 minutes apart ("Seksenler
+/// 13:15-14:20" and "Seksenler 13:30-14:10"): copies with the same title
+/// become one, and a show that runs into the next ends where the next starts.
+List<Programme> tidyProgrammes(List<Programme> list) {
+  final sorted = [...list]..sort((a, b) => a.start != b.start ? a.start.compareTo(b.start) : b.stop.compareTo(a.stop));
+  String key(Programme p) => p.title.trim().toLowerCase();
+  final out = <Programme>[];
+  for (final p in sorted) {
+    if (p.stop <= p.start) continue;
+    final last = out.isEmpty ? null : out.last;
+    if (last == null || p.start >= last.stop) {
+      out.add(p);
+    } else if (key(p) == key(last)) {
+      out.last = Programme(
+        start: last.start,
+        stop: p.stop > last.stop ? p.stop : last.stop,
+        title: last.title,
+        description: last.description.isNotEmpty ? last.description : p.description,
+        archive: last.archive || p.archive,
+      );
+    } else if (p.start == last.start) {
+      // Same start, different show: the longer one (sorted first) stays.
+      continue;
+    } else {
+      out.last = Programme(start: last.start, stop: p.start, title: last.title, description: last.description, archive: last.archive);
+      out.add(p);
+    }
+  }
+  return out;
 }
 
 /// 0..1 progress of [p] at the current time.

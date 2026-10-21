@@ -30,6 +30,8 @@ class FakeLibrary implements LibraryApi {
   final List<int> played = [];
   final List<(int, int)> caughtUp = [];
   final Map<int, List<Programme>> past = {};
+  /// Now / next per live channel.
+  final Map<int, List<Programme>> guide = {};
 
   /// TMDB: the key the fake accepts, what it returns per item.
   static const goodTmdbKey = 'good-key';
@@ -347,7 +349,7 @@ class FakeLibrary implements LibraryApi {
   );
 
   @override
-  Future<List<Programme>> epg(int itemId) async => const [];
+  Future<List<Programme>> epg(int itemId) async => guide[itemId] ?? const [];
 
   @override
   Future<List<Programme>> archive(int itemId) async => past[itemId] ?? const [];
