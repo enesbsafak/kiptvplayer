@@ -63,6 +63,10 @@ class PlayerController extends ChangeNotifier {
   bool playing = false;
   Duration duration = Duration.zero;
   final position = ValueNotifier(Duration.zero);
+
+  /// Asks the full-screen player to open its audio/subtitle panel (media
+  /// flyout, automation); the player screen resets it once shown.
+  final tracksPanelRequest = ValueNotifier(false);
   List<MediaTrack> tracks = const [];
   int? videoHeight;
   String? error;
@@ -410,6 +414,7 @@ class PlayerController extends ChangeNotifier {
     _retryTimer?.cancel();
     _digitTimer?.cancel();
     position.dispose();
+    tracksPanelRequest.dispose();
     super.dispose();
   }
 }

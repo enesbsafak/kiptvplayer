@@ -120,6 +120,9 @@ class Automation {
         await File('$dir${Platform.pathSeparator}tracks.txt').writeAsString(lines.join(String.fromCharCode(10)));
         // The seek bar must have moved by now.
         await shot('player-movie', wait: const Duration(milliseconds: 3500));
+        // The audio/subtitle panel with same-language tracks.
+        player.tracksPanelRequest.value = true;
+        await shot('player-tracks', wait: const Duration(milliseconds: 600));
         await File('$dir${Platform.pathSeparator}position.txt').writeAsString('${player.position.value.inMilliseconds}');
         await player.stop();
       }

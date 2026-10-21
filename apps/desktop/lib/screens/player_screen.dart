@@ -43,6 +43,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     _focus.dispose();
     // Back to the usual place for the preview and the next video.
     _player?.engine.setSubtitlePosition(100);
+    _player?.tracksPanelRequest.removeListener(_openTracksOnRequest);
     super.dispose();
   }
 
@@ -51,8 +52,18 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _player ??= context.player;
+    if (_player == null) {
+      _player = context.player..tracksPanelRequest.addListener(_openTracksOnRequest);
+      _openTracksOnRequest();
+    }
     _placeSubtitles();
+  }
+
+  void _openTracksOnRequest() {
+    final request = _player?.tracksPanelRequest;
+    if (request == null || !request.value) return;
+    request.value = false;
+    if (_panel != _Panel.tracks) _togglePanel(_Panel.tracks);
   }
 
   /// The bottom controls' height (seek bar, buttons, padding).
