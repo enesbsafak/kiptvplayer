@@ -11,7 +11,9 @@ param(
   # tr or en: the UI language of the captures.
   [string]$Language = 'tr',
   # The compact (phone) layout at this size, e.g. 390x844.
-  [string]$Phone
+  [string]$Phone,
+  # Pixels per layout pixel: -Phone 360x640 -Scale 3 gives 1080x1920.
+  [double]$Scale = 1
 )
 $ErrorActionPreference = 'Stop'
 Add-Type @'
@@ -35,7 +37,7 @@ $env:KP_OPENSUBS_BASE = "$Mock/os/api/v1"
 
 $p = Start-Process (Join-Path $exeDir 'karadelik_player.exe') -WorkingDirectory $exeDir -WindowStyle Hidden -PassThru `
   -ArgumentList (@('--kp-offscreen', "--kp-data-dir=$data", "--kp-add-mock=$Mock", "--kp-shot=$Out", '--kp-tmdb-key=kp-mock-tmdb-key', "--kp-language=$Language") +
-    $(if ($Phone) { @("--kp-phone=$Phone") } else { @() }))
+    $(if ($Phone) { @("--kp-phone=$Phone") } else { @() }) + @("--kp-shot-scale=$Scale"))
 $stoleFocus = $false
 $sw = [Diagnostics.Stopwatch]::StartNew()
 while (-not $p.HasExited -and $sw.Elapsed.TotalSeconds -lt 180) {

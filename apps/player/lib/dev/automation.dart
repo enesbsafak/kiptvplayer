@@ -19,6 +19,7 @@ import '../shell/command_palette.dart';
 ///   saves `<section>.png`, then exits
 /// - `--kp-tmdb-key=<key>` (with `--kp-shot`) turns TMDB on for the run
 /// - `--kp-language=tr|en` (with `--kp-shot`) captures in that language
+/// - `--kp-shot-scale=<n>` (with `--kp-shot`) captures at n times the size
 /// - `--kp-soak=<minutes>` (with `--kp-offscreen` only) plays live TV, zapping
 ///   every minute (`--kp-soak-every=<seconds>`), then exits: a leak check
 ///   (tools/soak.ps1)
@@ -48,7 +49,7 @@ class Automation {
     if (mock != null && app.sources.isEmpty) {
       final input = NewSourceInput(
         kind: SourceType.xtream,
-        name: 'Demo sağlayıcı',
+        name: _arg('kp-language') == 'en' ? 'Demo provider' : 'Demo sağlayıcı',
         url: mock,
         username: 'demo',
         password: 'demo',
@@ -277,7 +278,8 @@ class Automation {
   Future<void> _capture(String path) async {
     final boundary = boundaryKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
     if (boundary == null) return;
-    final image = await boundary.toImage(pixelRatio: 1);
+    // --kp-shot-scale=3: a 360x640 phone layout becomes 1080x1920 (store screenshots).
+    final image = await boundary.toImage(pixelRatio: double.tryParse(_arg('kp-shot-scale') ?? '') ?? 1);
     final png = await image.toByteData(format: ui.ImageByteFormat.png);
     if (png != null) await File(path).writeAsBytes(png.buffer.asUint8List());
   }

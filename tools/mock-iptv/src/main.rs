@@ -56,6 +56,40 @@ const SERIES_CATS: &[&str] = &["Yerli Diziler", "Yabancı Diziler", "Mini Dizile
 const TITLE_A: &[&str] = &["Karanlık", "Son", "Kayıp", "Gizli", "Sessiz", "Kırmızı", "Uzak", "Büyük", "Yalnız", "Soğuk"];
 const TITLE_B: &[&str] = &["Şehir", "Yol", "Gece", "Ufuk", "Ada", "Liman", "Deniz", "Orman", "İz", "Rüya", "Kule", "Saat"];
 
+/// The same tables in English (KP_MOCK_LANG=en): store screenshots for an
+/// English listing. All names are made up.
+const LIVE_CATS_EN: &[&str] = &[
+    "XXX | Adult", "DE: Sport", "FR: Info", "UK: Entertainment", "UK: News", "UK: Sport", "UK: Documentary", "UK: Kids",
+    "UK: Music", "World",
+];
+const LIVE_NAMES_EN: &[&str] = &[
+    "Night", "Sport", "News", "Channel", "Headline", "Arena", "Discovery", "Kids", "Music", "World",
+];
+const SHOWS_EN: &[&str] = &[
+    "Morning News", "Midday", "Evening News", "Nature Hour", "Drama Rerun", "Live Match", "Sports Desk",
+    "Cartoons", "Top Tracks", "Late Movie", "Cooking Time", "Weather", "Debate", "Showbiz",
+];
+const MOVIE_CATS_EN: &[&str] = &["Action", "Comedy", "Drama", "Science Fiction", "Documentary", "Animation"];
+const SERIES_CATS_EN: &[&str] = &["Drama Series", "Crime Series", "Mini Series"];
+const TITLE_A_EN: &[&str] = &["Dark", "Last", "Lost", "Hidden", "Silent", "Red", "Distant", "Great", "Lonely", "Cold"];
+const TITLE_B_EN: &[&str] = &["City", "Road", "Night", "Horizon", "Island", "Harbour", "Sea", "Forest", "Trace", "Dream", "Tower", "Hour"];
+
+/// KP_MOCK_LANG=en switches every name to English; Turkish otherwise.
+fn en() -> bool {
+    static EN: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *EN.get_or_init(|| std::env::var("KP_MOCK_LANG").is_ok_and(|v| v == "en"))
+}
+
+fn tx(tr: &'static str, en_text: &'static str) -> &'static str {
+    if en() { en_text } else { tr }
+}
+
+fn live_cats() -> &'static [&'static str] { if en() { LIVE_CATS_EN } else { LIVE_CATS } }
+fn live_names() -> &'static [&'static str] { if en() { LIVE_NAMES_EN } else { LIVE_NAMES } }
+fn shows() -> &'static [&'static str] { if en() { SHOWS_EN } else { SHOWS } }
+fn movie_cats() -> &'static [&'static str] { if en() { MOVIE_CATS_EN } else { MOVIE_CATS } }
+fn series_cats() -> &'static [&'static str] { if en() { SERIES_CATS_EN } else { SERIES_CATS } }
+
 #[derive(Clone)]
 struct AppState {
     base: String,
@@ -113,7 +147,18 @@ fn now() -> i64 {
 }
 
 fn title(i: usize) -> String {
-    format!("{} {}", TITLE_A[i % TITLE_A.len()], TITLE_B[(i / TITLE_A.len()) % TITLE_B.len()])
+    let (a, b) = if en() { (TITLE_A_EN, TITLE_B_EN) } else { (TITLE_A, TITLE_B) };
+    format!("{} {}", a[i % a.len()], b[(i / a.len()) % b.len()])
+}
+
+/// A programme's guide description.
+fn describe(show: &str) -> String {
+    if en() { format!("About {show}.") } else { format!("{show} programının açıklaması.") }
+}
+
+/// Series names: "<title> Dizisi", or "The <title> Series" in English.
+fn series_title(i: usize) -> String {
+    if en() { format!("The {} Series", title(i + 7)) } else { format!("{} Dizisi", title(i + 7)) }
 }
 
 fn b64(s: &str) -> String {
@@ -135,16 +180,16 @@ async fn player_api(State(s): State<AppState>, Query(q): Query<HashMap<String, S
             },
             "server_info": {"url": "127.0.0.1", "timezone": "Europe/Istanbul", "timestamp_now": now()}
         }),
-        "get_live_categories" => categories(LIVE_CATS),
-        "get_vod_categories" => categories(MOVIE_CATS),
-        "get_series_categories" => categories(SERIES_CATS),
+        "get_live_categories" => categories(live_cats()),
+        "get_vod_categories" => categories(movie_cats()),
+        "get_series_categories" => categories(series_cats()),
         "get_live_streams" => Value::Array(
             (0..s.live)
                 .map(|i| {
-                    let cat = i % LIVE_CATS.len();
+                    let cat = i % live_cats().len();
                     json!({
                         "num": i + 1,
-                        "name": format!("{} {} HD", LIVE_NAMES[cat], i / LIVE_CATS.len() + 1),
+                        "name": format!("{} {} HD", live_names()[cat], i / live_cats().len() + 1),
                         "stream_type": "live",
                         "stream_id": 1000 + i,
                         "stream_icon": format!("{}/media/logos/{}.png", s.base, i % 12),
@@ -168,7 +213,7 @@ async fn player_api(State(s): State<AppState>, Query(q): Query<HashMap<String, S
                         "stream_id": 5000 + i,
                         "stream_icon": format!("{}/media/posters/{}.jpg", s.base, i % 24),
                         "rating": format!("{:.1}", 5.0 + (i % 50) as f32 / 10.0),
-                        "category_id": (i % MOVIE_CATS.len() + 1).to_string(),
+                        "category_id": (i % movie_cats().len() + 1).to_string(),
                         "container_extension": "ts",
                         "year": (1995 + i % 30).to_string(),
                         "added": (now() - (i as i64) * 3_600).to_string()
@@ -181,11 +226,11 @@ async fn player_api(State(s): State<AppState>, Query(q): Query<HashMap<String, S
                 .map(|i| {
                     json!({
                         "num": i + 1,
-                        "name": format!("{} Dizisi", title(i + 7)),
+                        "name": series_title(i),
                         "series_id": 8000 + i,
                         "cover": format!("{}/media/posters/{}.jpg", s.base, (i + 5) % 24),
                         "rating": format!("{:.1}", 6.0 + (i % 40) as f32 / 10.0),
-                        "category_id": (i % SERIES_CATS.len() + 1).to_string(),
+                        "category_id": (i % series_cats().len() + 1).to_string(),
                         "releaseDate": format!("{}-01-01", 2010 + i % 15),
                         "last_modified": (now() - (i as i64) * 7_200).to_string()
                     })
@@ -198,10 +243,10 @@ async fn player_api(State(s): State<AppState>, Query(q): Query<HashMap<String, S
             json!({
                 "info": {
                     "name": title(i),
-                    "plot": "Küçük bir sahil kasabasında geçen, sırlarla dolu bir hikâye. Test verisidir; gerçek bir yapımı temsil etmez.",
-                    "genre": MOVIE_CATS[i % MOVIE_CATS.len()],
-                    "cast": "Oyuncu Bir, Oyuncu İki, Oyuncu Üç",
-                    "director": "Yönetmen Adı",
+                    "plot": tx("Küçük bir sahil kasabasında geçen, sırlarla dolu bir hikâye. Test verisidir; gerçek bir yapımı temsil etmez.", "A story full of secrets in a small seaside town. Test data; not a real production."),
+                    "genre": movie_cats()[i % movie_cats().len()],
+                    "cast": tx("Oyuncu Bir, Oyuncu İki, Oyuncu Üç", "Actor One, Actor Two, Actor Three"),
+                    "director": tx("Yönetmen Adı", "Director Name"),
                     "duration_secs": 120,
                     "backdrop_path": [format!("{}/media/backdrops/{}.jpg", s.base, i % 4)],
                     "rating": "7.4"
@@ -220,10 +265,10 @@ async fn player_api(State(s): State<AppState>, Query(q): Query<HashMap<String, S
                             "id": (id * 100 + (season * 10 + e) as i64).to_string(),
                             "episode_num": e,
                             "season": season,
-                            "title": format!("{}. Sezon {}. Bölüm", season, e),
+                            "title": if en() { format!("Season {} Episode {}", season, e) } else { format!("{}. Sezon {}. Bölüm", season, e) },
                             "container_extension": "ts",
                             "info": {
-                                "plot": "Bölüm özeti. Test verisidir.",
+                                "plot": tx("Bölüm özeti. Test verisidir.", "Episode summary. Test data."),
                                 "duration_secs": 120,
                                 "movie_image": format!("{}/media/backdrops/{}.jpg", s.base, (e + season) % 4)
                             }
@@ -234,10 +279,10 @@ async fn player_api(State(s): State<AppState>, Query(q): Query<HashMap<String, S
             }
             json!({
                 "info": {
-                    "name": format!("{} Dizisi", title(i + 7)),
-                    "plot": "Bir ailenin üç kuşağa yayılan hikâyesi. Test verisidir.",
-                    "genre": SERIES_CATS[i % SERIES_CATS.len()],
-                    "cast": "Oyuncu Bir, Oyuncu İki",
+                    "name": series_title(i),
+                    "plot": tx("Bir ailenin üç kuşağa yayılan hikâyesi. Test verisidir.", "A family story across three generations. Test data."),
+                    "genre": series_cats()[i % series_cats().len()],
+                    "cast": tx("Oyuncu Bir, Oyuncu İki", "Actor One, Actor Two"),
                     "backdrop_path": [format!("{}/media/backdrops/{}.jpg", s.base, i % 4)],
                     "episode_run_time": "2"
                 },
@@ -281,7 +326,7 @@ impl Programme {
     fn json(&self, has_archive: bool) -> Value {
         json!({
             "title": b64(self.show),
-            "description": b64(&format!("{} programının açıklaması.", self.show)),
+            "description": b64(&describe(self.show)),
             "start_timestamp": self.start.to_string(),
             "stop_timestamp": self.stop.to_string(),
             "has_archive": if has_archive { 1 } else { 0 }
@@ -301,7 +346,7 @@ fn schedule(id: usize, from: i64, to: i64) -> Vec<Programme> {
             let len = if (id + k) % 3 == 0 { 3600 } else { 1800 };
             let stop = (start + len).min(day + 86_400);
             if stop > from && start < to {
-                out.push(Programme { start, stop, show: SHOWS[(id + k + (day / 86_400) as usize) % SHOWS.len()] });
+                out.push(Programme { start, stop, show: shows()[(id + k + (day / 86_400) as usize) % shows().len()] });
             }
             start = stop;
             k += 1;
@@ -379,7 +424,7 @@ async fn spike_channels(State(s): State<AppState>) -> impl IntoResponse {
         .map(|i| {
             let (file, label) = STREAMS[i % STREAMS.len()];
             json!({
-                "name": format!("Kanal {} · {label}", i + 1),
+                "name": format!("{} {} · {label}", tx("Kanal", "Channel"), i + 1),
                 "url": format!("{}/media/{file}", s.base),
             })
         })
@@ -388,23 +433,24 @@ async fn spike_channels(State(s): State<AppState>) -> impl IntoResponse {
 }
 
 async fn playlist(State(s): State<AppState>, Query(q): Query<HashMap<String, String>>) -> impl IntoResponse {
-    const GROUPS: &[&str] = &["Ulusal", "Spor", "Haber", "Belgesel", "Çocuk", "Müzik", "Dünya"];
+    let groups: &[&str] = if en() { &["Entertainment", "Sport", "News", "Documentary", "Kids", "Music", "World"] } else { &["Ulusal", "Spor", "Haber", "Belgesel", "Çocuk", "Müzik", "Dünya"] };
     let n = q.get("n").and_then(|n| n.parse::<usize>().ok()).unwrap_or(1000).min(500_000);
     let mut body = String::with_capacity(n * 200);
     // The guide is announced in the header, as real playlists do.
     let _ = writeln!(body, "#EXTM3U url-tvg=\"{}/xmltv.xml.gz?n={n}\"", s.base);
     for i in 0..n {
         let (file, _) = STREAMS[i % STREAMS.len()];
-        let group = GROUPS[i % GROUPS.len()];
+        let group = groups[i % groups.len()];
         // Every third channel has a 3-day archive, M3U style (append).
         let catchup = if i % 3 == 0 { " catchup=\"append\" catchup-days=\"3\" catchup-source=\"?utc={utc}&lutc={lutc}\"" } else { "" };
         // Some channels carry no tvg-id: the guide must match them by name.
         let id = if i % 10 == 9 { String::new() } else { format!(" tvg-id=\"ch{i}.tr\"") };
         let _ = writeln!(
             body,
-            "#EXTINF:-1{id} tvg-logo=\"{}/media/logos/{}.png\" group-title=\"{group}\"{catchup},Kanal {i}\n{}/media/{file}",
+            "#EXTINF:-1{id} tvg-logo=\"{}/media/logos/{}.png\" group-title=\"{group}\"{catchup},{} {i}\n{}/media/{file}",
             s.base,
             i % 12,
+            tx("Kanal", "Channel"),
             s.base
         );
     }
@@ -501,10 +547,10 @@ async fn tmdb_search(
         return tmdb_denied();
     }
     let query = q.get("query").cloned().unwrap_or_default();
-    // Films are title(i); series are "title(i + 7) Dizisi".
+    // Films are title(i); series are series_title(i).
     let hit = (0..300usize).find(|&i| match media.as_str() {
         "movie" => title(i) == query,
-        _ => format!("{} Dizisi", title(i + 7)) == query,
+        _ => series_title(i) == query,
     });
     let results: Vec<Value> = hit
         .map(|i| {
@@ -516,13 +562,13 @@ async fn tmdb_search(
 }
 
 fn tmdb_people() -> Value {
-    let names = ["Deniz Aksoy", "Ece Yılmaz", "Mert Kaya", "Selin Demir", "Can Öztürk", "Zeynep Arslan"];
-    let roles = ["Kaptan", "Doktor", "Muhabir", "Komiser", "Ressam", "Öğretmen"];
+    let names = if en() { ["Sam Rivers", "Ada Moreno", "Noah Clarke", "Lena Fischer", "Omar Haddad", "Mia Laurent"] } else { ["Deniz Aksoy", "Ece Yılmaz", "Mert Kaya", "Selin Demir", "Can Öztürk", "Zeynep Arslan"] };
+    let roles = if en() { ["Captain", "Doctor", "Reporter", "Inspector", "Painter", "Teacher"] } else { ["Kaptan", "Doktor", "Muhabir", "Komiser", "Ressam", "Öğretmen"] };
     json!({
         "cast": names.iter().zip(roles).enumerate().map(|(k, (n, r))| json!({
             "name": n, "character": r, "profile_path": format!("/person-{}.png", k % 12)
         })).collect::<Vec<_>>(),
-        "crew": [{"name": "Ayşe Karadeniz", "job": "Director"}, {"name": "Ali Veli", "job": "Writer"}]
+        "crew": [{"name": tx("Ayşe Karadeniz", "Clara Hughes"), "job": "Director"}, {"name": tx("Ali Veli", "Tom Baker"), "job": "Writer"}]
     })
 }
 
@@ -535,9 +581,9 @@ async fn tmdb_movie(Path(id): Path<usize>, Query(q): Query<HashMap<String, Strin
         "id": id,
         "title": title(i),
         "original_title": format!("The {}", title(i)),
-        "tagline": "Bazı sırlar denizin dibinde kalmaz.",
-        "overview": format!("TMDB özeti: {} için yazılmış, oyuncuları ve ekibiyle eksiksiz bir tanıtım. Test verisidir.", title(i)),
-        "genres": [{"id": 18, "name": "Dram"}, {"id": 53, "name": "Gerilim"}],
+        "tagline": tx("Bazı sırlar denizin dibinde kalmaz.", "Some secrets do not stay at the bottom of the sea."),
+        "overview": if en() { format!("TMDB overview: a complete synopsis of {} with its cast and crew. Test data.", title(i)) } else { format!("TMDB özeti: {} için yazılmış, oyuncuları ve ekibiyle eksiksiz bir tanıtım. Test verisidir.", title(i)) },
+        "genres": [{"id": 18, "name": tx("Dram", "Drama")}, {"id": 53, "name": tx("Gerilim", "Thriller")}],
         "release_date": format!("{}-05-17", 1995 + i % 30),
         "runtime": 112,
         "vote_average": 7.8,
@@ -558,11 +604,11 @@ async fn tmdb_tv(Path(id): Path<usize>, Query(q): Query<HashMap<String, String>>
     let i = id.saturating_sub(200_000);
     Json(json!({
         "id": id,
-        "name": format!("{} Dizisi", title(i + 7)),
+        "name": series_title(i),
         "original_name": format!("The {}", title(i + 7)),
         "tagline": "",
-        "overview": "TMDB özeti: bir kıyı kasabasında her sezon yeni bir gizem. Test verisidir.",
-        "genres": [{"id": 9648, "name": "Gizem"}, {"id": 18, "name": "Dram"}],
+        "overview": tx("TMDB özeti: bir kıyı kasabasında her sezon yeni bir gizem. Test verisidir.", "TMDB overview: a new mystery every season in a coastal town. Test data."),
+        "genres": [{"id": 9648, "name": tx("Gizem", "Mystery")}, {"id": 18, "name": tx("Dram", "Drama")}],
         "first_air_date": format!("{}-09-01", 2010 + i % 15),
         "episode_run_time": [45],
         "number_of_seasons": 1 + i % 3,
@@ -570,7 +616,7 @@ async fn tmdb_tv(Path(id): Path<usize>, Query(q): Query<HashMap<String, String>>
         "vote_count": 921,
         "poster_path": format!("/poster-{}.jpg", (i + 5) % 24),
         "backdrop_path": format!("/backdrop-{}.jpg", i % 4),
-        "created_by": [{"name": "Murat Sezer"}],
+        "created_by": [{"name": tx("Murat Sezer", "Jonas Berg")}],
         "credits": tmdb_people(),
         "videos": {"results": []},
         "content_ratings": {"results": [{"iso_3166_1": "TR", "rating": "16+"}]}
@@ -590,8 +636,8 @@ async fn tmdb_season(
         .map(|n| {
             json!({
                 "episode_number": n,
-                "name": format!("{}. Sezon {}. Bölüm: {}", season, n, SHOWS[(id + n as usize) % SHOWS.len()]),
-                "overview": format!("Sezon {season}, bölüm {n}: kasabada yeni bir iz ortaya çıkar."),
+                "name": format!("{}: {}", if en() { format!("Season {season} Episode {n}") } else { format!("{season}. Sezon {n}. Bölüm") }, shows()[(id + n as usize) % shows().len()]),
+                "overview": if en() { format!("Season {season}, episode {n}: a new trace turns up in town.") } else { format!("Sezon {season}, bölüm {n}: kasabada yeni bir iz ortaya çıkar.") },
                 "still_path": format!("/backdrop-{}.jpg", n % 4),
                 "runtime": 44,
                 "air_date": format!("2020-0{}-1{}", 1 + n % 9, n % 10)
@@ -627,13 +673,13 @@ fn xmltv_body(n: usize) -> String {
     let mut out = String::with_capacity(n * 4096);
     out.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<tv generator-info-name=\"mock-iptv\">\n");
     for i in 0..n {
-        let _ = writeln!(out, "  <channel id=\"ch{i}.tr\"><display-name>Kanal {i}</display-name></channel>");
+        let _ = writeln!(out, "  <channel id=\"ch{i}.tr\"><display-name>{} {i}</display-name></channel>", tx("Kanal", "Channel"));
     }
     for i in 0..n {
         for p in schedule(1000 + i, t - 3 * 86_400, t + 86_400) {
             let _ = writeln!(
                 out,
-                "  <programme start=\"{}\" stop=\"{}\" channel=\"ch{i}.tr\"><title lang=\"tr\">{}</title><desc lang=\"tr\">{} programının açıklaması.</desc></programme>",
+                "  <programme start=\"{}\" stop=\"{}\" channel=\"ch{i}.tr\"><title lang=\"tr\">{}</title><desc lang=\"tr\">{}</desc></programme>",
                 fmt(p.start),
                 fmt(p.stop),
                 p.show,
@@ -719,7 +765,7 @@ async fn stalker(State(s): State<AppState>, Query(q): Query<HashMap<String, Stri
         }
         ("vod", "get_categories") => {
             let mut list = vec![json!({"id": "*", "title": "All"})];
-            list.extend(["Aksiyon", "Dram", "Belgesel"].iter().enumerate().map(|(i, g)| json!({"id": (i + 1).to_string(), "title": g})));
+            list.extend((if en() { ["Action", "Drama", "Documentary"] } else { ["Aksiyon", "Dram", "Belgesel"] }).iter().enumerate().map(|(i, g)| json!({"id": (i + 1).to_string(), "title": g})));
             Value::Array(list)
         }
         // 30 entries per category, 14 per page like Ministra; every tenth is a series.
@@ -757,7 +803,7 @@ async fn stalker(State(s): State<AppState>, Query(q): Query<HashMap<String, Stri
                     .take(10)
                     .map(|p| json!({
                         "name": p.show,
-                        "descr": format!("{} programının açıklaması.", p.show),
+                        "descr": describe(p.show),
                         "start_timestamp": p.start,
                         "stop_timestamp": p.stop
                     }))

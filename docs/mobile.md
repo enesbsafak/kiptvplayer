@@ -30,6 +30,9 @@ captures every screen at that size, off-screen, with the mock provider.
 
 ## Before publishing to Google Play
 
+Listing texts, graphics, form answers and reviewer notes: [play-store.md](play-store.md).
+Privacy policy: [privacy.md](privacy.md).
+
 1. Create an upload key (keep it and its passwords outside the repository):
    `keytool -genkey -v -keystore upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload`
 2. Local builds: `apps/player/android/key.properties` (ignored by git) with
