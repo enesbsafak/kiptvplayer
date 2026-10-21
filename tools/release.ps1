@@ -2,7 +2,11 @@
 # the per-user installer, and latest.json for the in-app updater.
 #
 #   tools\release.ps1 [-Version 0.2.0] [-BaseUrl https://.../releases/download/v{0}]
+#                     [-Feed https://.../releases/latest/download/latest.json]
 #                     [-Configuration Release|Profile]
+#
+# -Feed bakes the address the updater checks into the app (default: this
+# repository's latest release).
 #
 # Output in dist\: KaradelikIPTVPlayer-Setup-<version>.exe and latest.json.
 #
@@ -17,6 +21,7 @@
 param(
   [string]$Version,
   [string]$BaseUrl = 'https://github.com/enesbsafak/kiptvplayer/releases/download/v{0}',
+  [string]$Feed,
   [string]$Configuration = 'Release'
 )
 $ErrorActionPreference = 'Stop'
@@ -52,7 +57,9 @@ function Read-Notes([string]$lang) {
 Push-Location $app
 try {
   $mode = $Configuration.ToLower()
-  flutter build windows "--$mode" "--dart-define=KP_VERSION=$Version"
+  $defines = @("--dart-define=KP_VERSION=$Version")
+  if ($Feed) { $defines += "--dart-define=KP_UPDATE_FEED=$Feed" }
+  flutter build windows "--$mode" @defines
   if ($LASTEXITCODE -ne 0) { throw 'flutter build failed (is a Release build of the app running?)' }
 } finally { Pop-Location }
 $buildDir = Join-Path $app "build\windows\x64\runner\$Configuration"
