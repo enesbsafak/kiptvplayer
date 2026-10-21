@@ -1,0 +1,97 @@
+# Signed Android App Bundle for Google Play: on a "v1.2.3" tag (with the
+# Windows release) and on demand (Actions > Android release > Run workflow).
+#
+# Signing: the upload key in the KP_ANDROID_KEYSTORE_B64 (base64 PKCS12),
+# KP_ANDROID_STORE_PASSWORD, KP_ANDROID_KEY_ALIAS and KP_ANDROID_KEY_PASSWORD
+# secrets. Play App Signing re-signs for devices.
+#
+# Upload: with the PLAY_SERVICE_ACCOUNT_JSON secret (a service account with
+# release rights on this app only) the bundle goes to the internal testing
+# track. Google takes the very first bundle of a new app only by hand: run
+# this workflow, download the "android-bundle" artifact and upload it in
+# Play Console > Testing > Internal testing. The repository variable
+# PLAY_RELEASE_STATUS sets the release status: "draft" (default; required
+# while the app is unpublished) or "completed".
+name: Android release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: Swatinem/rust-cache@v2
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.7
+          cache: true
+
+      - name: Upload key
+        env:
+          KEYSTORE_B64: ${{ secrets.KP_ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then echo "::error::the KP_ANDROID_KEYSTORE_B64 secret is missing"; exit 1; fi
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.p12"
+          echo "KP_ANDROID_KEYSTORE=$RUNNER_TEMP/upload.p12" >> "$GITHUB_ENV"
+
+      - name: Build the bundle
+        working-directory: apps/player
+        env:
+          KP_ANDROID_STORE_PASSWORD: ${{ secrets.KP_ANDROID_STORE_PASSWORD }}
+          KP_ANDROID_KEY_ALIAS: ${{ secrets.KP_ANDROID_KEY_ALIAS }}
+          KP_ANDROID_KEY_PASSWORD: ${{ secrets.KP_ANDROID_KEY_PASSWORD }}
+        run: flutter build appbundle --release
+
+      - name: Check it is signed with the upload key, not the debug key
+        run: |
+          aab=apps/player/build/app/outputs/bundle/release/app-release.aab
+          keytool -printcert -jarfile "$aab" | tee "$RUNNER_TEMP/cert.txt"
+          if grep -q "CN=Android Debug" "$RUNNER_TEMP/cert.txt"; then echo "::error::signed with the debug key"; exit 1; fi
+          grep -q "Karadelik Player upload key" "$RUNNER_TEMP/cert.txt"
+          rm -f "$RUNNER_TEMP/upload.p12"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-bundle
+          path: apps/player/build/app/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - name: Release notes for Play
+        if: env.PLAY_JSON != ''
+        run: |
+          version=$(grep -m1 '^version:' apps/player/pubspec.yaml | sed -E 's/version: *([^+]+).*/\1/')
+          mkdir -p "$RUNNER_TEMP/whatsnew"
+          for pair in en:en-US tr:tr-TR; do
+            src="tools/release-notes/$version.${pair%%:*}.txt"
+            [ -f "$src" ] && head -c 500 "$src" > "$RUNNER_TEMP/whatsnew/whatsnew-${pair##*:}"
+          done
+          ls "$RUNNER_TEMP/whatsnew"
+
+      - name: Upload to the internal testing track
+        if: env.PLAY_JSON != ''
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: dev.karadelik.player
+          releaseFiles: apps/player/build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: ${{ vars.PLAY_RELEASE_STATUS || 'draft' }}
+          whatsNewDirectory: ${{ runner.temp }}/whatsnew
