@@ -510,7 +510,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addM3uFile => 'M3U file';
 
   @override
-  String get addM3uFileHint => 'A playlist on this computer';
+  String get addM3uFileHint => 'A playlist on this device';
 
   @override
   String get addName => 'Name';
@@ -558,7 +558,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get addPasswordNote =>
-      'Your password is kept in this computer\'s credential store.';
+      'Your password is kept in this device\'s credential store.';
 
   @override
   String get actionCancel => 'Cancel';
@@ -623,7 +623,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sourceDeleteBody =>
-      'The source\'s catalog, favorites and watch history are removed from this computer. Its password is removed from the credential store.';
+      'The source\'s catalog, favorites and watch history are removed from this device. Its password is removed from the credential store.';
 
   @override
   String get actionDelete => 'Delete';
@@ -695,7 +695,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tmdbBody =>
-      'Movies and series get their overview, genres, cast photos, trailer, age rating and episode details from TMDB. The key stays in this computer\'s credential store; only a title and its year are sent to TMDB.';
+      'Movies and series get their overview, genres, cast photos, trailer, age rating and episode details from TMDB. The key stays in this device\'s credential store; only a title and its year are sent to TMDB.';
 
   @override
   String get tmdbReplaceHint => 'Replace with a new key';
@@ -770,7 +770,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get aboutPrivacy =>
-      'Privacy: source passwords stay only in this computer\'s credential store. The app contains no tracking or advertising SDK.';
+      'Privacy: source passwords stay only in this device\'s credential store. The app contains no tracking or advertising SDK.';
 
   @override
   String get aboutTmdb =>
@@ -1069,7 +1069,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get findFramesDropping =>
-      'Frames are being dropped: the computer cannot decode the picture fast enough.';
+      'Frames are being dropped: the device cannot decode the picture fast enough.';
 
   @override
   String get findSoftwareDecoding =>
@@ -1411,7 +1411,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get subsNoKey =>
-      'To search for subtitles, enter your own OpenSubtitles API key in Settings > Preferences. The key stays in this computer\'s credential store.';
+      'To search for subtitles, enter your own OpenSubtitles API key in Settings > Preferences. The key stays in this device\'s credential store.';
 
   @override
   String get subsOpenSettings => 'Open Settings';

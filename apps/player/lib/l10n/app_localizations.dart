@@ -959,7 +959,7 @@ abstract class AppLocalizations {
   /// No description provided for @addM3uFileHint.
   ///
   /// In tr, this message translates to:
-  /// **'Bilgisayardaki liste'**
+  /// **'Cihazdaki liste'**
   String get addM3uFileHint;
 
   /// No description provided for @addName.
@@ -1049,7 +1049,7 @@ abstract class AppLocalizations {
   /// No description provided for @addPasswordNote.
   ///
   /// In tr, this message translates to:
-  /// **'Şifreniz bu bilgisayarın anahtar deposunda saklanır.'**
+  /// **'Şifreniz bu cihazın anahtar deposunda saklanır.'**
   String get addPasswordNote;
 
   /// No description provided for @actionCancel.
@@ -1163,7 +1163,7 @@ abstract class AppLocalizations {
   /// No description provided for @sourceDeleteBody.
   ///
   /// In tr, this message translates to:
-  /// **'Kaynağın kataloğu, favorileri ve izleme geçmişi bu bilgisayardan silinir. Şifre anahtar deposundan kaldırılır.'**
+  /// **'Kaynağın kataloğu, favorileri ve izleme geçmişi bu cihazdan silinir. Şifre anahtar deposundan kaldırılır.'**
   String get sourceDeleteBody;
 
   /// No description provided for @actionDelete.
@@ -1289,7 +1289,7 @@ abstract class AppLocalizations {
   /// No description provided for @tmdbBody.
   ///
   /// In tr, this message translates to:
-  /// **'Film ve dizilerde özet, tür, oyuncu fotoğrafları, fragman, yaş sınırı ve bölüm bilgileri TMDB’den gelir. Anahtar yalnızca bu bilgisayarın anahtar deposunda saklanır; TMDB’ye yalnızca içerik adı ve yılı gönderilir.'**
+  /// **'Film ve dizilerde özet, tür, oyuncu fotoğrafları, fragman, yaş sınırı ve bölüm bilgileri TMDB’den gelir. Anahtar yalnızca bu cihazın anahtar deposunda saklanır; TMDB’ye yalnızca içerik adı ve yılı gönderilir.'**
   String get tmdbBody;
 
   /// No description provided for @tmdbReplaceHint.
@@ -1427,7 +1427,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutPrivacy.
   ///
   /// In tr, this message translates to:
-  /// **'Gizlilik: kaynak şifreleri yalnızca bu bilgisayarın anahtar deposunda tutulur. Uygulama izleme veya reklam SDK’sı içermez.'**
+  /// **'Gizlilik: kaynak şifreleri yalnızca bu cihazın anahtar deposunda tutulur. Uygulama izleme veya reklam SDK’sı içermez.'**
   String get aboutPrivacy;
 
   /// No description provided for @aboutTmdb.
@@ -1955,7 +1955,7 @@ abstract class AppLocalizations {
   /// No description provided for @findFramesDropping.
   ///
   /// In tr, this message translates to:
-  /// **'Kareler atlanıyor: bilgisayar görüntüyü çözmeye yetişemiyor.'**
+  /// **'Kareler atlanıyor: cihaz görüntüyü çözmeye yetişemiyor.'**
   String get findFramesDropping;
 
   /// No description provided for @findSoftwareDecoding.
@@ -2561,7 +2561,7 @@ abstract class AppLocalizations {
   /// No description provided for @subsNoKey.
   ///
   /// In tr, this message translates to:
-  /// **'Altyazı aramak için Ayarlar > Tercihler\'e kendi OpenSubtitles API anahtarınızı girin. Anahtar yalnızca bu bilgisayarın kimlik deposunda tutulur.'**
+  /// **'Altyazı aramak için Ayarlar > Tercihler\'e kendi OpenSubtitles API anahtarınızı girin. Anahtar yalnızca bu cihazın kimlik deposunda tutulur.'**
   String get subsNoKey;
 
   /// No description provided for @subsOpenSettings.

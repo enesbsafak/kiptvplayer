@@ -488,7 +488,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get addM3uFile => 'M3U dosyası';
 
   @override
-  String get addM3uFileHint => 'Bilgisayardaki liste';
+  String get addM3uFileHint => 'Cihazdaki liste';
 
   @override
   String get addName => 'Ad';
@@ -535,7 +535,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get addPasswordNote =>
-      'Şifreniz bu bilgisayarın anahtar deposunda saklanır.';
+      'Şifreniz bu cihazın anahtar deposunda saklanır.';
 
   @override
   String get actionCancel => 'Vazgeç';
@@ -600,7 +600,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get sourceDeleteBody =>
-      'Kaynağın kataloğu, favorileri ve izleme geçmişi bu bilgisayardan silinir. Şifre anahtar deposundan kaldırılır.';
+      'Kaynağın kataloğu, favorileri ve izleme geçmişi bu cihazdan silinir. Şifre anahtar deposundan kaldırılır.';
 
   @override
   String get actionDelete => 'Sil';
@@ -673,7 +673,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get tmdbBody =>
-      'Film ve dizilerde özet, tür, oyuncu fotoğrafları, fragman, yaş sınırı ve bölüm bilgileri TMDB’den gelir. Anahtar yalnızca bu bilgisayarın anahtar deposunda saklanır; TMDB’ye yalnızca içerik adı ve yılı gönderilir.';
+      'Film ve dizilerde özet, tür, oyuncu fotoğrafları, fragman, yaş sınırı ve bölüm bilgileri TMDB’den gelir. Anahtar yalnızca bu cihazın anahtar deposunda saklanır; TMDB’ye yalnızca içerik adı ve yılı gönderilir.';
 
   @override
   String get tmdbReplaceHint => 'Yeni anahtar ile değiştir';
@@ -748,7 +748,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get aboutPrivacy =>
-      'Gizlilik: kaynak şifreleri yalnızca bu bilgisayarın anahtar deposunda tutulur. Uygulama izleme veya reklam SDK’sı içermez.';
+      'Gizlilik: kaynak şifreleri yalnızca bu cihazın anahtar deposunda tutulur. Uygulama izleme veya reklam SDK’sı içermez.';
 
   @override
   String get aboutTmdb =>
@@ -1047,7 +1047,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get findFramesDropping =>
-      'Kareler atlanıyor: bilgisayar görüntüyü çözmeye yetişemiyor.';
+      'Kareler atlanıyor: cihaz görüntüyü çözmeye yetişemiyor.';
 
   @override
   String get findSoftwareDecoding =>
@@ -1388,7 +1388,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get subsNoKey =>
-      'Altyazı aramak için Ayarlar > Tercihler\'e kendi OpenSubtitles API anahtarınızı girin. Anahtar yalnızca bu bilgisayarın kimlik deposunda tutulur.';
+      'Altyazı aramak için Ayarlar > Tercihler\'e kendi OpenSubtitles API anahtarınızı girin. Anahtar yalnızca bu cihazın kimlik deposunda tutulur.';
 
   @override
   String get subsOpenSettings => 'Ayarlara git';
