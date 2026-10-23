@@ -114,13 +114,22 @@ class _MobileShellState extends State<MobileShell> with WidgetsBindingObserver, 
     final player = context.player;
     final full = player.view == PlayerView.full;
     if (app.sources.isEmpty) {
-      return const Stack(fit: StackFit.expand, children: [KdAmbient(), SafeArea(child: OnboardingScreen())]);
+      return const Stack(
+        fit: StackFit.expand,
+        children: [
+          KdAmbient(),
+          SafeArea(child: OnboardingScreen()),
+        ],
+      );
     }
     final mq = MediaQuery.of(context);
     final mini = player.view == PlayerView.preview && player.now != null;
+    // While typing the keyboard takes the bottom: the bars step aside, as in
+    // Android's own apps.
+    final typing = View.of(context).viewInsets.bottom > 0;
     final navBottom = math.max(mq.padding.bottom, 10.0) + 6;
     // What floats over the bottom of the content: lists end above it.
-    final overlay = navBottom + MobileShell.navHeight + (mini ? MobileShell.miniHeight + 8 : 0) + 8;
+    final overlay = typing ? 8.0 : navBottom + MobileShell.navHeight + (mini ? MobileShell.miniHeight + 8 : 0) + 8;
     final top = mq.padding.top + MobileShell.topBarHeight;
     return Stack(
       fit: StackFit.expand,
@@ -134,30 +143,49 @@ class _MobileShellState extends State<MobileShell> with WidgetsBindingObserver, 
                 top: top,
                 child: _shrinkable(
                   MediaQuery(
-                    data: mq.copyWith(padding: mq.padding.copyWith(top: 0, bottom: overlay), viewPadding: mq.viewPadding.copyWith(top: 0, bottom: overlay)),
-                    child: _SectionSwitcher(section: app.section, nonce: app.detailNonce, child: widget.content(app)),
+                    data: mq.copyWith(
+                      padding: mq.padding.copyWith(top: 0, bottom: overlay),
+                      viewPadding: mq.viewPadding.copyWith(top: 0, bottom: overlay),
+                    ),
+                    child: _SectionSwitcher(section: app.section, child: widget.content(app)),
                   ),
                 ),
               ),
-              Positioned(top: 0, left: 0, right: 0, child: _TopBar(app: app, height: top)),
               Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _TopBar(app: app, height: top),
+              ),
+              if (!typing)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: navBottom,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSize(
+                        duration: KdMotionM3.medium,
+                        curve: KdMotionM3.emphasized,
+                        alignment: Alignment.bottomCenter,
+                        child: mini
+                            ? Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: _MiniBar(player: player),
+                              )
+                            : const SizedBox(width: double.infinity),
+                      ),
+                      _NavBar(app: app),
+                    ],
+                  ),
+                ),
+              Positioned(
+                top: top + 8,
                 left: 12,
                 right: 12,
-                bottom: navBottom,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedSize(
-                      duration: KdMotionM3.medium,
-                      curve: KdMotionM3.emphasized,
-                      alignment: Alignment.bottomCenter,
-                      child: mini ? Padding(padding: const EdgeInsets.only(bottom: 8), child: _MiniBar(player: player)) : const SizedBox(width: double.infinity),
-                    ),
-                    _NavBar(app: app),
-                  ],
-                ),
+                child: const Center(child: ReminderBanner()),
               ),
-              Positioned(top: top + 8, left: 12, right: 12, child: const Center(child: ReminderBanner())),
             ],
           ),
         ),
@@ -170,10 +198,9 @@ class _MobileShellState extends State<MobileShell> with WidgetsBindingObserver, 
 /// Fade through: the old section fades out quickly, the new one fades in
 /// growing from 96 %, as Android moves between top-level destinations.
 class _SectionSwitcher extends StatelessWidget {
-  const _SectionSwitcher({required this.section, required this.nonce, required this.child});
+  const _SectionSwitcher({required this.section, required this.child});
 
   final Section section;
-  final int nonce;
   final Widget child;
 
   @override
@@ -326,7 +353,11 @@ class _SourceTitle extends StatelessWidget {
                             s?.lastError != null ? l10n.sourceSyncError : l10n.navLibrary,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: KdType.chip, color: s?.lastError != null ? KdColors.err : KdColors.muted, height: 1.2),
+                            style: TextStyle(
+                              fontSize: KdType.chip,
+                              color: s?.lastError != null ? KdColors.err : KdColors.muted,
+                              height: 1.2,
+                            ),
                           ),
                         ),
                       ],
@@ -489,7 +520,11 @@ class _MiniBar extends StatelessWidget {
                   padding: const EdgeInsets.all(8),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: SizedBox(width: 85, height: 48, child: ColoredBox(color: Colors.black, child: player.engine.surface())),
+                    child: SizedBox(
+                      width: 85,
+                      height: 48,
+                      child: ColoredBox(color: Colors.black, child: player.engine.surface()),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 4),
@@ -498,7 +533,12 @@ class _MiniBar extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(now.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(
+                        now.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
@@ -531,4 +571,3 @@ class _MiniBar extends StatelessWidget {
     );
   }
 }
-
