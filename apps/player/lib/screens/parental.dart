@@ -127,7 +127,7 @@ class _PinDialogState extends State<_PinDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: KdColors.bg2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+      shape: kdDialogShape,
       title: Row(
         children: [
           const Icon(LucideIcons.lock, size: 16, color: KdColors.accent),

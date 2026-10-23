@@ -77,7 +77,7 @@ class _SubtitleSearchState extends State<_SubtitleSearch> {
     final results = _results;
     return AlertDialog(
       backgroundColor: KdColors.bg2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+      shape: kdDialogShape,
       title: Text(l10n.subsTitle, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
       content: SizedBox(
         width: 560,

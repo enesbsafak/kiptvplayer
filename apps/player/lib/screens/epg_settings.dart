@@ -80,7 +80,7 @@ class _EpgSettingsDialogState extends State<_EpgSettingsDialog> {
     };
     return AlertDialog(
       backgroundColor: KdColors.bg2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+      shape: kdDialogShape,
       title: Text(l10n.epgSettingsTitle(widget.item.name), style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
       content: SizedBox(
         width: 460,

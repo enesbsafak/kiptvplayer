@@ -142,7 +142,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: KdColors.bg2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+      shape: kdDialogShape,
       title: Text(widget.confirm ? l10n.backupPasswordNew : l10n.backupPasswordAsk, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
       content: SizedBox(
         width: 380,

@@ -230,7 +230,7 @@ class _SourceRowState extends State<_SourceRow> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: KdColors.bg2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+        shape: kdDialogShape,
         title: Text(l10n.sourceDeleteTitle(widget.source.name), style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
         content: Text(
           l10n.sourceDeleteBody,
@@ -643,7 +643,7 @@ class _HistorySectionState extends State<_HistorySection> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: KdColors.bg2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+        shape: kdDialogShape,
         title: Text(l10n.historyClearAll, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
         content: Text(l10n.historyClearBody, style: const TextStyle(color: KdColors.muted)),
         actions: [

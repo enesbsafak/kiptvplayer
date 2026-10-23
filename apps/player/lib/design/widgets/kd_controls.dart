@@ -551,8 +551,10 @@ class KdEmpty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 380),
+      child: Container(
+        // Clear of a phone's edges.
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        constraints: const BoxConstraints(maxWidth: 428),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -638,3 +640,9 @@ String kdClock(int unixSecs) {
   final t = DateTime.fromMillisecondsSinceEpoch(unixSecs * 1000);
   return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 }
+
+/// A dialog's outline: KaradelikDev's card on desktop, Android's 28 dp
+/// rounded dialog with a faint rim on Android.
+ShapeBorder get kdDialogShape => androidUi
+    ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(28), side: const BorderSide(color: Color(0x1FFFFFFF)))
+    : RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line));

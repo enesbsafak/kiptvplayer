@@ -27,7 +27,7 @@ Future<void> _menu(BuildContext context, Offset at, List<(IconData, String, Futu
   final picked = await showMenu<int>(
     context: context,
     color: KdColors.bg2,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+    shape: kdDialogShape,
     position: RelativeRect.fromLTRB(local.dx, local.dy, overlay.size.width - local.dx, overlay.size.height - local.dy),
     items: [
       for (final (i, e) in entries.indexed)
@@ -82,7 +82,7 @@ class _NameDialogState extends State<_NameDialog> {
     final original = widget.original;
     return AlertDialog(
       backgroundColor: KdColors.bg2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+      shape: kdDialogShape,
       title: Text(widget.title, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
       content: SizedBox(
         width: 380,

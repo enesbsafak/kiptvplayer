@@ -267,7 +267,7 @@ class _CommandPaletteState extends State<CommandPalette> {
         padding: const EdgeInsets.only(top: 90, left: 16, right: 16),
         child: Material(
           color: KdColors.bg2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+          shape: kdDialogShape,
           clipBehavior: Clip.antiAlias,
           elevation: 12,
           shadowColor: Colors.black,

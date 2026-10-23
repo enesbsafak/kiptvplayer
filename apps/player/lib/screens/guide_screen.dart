@@ -338,7 +338,7 @@ class ProgrammeDialog extends StatelessWidget {
     final day = DateFormat('EEEE d MMMM', languageCode).format(DateTime.fromMillisecondsSinceEpoch(p.start * 1000));
     return AlertDialog(
       backgroundColor: KdColors.bg2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line)),
+      shape: kdDialogShape,
       title: Text(p.title, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
       content: SizedBox(
         width: 440,
