@@ -346,14 +346,17 @@ class FakeLibrary implements LibraryApi {
     return Playback(url: 'http://127.0.0.1/$itemId.ts', title: 'K$itemId', isLive: true);
   }
 
+  /// A series' episodes, by item id.
+  final Map<int, List<EpisodeInfo>> episodesOf = {};
+
   @override
   Future<ItemDetail> detail(int itemId) async => ItemDetail(
     id: itemId,
-    kind: Kind.movie,
+    kind: episodesOf.containsKey(itemId) ? Kind.series : Kind.movie,
     name: 'Film $itemId',
     plot: 'Sağlayıcının özeti.',
     cast: 'Oyuncu Bir, Oyuncu İki',
-    episodes: const [],
+    episodes: episodesOf[itemId] ?? const [],
     isFavorite: false,
   );
 

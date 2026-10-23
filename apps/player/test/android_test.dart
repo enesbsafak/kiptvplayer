@@ -294,4 +294,29 @@ void main() {
     }
     // An overflow anywhere fails the test by itself.
   });
+
+  testWidgets('a long-running series: the seasons scroll sideways to the last one', (tester) async {
+    await setAndroidPhone(tester, size: const Size(360, 640));
+    final lib = _library();
+    lib.episodesOf[30] = [
+      for (var season = 1; season <= 14; season++)
+        for (var n = 1; n <= 2; n++)
+          EpisodeInfo(extId: season * 100 + n, season: season, number: n, title: 'S$season B$n', container: 'mkv'),
+    ];
+    final h = TestHarness(lib);
+    await h.state.load();
+    h.state.go(Section.series);
+    await tester.pumpWidget(androidApp(h));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dizi'));
+    await tester.pumpAndSettle();
+
+    final last = find.text('14. Sezon');
+    await tester.scrollUntilVisible(find.text('1. Sezon'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.dragUntilVisible(last, find.text('1. Sezon'), const Offset(-200, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(last);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('S14 B1'), findsOneWidget, reason: 'the last season, reached by a swipe');
+  });
 }

@@ -627,22 +627,30 @@ class _DetailViewState extends State<DetailView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            KdSectionLabel(l10n.detailEpisodes),
-            const SizedBox(width: 14),
-            for (final s in seasons) ...[
-              KdPill(
-                label: l10n.detailSeasonN(s),
-                selected: s == _season,
-                onTap: () {
-                  setState(() => _season = s);
-                  _loadTmdbSeason();
-                },
-              ),
-              const SizedBox(width: 6),
-            ],
-          ],
+        KdSectionLabel(l10n.detailEpisodes),
+        const SizedBox(height: 10),
+        // Seasons scroll sideways (a finger, a trackpad, the mouse wheel):
+        // a long-running series has more than a screen's width of them.
+        KdWheelScroll(
+          builder: (controller) => SingleChildScrollView(
+            controller: controller,
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final (i, s) in seasons.indexed) ...[
+                  if (i > 0) const SizedBox(width: 6),
+                  KdPill(
+                    label: l10n.detailSeasonN(s),
+                    selected: s == _season,
+                    onTap: () {
+                      setState(() => _season = s);
+                      _loadTmdbSeason();
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         for (final e in list)
