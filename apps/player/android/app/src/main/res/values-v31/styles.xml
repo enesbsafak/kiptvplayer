@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+: the system launch screen, the mark on the app's black.
+         The app's opening (lib/mobile/intro.dart) takes over from the same
+         mark at the same place, so the hand-over does not show. -->
+    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@drawable/normal_background</item>
+        <item name="android:windowSplashScreenBackground">#0B0B10</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <item name="android:windowBackground">@drawable/normal_background</item>
+    </style>
+</resources>

@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The app's background (#0b0b10) until Flutter paints: no white flash. -->
+<!-- Before Android 12: the app's background (#0b0b10) and the mark in the
+     middle until Flutter paints; the opening animation starts from it. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
     <item>
         <color android:color="#0B0B10" />
+    </item>
+    <item>
+        <bitmap android:gravity="center" android:src="@drawable/splash_icon" />
     </item>
 </layer-list>

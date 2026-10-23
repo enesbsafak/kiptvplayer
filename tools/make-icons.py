@@ -86,6 +86,28 @@ def tv_banner() -> None:
     img.resize((w, h), Image.LANCZOS).convert('RGB').save(folder / 'tv_banner.png', optimize=True)
 
 
+def splash() -> None:
+    """Android's launch screen: the mark alone on the app's background. On
+    Android 12+ the system draws it (a 288 dp icon, the art inside the 192 dp
+    circle); before that the launch theme centres the same bitmap. The app's
+    opening animation (lib/mobile/intro.dart) starts from the mark at the
+    same size and place: [SPLASH_MARK_DP] wide."""
+    res = APP / 'android' / 'app' / 'src' / 'main' / 'res'
+    for density, dp in {'mdpi': 1, 'hdpi': 1.5, 'xhdpi': 2, 'xxhdpi': 3, 'xxxhdpi': 4}.items():
+        size = round(288 * dp)
+        out = Image.new('RGBA', (size, size), (0, 0, 0, 0))
+        mark = FOREGROUND.resize((round(SPLASH_MARK_DP * dp),) * 2, Image.LANCZOS)
+        out.alpha_composite(mark, ((size - mark.width) // 2,) * 2)
+        folder = res / f'drawable-{density}'
+        folder.mkdir(parents=True, exist_ok=True)
+        out.save(folder / 'splash_icon.png', optimize=True)
+
+
+# Width of the mark on the launch screen, in dp; lib/mobile/intro.dart
+# draws it at the same width.
+SPLASH_MARK_DP = 160
+
+
 def apple(contents: Path, mac: bool) -> None:
     spec = json.loads(contents.read_text(encoding='utf-8'))
     for image in spec['images']:
@@ -111,6 +133,11 @@ if __name__ == '__main__':
     apple(APP / 'ios' / 'Runner' / 'Assets.xcassets' / 'AppIcon.appiconset' / 'Contents.json', mac=False)
     apple(APP / 'macos' / 'Runner' / 'Assets.xcassets' / 'AppIcon.appiconset' / 'Contents.json', mac=True)
     windows()
-    # In the app (titlebar, first run, About): the mark without its square.
+    splash()
+    # In the app (titlebar, first run, About, the opening): the mark without
+    # its square, sharp up to 3x screens at 160 dp (the opening's size).
     foreground(256, 1.0).save(APP / 'assets' / 'brand' / 'logo.png')
+    for scale in (2, 3):
+        (APP / 'assets' / 'brand' / f'{scale}.0x').mkdir(exist_ok=True)
+        foreground(256 * scale, 1.0).save(APP / 'assets' / 'brand' / f'{scale}.0x' / 'logo.png')
     print('icons written')

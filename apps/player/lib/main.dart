@@ -21,6 +21,7 @@ import 'design/tokens.dart';
 import 'design/widgets/kd_titlebar.dart' show flashTaskbar;
 import 'dev/automation.dart';
 import 'l10n/l10n.dart';
+import 'mobile/intro.dart';
 import 'perf/perf.dart';
 import 'player/media_session.dart';
 import 'player/player_controller.dart';
@@ -192,7 +193,7 @@ class _KaradelikPlayerAppState extends State<KaradelikPlayerApp> {
           final app = isTv
               ? TvFrame(child: child!)
               : androidUi
-                  ? _AndroidText(child: child!)
+                  ? _AndroidText(child: KdIntro(child: child!))
                   : child;
           final phone = widget.phone;
           if (phone == null) return RepaintBoundary(key: widget.boundaryKey, child: app);

@@ -11,6 +11,7 @@ import 'package:karadelik_player/app/app_state.dart';
 import 'package:karadelik_player/app/library.dart';
 import 'package:karadelik_player/app/platform.dart';
 import 'package:karadelik_player/design/theme.dart';
+import 'package:karadelik_player/mobile/intro.dart';
 import 'package:karadelik_player/mobile/mobile_shell.dart';
 import 'package:karadelik_player/player/player_controller.dart';
 import 'package:karadelik_player/screens/player_screen.dart';
@@ -177,5 +178,31 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(h.player.view, isNot(PlayerView.full));
+  });
+
+  testWidgets('the opening plays over a usable app, then leaves', (tester) async {
+    await setAndroidPhone(tester);
+    var taps = 0;
+    await tester.pumpWidget(MaterialApp(
+      home: KdIntro(child: Center(child: TextButton(onPressed: () => taps++, child: const Text('içeride')))),
+    ));
+    expect(find.byType(CustomPaint), findsWidgets, reason: 'the horizon is drawn');
+    await tester.tap(find.text('içeride'), warnIfMissed: false);
+    expect(taps, 1, reason: 'the app takes touches from the first frame');
+    await tester.pump(KdIntro.duration ~/ 2);
+    expect(find.byType(IgnorePointer), findsWidgets);
+    await tester.pumpAndSettle();
+    expect(find.byWidgetPredicate((w) => w is Image), findsNothing, reason: 'the mark is gone');
+  });
+
+  testWidgets('no opening when animations are off', (tester) async {
+    await setAndroidPhone(tester);
+    await tester.pumpWidget(MaterialApp(
+      home: MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: KdIntro(child: const Text('içeride')),
+      ),
+    ));
+    expect(find.byWidgetPredicate((w) => w is Image), findsNothing);
   });
 }
