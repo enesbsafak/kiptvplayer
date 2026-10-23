@@ -140,7 +140,10 @@ class MediaKitEngine implements PlayerEngine {
     final size = _textureSize();
     final video = VideoController(
       player,
-      configuration: VideoControllerConfiguration(hwdec: 'auto-safe', width: size?.$1, height: size?.$2),
+      // Android: left to media_kit, which picks the same auto-safe on a
+      // phone and software decoding on an emulator (its MediaCodec renders
+      // nothing there: the picture stayed black).
+      configuration: VideoControllerConfiguration(hwdec: Platform.isAndroid ? null : 'auto-safe', width: size?.$1, height: size?.$2),
     );
     return MediaKitEngine._(player, video, silent: silent);
   }
