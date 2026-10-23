@@ -32,6 +32,8 @@ class MobileShell extends StatefulWidget {
   final Widget Function(AppState app) content;
 
   static const topBarHeight = 60.0;
+  static const topBarHeightRail = 52.0;
+  static const railWidth = 80.0;
   static const navHeight = 66.0;
   static const miniHeight = 64.0;
 
@@ -127,10 +129,18 @@ class _MobileShellState extends State<MobileShell> with WidgetsBindingObserver, 
     // While typing the keyboard takes the bottom: the bars step aside, as in
     // Android's own apps.
     final typing = View.of(context).viewInsets.bottom > 0;
+    // A phone on its side has little height: the sections move to a rail on
+    // the left (Android's navigation rail) and the content keeps the height.
+    final rail = mq.size.width > mq.size.height && mq.size.width >= 560;
     final navBottom = math.max(mq.padding.bottom, 10.0) + 6;
     // What floats over the bottom of the content: lists end above it.
-    final overlay = typing ? 8.0 : navBottom + MobileShell.navHeight + (mini ? MobileShell.miniHeight + 8 : 0) + 8;
-    final top = mq.padding.top + MobileShell.topBarHeight;
+    final overlay = typing
+        ? 8.0
+        : rail
+            ? (mini ? navBottom + MobileShell.miniHeight + 8 : navBottom)
+            : navBottom + MobileShell.navHeight + (mini ? MobileShell.miniHeight + 8 : 0) + 8;
+    final railRight = rail ? mq.padding.left + 8 + MobileShell.railWidth : 0.0;
+    final top = mq.padding.top + (rail ? MobileShell.topBarHeightRail : MobileShell.topBarHeight);
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -141,11 +151,12 @@ class _MobileShellState extends State<MobileShell> with WidgetsBindingObserver, 
             children: [
               Positioned.fill(
                 top: top,
+                left: railRight,
                 child: _shrinkable(
                   MediaQuery(
                     data: mq.copyWith(
-                      padding: mq.padding.copyWith(top: 0, bottom: overlay),
-                      viewPadding: mq.viewPadding.copyWith(top: 0, bottom: overlay),
+                      padding: mq.padding.copyWith(top: 0, bottom: overlay, left: rail ? 0 : null),
+                      viewPadding: mq.viewPadding.copyWith(top: 0, bottom: overlay, left: rail ? 0 : null),
                     ),
                     child: _SectionSwitcher(section: app.section, child: widget.content(app)),
                   ),
@@ -153,11 +164,21 @@ class _MobileShellState extends State<MobileShell> with WidgetsBindingObserver, 
               ),
               Positioned(
                 top: 0,
-                left: 0,
+                left: railRight,
                 right: 0,
                 child: _TopBar(app: app, height: top),
               ),
-              if (!typing)
+              if (rail)
+                Positioned(
+                  left: mq.padding.left + 8,
+                  top: 8,
+                  bottom: math.max(mq.padding.bottom, 8.0),
+                  width: MobileShell.railWidth,
+                  child: _NavRail(app: app),
+                ),
+              if (rail && mini && !typing)
+                Positioned(right: 12 + mq.padding.right, bottom: navBottom, width: 380, child: _MiniBar(player: player)),
+              if (!typing && !rail)
                 Positioned(
                   left: 12,
                   right: 12,
@@ -442,6 +463,77 @@ class _NavBar extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+/// The sections in a glass rail down the left edge (a phone on its side);
+/// the lit pill slides up and down.
+class _NavRail extends StatelessWidget {
+  const _NavRail({required this.app});
+
+  final AppState app;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = _NavBar.entries;
+    final index = items.indexWhere((e) => e.section == app.section);
+    return KdGlass(
+      borderRadius: BorderRadius.circular(KdGlassTokens.radiusBar + 6),
+      child: LayoutBuilder(
+        builder: (context, c) {
+          final h = math.min(64.0, c.maxHeight / items.length);
+          final top = (c.maxHeight - h * items.length) / 2;
+          return Stack(
+            children: [
+              AnimatedPositioned(
+                duration: KdMotionM3.long,
+                curve: KdMotionM3.emphasized,
+                left: 6,
+                right: 6,
+                top: top + (index < 0 ? 0 : index) * h + 4,
+                height: h - 8,
+                child: AnimatedOpacity(
+                  duration: KdMotionM3.short,
+                  opacity: index < 0 ? 0 : 1,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(KdGlassTokens.radiusCard),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [KdColors.accentAlpha(0.24), KdColors.accentAlpha(0.10)],
+                      ),
+                      border: Border.all(color: KdColors.accentAlpha(0.35)),
+                      boxShadow: [BoxShadow(color: KdColors.accentAlpha(0.22), blurRadius: 18)],
+                    ),
+                  ),
+                ),
+              ),
+              Positioned.fill(
+                top: top,
+                bottom: top,
+                child: Column(
+                  children: [
+                    for (final e in items)
+                      SizedBox(
+                        height: h,
+                        child: _NavItem(
+                          entry: e,
+                          active: e.section == app.section,
+                          onTap: () {
+                            if (e.section != app.section) HapticFeedback.selectionClick();
+                            app.go(e.section);
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

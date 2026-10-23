@@ -275,4 +275,23 @@ void main() {
     }
     // An overflow anywhere fails the test by itself.
   });
+
+  testWidgets('a phone on its side: the sections in a rail, every section lays out', (tester) async {
+    await setAndroidPhone(tester, size: const Size(844, 390));
+    final h = TestHarness(_library());
+    await h.state.load();
+    await tester.pumpWidget(androidApp(h));
+    await tester.pumpAndSettle();
+    // The rail sits on the left, the content beside it, full height.
+    final live = tester.getRect(_nav('Canlı TV'));
+    expect(live.left, lessThan(100), reason: 'a rail on the left, not a bar at the bottom');
+    await tester.tap(_nav('Canlı TV'));
+    await tester.pumpAndSettle();
+    expect(h.state.section, Section.live);
+    for (final s in Section.values) {
+      h.state.go(s);
+      await tester.pumpAndSettle();
+    }
+    // An overflow anywhere fails the test by itself.
+  });
 }
