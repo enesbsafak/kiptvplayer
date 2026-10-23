@@ -15,6 +15,7 @@ import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
+import '../mobile/glass.dart';
 import '../player/media_track.dart';
 import '../player/playback_stats.dart';
 import '../player/player_controller.dart';
@@ -53,6 +54,21 @@ class _PlayerScreenState extends State<PlayerScreen> {
   /// A short note for key-driven changes without a panel ("Altyazı +0.3 s").
   String? _flash;
   Timer? _flashTimer;
+
+  /// Android: where the second tap of a double tap landed.
+  double? _doubleTapAt;
+
+  /// A double tap on the left half goes back 10 s, on the right half on;
+  /// live TV without a buffer has nowhere to go.
+  void _seekBySide(PlayerController player) {
+    final x = _doubleTapAt;
+    final live = player.now?.isLive ?? false;
+    if (x == null || (live && !player.canTimeshift)) return;
+    final back = x < MediaQuery.sizeOf(context).width / 2;
+    HapticFeedback.lightImpact();
+    player.seekBy(Duration(seconds: back ? -10 : 10));
+    _note(back ? '« 10 s' : '10 s »');
+  }
 
   void _note(String text) {
     _flashTimer?.cancel();
@@ -334,7 +350,12 @@ class _PlayerScreenState extends State<PlayerScreen> {
                       }
                       _poke();
                     },
-                    onDoubleTap: isDesktopOs ? player.toggleWindowFullscreen : null,
+                    onDoubleTapDown: androidUi ? (d) => _doubleTapAt = d.localPosition.dx : null,
+                    onDoubleTap: androidUi
+                        ? () => _seekBySide(player)
+                        : isDesktopOs
+                            ? player.toggleWindowFullscreen
+                            : null,
                     child: player.engine.surface(),
                   ),
                   if (player.opening || player.buffering)
@@ -453,7 +474,13 @@ class _TopBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _OsdButton(icon: LucideIcons.arrowLeft, tooltip: l10n.tipBackEsc, onTap: onBack),
+          if (androidUi)
+            KdGlass(
+              borderRadius: BorderRadius.circular(KdRadius.pill),
+              child: _OsdButton(icon: LucideIcons.arrowLeft, tooltip: l10n.tipBackEsc, onTap: onBack),
+            )
+          else
+            _OsdButton(icon: LucideIcons.arrowLeft, tooltip: l10n.tipBackEsc, onTap: onBack),
           const SizedBox(width: 12),
           // Title and tags take the free space, so trailing actions sit at the edge.
           Expanded(
@@ -545,7 +572,34 @@ class _BottomBar extends StatelessWidget {
             )
           else
             _SeekBar(player: player),
-          if (isCompact(context))
+          if (isCompact(context) && androidUi)
+            _GlassControls(
+              children: [
+                _OsdButton(icon: LucideIcons.subtitles, tooltip: l10n.tipTracks, onTap: onTracks),
+                _OsdButton(
+                  icon: live ? LucideIcons.chevronsUpDown : LucideIcons.rewind,
+                  tooltip: live ? l10n.tipPrevChannel : l10n.tipBack10,
+                  onTap: () => live ? player.zap(-1) : player.seekBy(const Duration(seconds: -10)),
+                ),
+                _OsdButton(
+                  icon: player.playing ? LucideIcons.pause : LucideIcons.play,
+                  tooltip: l10n.tipPlayPauseSpace,
+                  big: true,
+                  focusNode: playFocus,
+                  onTap: player.togglePause,
+                ),
+                _OsdButton(
+                  icon: live ? LucideIcons.skipForward : LucideIcons.fastForward,
+                  tooltip: live ? l10n.tipNextChannel : l10n.tipForward10,
+                  onTap: () => live ? player.zap(1) : player.seekBy(const Duration(seconds: 10)),
+                ),
+                if (live)
+                  _OsdButton(icon: LucideIcons.listVideo, tooltip: l10n.tipChannelList, onTap: onChannels)
+                else
+                  _OsdButton(icon: LucideIcons.activity, tooltip: l10n.tipStats, onTap: onStats),
+              ],
+            )
+          else if (isCompact(context))
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -928,6 +982,48 @@ class _Volume extends StatelessWidget {
   }
 }
 
+/// A panel over the video: frosted glass rounded on its inner side on
+/// Android, a near-opaque sheet with a hairline edge elsewhere.
+class _PanelSurface extends StatelessWidget {
+  const _PanelSurface({required this.edge, required this.radius, required this.child, this.padding = EdgeInsets.zero});
+
+  final Border edge;
+  final BorderRadius radius;
+  final EdgeInsetsGeometry padding;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (androidUi) return KdGlass(borderRadius: radius, padding: padding, child: child);
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(color: KdColors.bg2.withValues(alpha: 0.96), border: edge),
+      child: child,
+    );
+  }
+}
+
+/// Android: the player's buttons in one glass capsule over the video.
+class _GlassControls extends StatelessWidget {
+  const _GlassControls({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return KdGlass(
+      borderRadius: BorderRadius.circular(KdRadius.pill),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final (i, c) in children.indexed) ...[if (i > 0) const SizedBox(width: 10), c],
+        ],
+      ),
+    );
+  }
+}
+
 class _OsdButton extends StatefulWidget {
   const _OsdButton({required this.icon, required this.onTap, this.tooltip, this.big = false, this.focusNode});
 
@@ -944,7 +1040,8 @@ class _OsdButton extends StatefulWidget {
 class _OsdButtonState extends State<_OsdButton> {
   @override
   Widget build(BuildContext context) {
-    final size = widget.big ? 44.0 : 34.0;
+    // Android: finger-sized, the small ones bare on the glass capsule.
+    final size = androidUi ? (widget.big ? 60.0 : 48.0) : (widget.big ? 44.0 : 34.0);
     Widget b = KdTappable(
       onTap: widget.onTap,
       focusNode: widget.focusNode,
@@ -958,9 +1055,14 @@ class _OsdButtonState extends State<_OsdButton> {
             shape: BoxShape.circle,
             color: widget.big
                 ? (hover ? KdColors.accent2 : KdColors.accent)
-                : (hover ? const Color(0x33FFFFFF) : const Color(0x1AFFFFFF)),
+                : (hover ? const Color(0x33FFFFFF) : (androidUi ? const Color(0x00FFFFFF) : const Color(0x1AFFFFFF))),
+            boxShadow: androidUi && widget.big ? [BoxShadow(color: KdColors.accent.withValues(alpha: 0.4), blurRadius: 20)] : null,
           ),
-          child: Icon(widget.icon, size: widget.big ? 20 : 16, color: widget.big ? KdColors.accentInk : KdColors.text),
+          child: Icon(
+            widget.icon,
+            size: androidUi ? (widget.big ? 26 : 22) : (widget.big ? 20 : 16),
+            color: widget.big ? KdColors.accentInk : KdColors.text,
+          ),
         ),
       ),
     );
@@ -1092,12 +1194,10 @@ class _TracksSheetState extends State<_TracksSheet> {
       1 => _subtitleRows(context, player, touch: true),
       _ => [_AdjustColumn(player: player, width: double.infinity)],
     };
-    return Container(
+    return _PanelSurface(
+      edge: const Border(left: BorderSide(color: KdColors.line)),
+      radius: const BorderRadius.horizontal(left: Radius.circular(KdGlassTokens.radiusSheet)),
       padding: EdgeInsets.fromLTRB(16, 12 + safe.top, 16 + safe.right, 0),
-      decoration: BoxDecoration(
-        color: KdColors.bg2.withValues(alpha: 0.97),
-        border: const Border(left: BorderSide(color: KdColors.line)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1304,11 +1404,9 @@ class _ChannelSheetState extends State<_ChannelSheet> {
   Widget build(BuildContext context) {
     final q = widget.now.queue;
     final epg = context.epg;
-    return Container(
-      decoration: BoxDecoration(
-        color: KdColors.bg.withValues(alpha: 0.94),
-        border: const Border(right: BorderSide(color: KdColors.line)),
-      ),
+    return _PanelSurface(
+      edge: const Border(right: BorderSide(color: KdColors.line)),
+      radius: const BorderRadius.horizontal(right: Radius.circular(KdGlassTokens.radiusSheet)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [

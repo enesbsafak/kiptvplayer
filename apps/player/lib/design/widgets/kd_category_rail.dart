@@ -2,8 +2,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../app/platform.dart';
 import '../../app/text.dart';
 import '../../l10n/l10n.dart';
+import '../../mobile/sheet.dart';
 import '../tokens.dart';
 import 'kd_controls.dart';
 import 'kd_widgets.dart';
@@ -139,6 +141,24 @@ class KdCategoryPicker extends StatelessWidget {
   final void Function(int id, Offset at)? onContext;
 
   void _open(BuildContext context) {
+    if (androidUi) {
+      showKdSheet<void>(
+        context,
+        heightFactor: 0.7,
+        builder: (sheet) => KdCategoryRail(
+          title: title,
+          entries: entries,
+          selected: selected,
+          footer: footer,
+          onContext: onContext,
+          onSelect: (id) {
+            Navigator.of(sheet).pop();
+            onSelect(id);
+          },
+        ),
+      );
+      return;
+    }
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -171,13 +191,17 @@ class KdCategoryPicker extends StatelessWidget {
       label: title,
       child: KdTappable(
         onTap: () => _open(context),
+        radius: 18,
         builder: (context, hover, focus) => Container(
-          height: 44,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          height: androidUi ? 52 : 44,
+          padding: EdgeInsets.symmetric(horizontal: androidUi ? 16 : 12),
           decoration: BoxDecoration(
-            color: KdColors.bg2,
-            border: Border.all(color: focus ? KdColors.accent : KdColors.line, width: focus ? 2 : 1),
-            borderRadius: BorderRadius.circular(KdRadius.card),
+            color: androidUi ? const Color(0x0FFFFFFF) : KdColors.bg2,
+            border: Border.all(
+              color: focus ? KdColors.accent : (androidUi ? const Color(0x1AFFFFFF) : KdColors.line),
+              width: focus ? 2 : 1,
+            ),
+            borderRadius: BorderRadius.circular(androidUi ? 18 : KdRadius.card),
           ),
           child: Row(
             children: [

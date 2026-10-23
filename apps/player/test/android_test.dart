@@ -11,6 +11,7 @@ import 'package:karadelik_player/app/app_state.dart';
 import 'package:karadelik_player/app/library.dart';
 import 'package:karadelik_player/app/platform.dart';
 import 'package:karadelik_player/design/theme.dart';
+import 'package:karadelik_player/mobile/glass.dart';
 import 'package:karadelik_player/mobile/intro.dart';
 import 'package:karadelik_player/mobile/mobile_shell.dart';
 import 'package:karadelik_player/player/player_controller.dart';
@@ -204,5 +205,29 @@ void main() {
       ),
     ));
     expect(find.byWidgetPredicate((w) => w is Image), findsNothing);
+  });
+
+  testWidgets('the player: glass controls, a double tap on a side seeks 10 s', (tester) async {
+    await setAndroidPhone(tester, size: const Size(800, 390));
+    final lib = _library();
+    final h = TestHarness(lib);
+    await h.state.load();
+    await tester.pumpWidget(androidApp(h));
+    await tester.pumpAndSettle();
+    await h.player.play(lib.items[Kind.movie]![0], Kind.movie, view: PlayerView.full);
+    await tester.pumpAndSettle();
+    expect(find.descendant(of: find.byType(PlayerScreen), matching: find.byType(KdGlass)), findsWidgets);
+
+    final screen = tester.getRect(find.byType(PlayerScreen));
+    final right = Offset(screen.right - 120, screen.center.dy);
+    await tester.tapAt(right);
+    await tester.pump(const Duration(milliseconds: 60));
+    await tester.tapAt(right);
+    await tester.pumpAndSettle();
+    expect(h.engine.seeks, isNotEmpty, reason: 'a double tap on the right seeks');
+    expect(find.text('10 s »'), findsOneWidget);
+    // The controls hide on a timer; leave the player before the test ends.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle(const Duration(seconds: 6));
   });
 }

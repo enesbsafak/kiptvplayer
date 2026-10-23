@@ -5,13 +5,16 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../app/library.dart';
 import '../app/paging.dart';
+import '../app/platform.dart';
 import '../app/scope.dart';
 import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_category_rail.dart';
 import '../design/widgets/kd_controls.dart';
+import '../design/widgets/kd_icon_button.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
+import '../mobile/glass.dart';
 import '../player/player_controller.dart';
 import 'parental.dart';
 import 'edits.dart';
@@ -424,12 +427,22 @@ class _DetailViewState extends State<DetailView> {
           children: [
             Align(
               alignment: Alignment.centerLeft,
-              child: KdButton(label: l10n.actionBack, icon: LucideIcons.arrowLeft, kind: KdButtonKind.ghost, onPressed: widget.onBack),
+              child: androidUi
+                  // Android: a round back button on glass (the system back works too).
+                  ? KdGlass(
+                      borderRadius: BorderRadius.circular(KdRadius.pill),
+                      child: KdIconButton(icon: LucideIcons.arrowLeft, tooltip: l10n.actionBack, onPressed: widget.onBack),
+                    )
+                  : KdButton(label: l10n.actionBack, icon: LucideIcons.arrowLeft, kind: KdButtonKind.ghost, onPressed: widget.onBack),
             ),
             SizedBox(height: compact ? 16 : 40),
             if (compact) ...[
-              // A phone: the poster above the facts, which need the full width.
-              KdArt(url: t?.poster ?? item.logo, label: item.name, width: 120, height: 180, radius: KdRadius.card),
+              // A phone: the poster above the facts, which need the full width;
+              // at its own size (a list stretches its children).
+              Align(
+                alignment: Alignment.centerLeft,
+                child: KdArt(url: t?.poster ?? item.logo, label: item.name, width: 120, height: 180, radius: androidUi ? 16 : KdRadius.card),
+              ),
               const SizedBox(height: 16),
               _facts(d),
             ] else
@@ -523,11 +536,14 @@ class _DetailViewState extends State<DetailView> {
                 ),
               const SizedBox(width: 12),
             ],
-            Flexible(
-              child: Text(meta.join('  ·  '), style: const TextStyle(color: KdColors.muted)),
-            ),
+            if (!androidUi) Flexible(child: Text(meta.join('  ·  '), style: const TextStyle(color: KdColors.muted))),
           ],
         ),
+        // Android: the year, genres and length on a line of their own.
+        if (androidUi && meta.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text(meta.join('  ·  '), style: const TextStyle(color: KdColors.muted)),
+        ],
         const SizedBox(height: 16),
         Wrap(
           spacing: 8,

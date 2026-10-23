@@ -4,6 +4,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/library.dart';
 import '../app/paging.dart';
+import '../app/platform.dart';
 import '../app/scope.dart';
 import '../app/text.dart';
 import '../design/layout.dart';
@@ -35,7 +36,8 @@ int _groupKey(int groupId) => -1000 - groupId;
 int? _groupOf(int key) => key <= -1001 ? -1000 - key : null;
 
 class _LiveScreenState extends State<LiveScreen> {
-  static const _rowHeight = 50.0;
+  /// Android: finger-sized rows that grow with the text size.
+  double get _rowHeight => androidUi ? withText(context, 68, 36) : 50.0;
 
   List<Category> _categories = const [];
   int _category = _all;
@@ -101,8 +103,7 @@ class _LiveScreenState extends State<LiveScreen> {
     });
     // A deleted group or hidden category falls back to all channels.
     final group = _groupOf(_category);
-    if ((group != null && !groups.any((g) => g.uid == group)) ||
-        (_category >= 0 && !cats.any((c) => c.uid == _category))) {
+    if ((group != null && !groups.any((g) => g.uid == group)) || (_category >= 0 && !cats.any((c) => c.uid == _category))) {
       _category = _all;
     }
     _selectCategory(_category);
@@ -127,12 +128,8 @@ class _LiveScreenState extends State<LiveScreen> {
         if (mounted && _category == uid) setState(() => _groupItems = items);
       });
     } else if (uid != _favorites) {
-      final pager = ItemPager(
-        library: context.library,
-        sourceId: sid,
-        kind: Kind.live,
-        categoryUid: uid == _all ? null : uid,
-      )..addListener(() => setState(() {}));
+      final pager = ItemPager(library: context.library, sourceId: sid, kind: Kind.live, categoryUid: uid == _all ? null : uid)
+        ..addListener(() => setState(() {}));
       _pager = pager;
       pager.loadMore();
     }
@@ -155,12 +152,7 @@ class _LiveScreenState extends State<LiveScreen> {
     if (index < 0 || index >= items.length) return;
     setState(() => _selected = index);
     _ensureVisible(index);
-    context.player.play(
-      items[index],
-      Kind.live,
-      queue: items,
-      view: full ? PlayerView.full : PlayerView.preview,
-    );
+    context.player.play(items[index], Kind.live, queue: items, view: full ? PlayerView.full : PlayerView.preview);
   }
 
   void _ensureVisible(int index) {
@@ -405,6 +397,7 @@ class _ChannelRowState extends State<_ChannelRow> {
     final item = widget.item;
     final epg = context.epg..want(item.id);
     final sel = widget.selected;
+    if (androidUi) return _android(item, epg, sel);
     return KdTappable(
       onTap: widget.onTap,
       onDoubleTap: widget.onDoubleTap,
@@ -424,11 +417,7 @@ class _ChannelRowState extends State<_ChannelRow> {
                 width: 34,
                 child: Text(
                   '${item.chno ?? widget.index + 1}',
-                  style: const TextStyle(
-                    color: KdColors.muted,
-                    fontSize: KdType.small,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
+                  style: const TextStyle(color: KdColors.muted, fontSize: KdType.small, fontFeatures: [FontFeature.tabularFigures()]),
                 ),
               ),
               KdArt(url: item.logo, label: item.name, width: 34, height: 34, contain: true),
@@ -478,6 +467,82 @@ class _ChannelRowState extends State<_ChannelRow> {
       ),
     );
   }
+
+  /// Android: the logo on a rounded tile, the name and the programme with
+  /// its progress across the row, the number quietly on the right.
+  Widget _android(Item item, EpgCache epg, bool sel) {
+    return KdTappable(
+      onTap: widget.onTap,
+      onContext: (at) => widget.onContext(at),
+      radius: 18,
+      builder: (context, hover, focus) => Container(
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: sel ? KdColors.accentAlpha(0.14) : null,
+          border: focus ? Border.all(color: KdColors.accent, width: 2) : (sel ? Border.all(color: KdColors.accentAlpha(0.35)) : null),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              padding: const EdgeInsets.all(5),
+              decoration: BoxDecoration(color: const Color(0x0FFFFFFF), borderRadius: BorderRadius.circular(14)),
+              child: KdArt(url: item.logo, label: item.name, width: 38, height: 38, contain: true),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: ListenableBuilder(
+                listenable: epg,
+                builder: (context, _) {
+                  final now = epg.now(item.id);
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: sel ? KdColors.accent2 : KdColors.text, fontWeight: FontWeight.w600),
+                      ),
+                      if (now != null) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          now.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
+                        ),
+                        const SizedBox(height: 5),
+                        KdProgress(value: programmeProgress(now), height: 3),
+                      ],
+                    ],
+                  );
+                },
+              ),
+            ),
+            SizedBox(
+              width: 44,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '${item.chno ?? widget.index + 1}',
+                    style: const TextStyle(color: KdColors.muted, fontSize: KdType.small, fontFeatures: [FontFeature.tabularFigures()]),
+                  ),
+                  if (item.hasCatchup) ...[const SizedBox(height: 4), const Icon(LucideIcons.history, size: 15, color: KdColors.muted)],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// Embedded preview, programme info and actions for the playing channel.
@@ -508,10 +573,7 @@ class _PreviewPane extends StatelessWidget {
                         ? Stack(
                             fit: StackFit.expand,
                             children: [
-                              GestureDetector(
-                                onDoubleTap: () => player.setView(PlayerView.full),
-                                child: player.engine.surface(),
-                              ),
+                              GestureDetector(onDoubleTap: () => player.setView(PlayerView.full), child: player.engine.surface()),
                               Positioned(top: 10, right: 10, child: ZapDigits(player: player)),
                               if (player.reconnecting)
                                 Center(child: ReconnectBanner(player: player, compact: true))
@@ -527,17 +589,17 @@ class _PreviewPane extends StatelessWidget {
                                 const SizedBox(height: 8),
                                 Text(l10n.livePickChannel, style: const TextStyle(color: KdColors.muted)),
                                 const SizedBox(height: 4),
-                                Text(l10n.livePickChannelHint, style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+                                Text(
+                                  l10n.livePickChannelHint,
+                                  style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted),
+                                ),
                               ],
                             ),
                           ),
                   ),
                 ),
               ),
-              if (now != null && now.isLive) ...[
-                const SizedBox(height: 14),
-                _ChannelInfo(now: now),
-              ],
+              if (now != null && now.isLive) ...[const SizedBox(height: 14), _ChannelInfo(now: now)],
             ],
           ),
         );
@@ -584,15 +646,15 @@ class _ChannelInfoState extends State<_ChannelInfo> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(item.name, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+                  Text(
+                    item.name,
+                    style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600),
+                  ),
                   const SizedBox(height: 3),
                   Row(
                     children: [
                       KdTag(l10n.tagLive),
-                      if (player.videoHeight case final h? when h > 0) ...[
-                        const SizedBox(width: 6),
-                        KdTag(_res(h), ok: true),
-                      ],
+                      if (player.videoHeight case final h? when h > 0) ...[const SizedBox(width: 6), KdTag(_res(h), ok: true)],
                     ],
                   ),
                 ],
@@ -620,15 +682,15 @@ class _ChannelInfoState extends State<_ChannelInfo> {
         ),
         const SizedBox(height: 14),
         if (now == null && next == null)
-          Text(l10n.liveNoGuide, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small))
+          Text(
+            l10n.liveNoGuide,
+            style: const TextStyle(color: KdColors.muted, fontSize: KdType.small),
+          )
         else ...[
           if (now != null) _ProgrammeCard(p: now, label: l10n.guideNow, live: true),
           if (next != null) ...[const SizedBox(height: 8), _ProgrammeCard(p: next, label: l10n.guideNext)],
         ],
-        if (item.hasCatchup) ...[
-          const SizedBox(height: 22),
-          _ArchiveList(key: ValueKey(item.id), item: item, queue: widget.now.queue),
-        ],
+        if (item.hasCatchup) ...[const SizedBox(height: 22), _ArchiveList(key: ValueKey(item.id), item: item, queue: widget.now.queue)],
       ],
     );
   }
@@ -662,15 +724,22 @@ class _ArchiveListState extends State<_ArchiveList> {
       final d = kdDay(p.start);
       if (d != day) {
         day = d;
-        rows.add(Padding(
-          padding: EdgeInsets.only(top: rows.isEmpty ? 0 : 10, bottom: 4, left: 2),
-          child: Text(d, style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted, fontWeight: FontWeight.w600)),
-        ));
+        rows.add(
+          Padding(
+            padding: EdgeInsets.only(top: rows.isEmpty ? 0 : 10, bottom: 4, left: 2),
+            child: Text(
+              d,
+              style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted, fontWeight: FontWeight.w600),
+            ),
+          ),
+        );
       }
-      rows.add(_ArchiveRow(
-        p: p,
-        onTap: () => context.player.play(item, Kind.live, queue: widget.queue, programme: p, view: PlayerView.full),
-      ));
+      rows.add(
+        _ArchiveRow(
+          p: p,
+          onTap: () => context.player.play(item, Kind.live, queue: widget.queue, programme: p, view: PlayerView.full),
+        ),
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -682,14 +751,20 @@ class _ArchiveListState extends State<_ArchiveList> {
             KdSectionLabel(l10n.livePastBroadcasts),
             const Spacer(),
             if (past.isNotEmpty)
-              Text(l10n.liveProgrammeCount(past.length), style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+              Text(
+                l10n.liveProgrammeCount(past.length),
+                style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted),
+              ),
           ],
         ),
         const SizedBox(height: 8),
         if (!loaded)
           const KdIndeterminate()
         else if (past.isEmpty)
-          Text(l10n.liveNoArchive, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small))
+          Text(
+            l10n.liveNoArchive,
+            style: const TextStyle(color: KdColors.muted, fontSize: KdType.small),
+          )
         else ...[
           ...rows,
           if (past.length > _shown) ...[
@@ -753,7 +828,10 @@ class _ArchiveRowState extends State<_ArchiveRow> {
                 ),
               ),
               const SizedBox(width: 10),
-              Text(kdDuration(p.stop - p.start), style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted)),
+              Text(
+                kdDuration(p.stop - p.start),
+                style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted),
+              ),
               const SizedBox(width: 10),
               Icon(LucideIcons.play, size: 13, color: hover ? KdColors.accent2 : KdColors.muted),
             ],
@@ -764,7 +842,13 @@ class _ArchiveRowState extends State<_ArchiveRow> {
   }
 }
 
-String _res(int h) => h >= 2000 ? '4K' : h >= 1000 ? 'FHD' : h >= 700 ? 'HD' : 'SD';
+String _res(int h) => h >= 2000
+    ? '4K'
+    : h >= 1000
+    ? 'FHD'
+    : h >= 700
+    ? 'HD'
+    : 'SD';
 
 class _ProgrammeCard extends StatelessWidget {
   const _ProgrammeCard({required this.p, required this.label, this.live = false});
@@ -794,14 +878,23 @@ class _ProgrammeCard extends StatelessWidget {
                 style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()]),
               ),
               const Spacer(),
-              if (live) Text(l10n.liveMinutesLeft(minutesLeft(p)), style: const TextStyle(fontSize: KdType.chip, color: KdColors.accent2)),
+              if (live)
+                Text(
+                  l10n.liveMinutesLeft(minutesLeft(p)),
+                  style: const TextStyle(fontSize: KdType.chip, color: KdColors.accent2),
+                ),
             ],
           ),
           const SizedBox(height: 6),
           Text(p.title, style: const TextStyle(fontWeight: FontWeight.w600)),
           if (p.description.isNotEmpty) ...[
             const SizedBox(height: 3),
-            Text(p.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: KdType.small, color: KdColors.muted)),
+            Text(
+              p.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: KdType.small, color: KdColors.muted),
+            ),
           ],
           if (live) ...[const SizedBox(height: 8), KdProgress(value: programmeProgress(p))],
         ],
