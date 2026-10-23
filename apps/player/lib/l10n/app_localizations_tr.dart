@@ -1275,6 +1275,10 @@ class AppLocalizationsTr extends AppLocalizations {
       'Gizlenen bir şey yok. Kanal veya kategori listesinde sağ tıklayarak gizleyebilir, yeniden adlandırabilir ya da kendi gruplarınızı kurabilirsiniz; eşitlemeden sonra da kalırlar.';
 
   @override
+  String get editHiddenNoneTouch =>
+      'Gizlenen bir şey yok. Bir kanala veya kategoriye uzun basarak gizleyebilir, yeniden adlandırabilir ya da kendi gruplarınızı kurabilirsiniz; eşitlemeden sonra da kalırlar.';
+
+  @override
   String get editHiddenBody =>
       'Bunlar listelerde ve aramada görünmez; eşitlemeden sonra da gizli kalır.';
 

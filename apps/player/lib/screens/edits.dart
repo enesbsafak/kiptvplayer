@@ -278,7 +278,7 @@ class _HiddenItemsSettingsState extends State<HiddenItemsSettings> {
       children: [
         Text(l10n.editHiddenTitle, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
         const SizedBox(height: 4),
-        Text(empty ? l10n.editHiddenNone : l10n.editHiddenBody, style: const TextStyle(color: KdColors.muted, height: 1.5)),
+        Text(empty ? (androidUi ? l10n.editHiddenNoneTouch : l10n.editHiddenNone) : l10n.editHiddenBody, style: const TextStyle(color: KdColors.muted, height: 1.5)),
         if (!empty && sid != null) ...[
           const SizedBox(height: 10),
           SizedBox(

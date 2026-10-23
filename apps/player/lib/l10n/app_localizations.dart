@@ -2372,6 +2372,12 @@ abstract class AppLocalizations {
   /// **'Gizlenen bir şey yok. Kanal veya kategori listesinde sağ tıklayarak gizleyebilir, yeniden adlandırabilir ya da kendi gruplarınızı kurabilirsiniz; eşitlemeden sonra da kalırlar.'**
   String get editHiddenNone;
 
+  /// No description provided for @editHiddenNoneTouch.
+  ///
+  /// In tr, this message translates to:
+  /// **'Gizlenen bir şey yok. Bir kanala veya kategoriye uzun basarak gizleyebilir, yeniden adlandırabilir ya da kendi gruplarınızı kurabilirsiniz; eşitlemeden sonra da kalırlar.'**
+  String get editHiddenNoneTouch;
+
   /// No description provided for @editHiddenBody.
   ///
   /// In tr, this message translates to:

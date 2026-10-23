@@ -647,3 +647,41 @@ String kdClock(int unixSecs) {
 ShapeBorder get kdDialogShape => androidUi
     ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(28), side: const BorderSide(color: Color(0x1FFFFFFF)))
     : RoundedRectangleBorder(borderRadius: BorderRadius.circular(KdRadius.card), side: const BorderSide(color: KdColors.line));
+
+/// A text field beside its buttons in a row: 420 px at most, narrower when
+/// the screen is (a phone), never past its edge.
+class KdFieldWidth extends StatelessWidget {
+  const KdFieldWidth({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Flexible(
+    child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 420), child: child),
+  );
+}
+
+/// A text field and its buttons: side by side where there is room, the
+/// buttons under the field on a phone.
+class KdFieldRow extends StatelessWidget {
+  const KdFieldRow({super.key, required this.field, required this.buttons});
+
+  final Widget field;
+  final List<Widget> buttons;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width < 600) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [field, const SizedBox(height: 8), Wrap(spacing: 8, runSpacing: 8, children: buttons)],
+      );
+    }
+    return Row(
+      children: [
+        KdFieldWidth(child: field),
+        for (final b in buttons) ...[const SizedBox(width: 8), b],
+      ],
+    );
+  }
+}

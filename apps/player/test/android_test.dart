@@ -258,4 +258,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(h.state.section, Section.home);
   });
+
+  testWidgets('every settings tab lays out on a small Android phone', (tester) async {
+    await setAndroidPhone(tester, size: const Size(360, 640));
+    final h = TestHarness(_library());
+    await h.state.load();
+    h.state.go(Section.settings);
+    await tester.pumpWidget(androidApp(h));
+    await tester.pumpAndSettle();
+    for (final tab in ['Tercihler', 'Hakkında', 'Kaynaklar']) {
+      await tester.tap(find.text(tab).first);
+      await tester.pumpAndSettle();
+      // Down to the end: the fields and links further down lay out too.
+      await tester.drag(find.byType(Scrollable).last, const Offset(0, -4000));
+      await tester.pumpAndSettle();
+    }
+    // An overflow anywhere fails the test by itself.
+  });
 }

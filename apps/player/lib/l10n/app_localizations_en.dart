@@ -1298,6 +1298,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Nothing is hidden. Right-click a channel or category to hide or rename it, or to build your own groups; they stay after a sync.';
 
   @override
+  String get editHiddenNoneTouch =>
+      'Nothing is hidden. Long-press a channel or category to hide or rename it, or to build your own groups; they stay after a sync.';
+
+  @override
   String get editHiddenBody =>
       'These stay out of lists and search, also after a sync.';
 

@@ -668,13 +668,13 @@ class _HistorySectionState extends State<_HistorySection> {
         const SizedBox(height: 4),
         Text(l10n.historyClearBody, style: const TextStyle(color: KdColors.muted, height: 1.5)),
         const SizedBox(height: 12),
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             KdButton(label: l10n.historyClearAll, icon: LucideIcons.eraser, kind: KdButtonKind.danger, onPressed: _clear),
-            if (_done) ...[
-              const SizedBox(width: 12),
-              Text(l10n.historyCleared, style: const TextStyle(color: KdColors.ok)),
-            ],
+            if (_done) Text(l10n.historyCleared, style: const TextStyle(color: KdColors.ok)),
           ],
         ),
       ],
@@ -746,7 +746,7 @@ class _TmdbSettingsState extends State<TmdbSettings> {
       children: [
         Row(
           children: [
-            Text(l10n.tmdbTitle, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+            Flexible(child: Text(l10n.tmdbTitle, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600))),
             const SizedBox(width: 10),
             if (s != null) KdTag(on ? l10n.tagOn : l10n.tagOff, ok: on),
           ],
@@ -757,11 +757,8 @@ class _TmdbSettingsState extends State<TmdbSettings> {
           style: const TextStyle(color: KdColors.muted, height: 1.5),
         ),
         const SizedBox(height: 14),
-        Row(
-          children: [
-            SizedBox(
-              width: 420,
-              child: KdInput(
+        KdFieldRow(
+          field: KdInput(
                 controller: _key,
                 hint: on ? l10n.tmdbReplaceHint : l10n.tmdbKeyHint,
                 obscure: true,
@@ -769,18 +766,14 @@ class _TmdbSettingsState extends State<TmdbSettings> {
                 prefix: LucideIcons.keyRound,
                 onSubmitted: (v) => v.trim().isEmpty ? null : _save(v.trim()),
               ),
-            ),
-            const SizedBox(width: 8),
+          buttons: [
             KdButton(
               label: l10n.tmdbVerify,
               icon: LucideIcons.check,
               kind: KdButtonKind.primary,
               onPressed: _busy ? null : () => _key.text.trim().isEmpty ? null : _save(_key.text.trim()),
             ),
-            if (on) ...[
-              const SizedBox(width: 8),
-              KdButton(label: l10n.actionRemove, icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _busy ? null : () => _save(null)),
-            ],
+            if (on) KdButton(label: l10n.actionRemove, icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _busy ? null : () => _save(null)),
           ],
         ),
         if (_busy) ...[const SizedBox(height: 10), const SizedBox(width: 420, child: KdIndeterminate())],

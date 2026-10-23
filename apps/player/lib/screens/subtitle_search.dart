@@ -14,8 +14,10 @@ import '../player/player_controller.dart';
 
 /// OpenSubtitles from the player: results for the film or episode playing,
 /// most downloaded first; a click downloads and turns it on.
-Future<void> showSubtitleSearch(BuildContext context, PlayerController player) =>
-    showDialog<void>(context: context, builder: (_) => _SubtitleSearch(player: player));
+Future<void> showSubtitleSearch(BuildContext context, PlayerController player) => showDialog<void>(
+  context: context,
+  builder: (_) => _SubtitleSearch(player: player),
+);
 
 class _SubtitleSearch extends StatefulWidget {
   const _SubtitleSearch({required this.player});
@@ -78,7 +80,10 @@ class _SubtitleSearchState extends State<_SubtitleSearch> {
     return AlertDialog(
       backgroundColor: KdColors.bg2,
       shape: kdDialogShape,
-      title: Text(l10n.subsTitle, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+      title: Text(
+        l10n.subsTitle,
+        style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600),
+      ),
       content: SizedBox(
         width: 560,
         child: Column(
@@ -107,12 +112,18 @@ class _SubtitleSearchState extends State<_SubtitleSearch> {
                 constraints: const BoxConstraints(maxHeight: 380),
                 child: ListView(
                   shrinkWrap: true,
-                  children: [for (final r in results) _ResultRow(result: r, busy: _loading == r.fileId, onTap: _loading == null ? () => _pick(r) : null)],
+                  children: [
+                    for (final r in results)
+                      _ResultRow(result: r, busy: _loading == r.fileId, onTap: _loading == null ? () => _pick(r) : null),
+                  ],
                 ),
               ),
             if (_error case final e?) ...[
               const SizedBox(height: 10),
-              Text(e, style: const TextStyle(color: KdColors.err, fontSize: KdType.small)),
+              Text(
+                e,
+                style: const TextStyle(color: KdColors.err, fontSize: KdType.small),
+              ),
             ],
           ],
         ),
@@ -139,7 +150,10 @@ class _ResultRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 6),
         child: Row(
           children: [
-            SizedBox(width: 86, child: Text(languageName(r.language) ?? r.language.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w600))),
+            SizedBox(
+              width: 86,
+              child: Text(languageName(r.language) ?? r.language.toUpperCase(), style: const TextStyle(fontWeight: FontWeight.w600)),
+            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -159,7 +173,9 @@ class _ResultRow extends StatelessWidget {
             SizedBox(
               width: 18,
               height: 18,
-              child: busy ? const CircularProgressIndicator(strokeWidth: 2, color: KdColors.accent) : const Icon(LucideIcons.download, size: 16, color: KdColors.muted),
+              child: busy
+                  ? const CircularProgressIndicator(strokeWidth: 2, color: KdColors.accent)
+                  : const Icon(LucideIcons.download, size: 16, color: KdColors.muted),
             ),
           ],
         ),
@@ -225,7 +241,12 @@ class _OpenSubsSettingsState extends State<OpenSubsSettings> {
       children: [
         Row(
           children: [
-            Text(l10n.subsSettingsTitle, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+            Flexible(
+              child: Text(
+                l10n.subsSettingsTitle,
+                style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600),
+              ),
+            ),
             const SizedBox(width: 10),
             if (_on != null) KdTag(on ? l10n.tagOn : l10n.tagOff, ok: on),
           ],
@@ -233,30 +254,29 @@ class _OpenSubsSettingsState extends State<OpenSubsSettings> {
         const SizedBox(height: 4),
         Text(l10n.subsSettingsBody, style: const TextStyle(color: KdColors.muted, height: 1.5)),
         const SizedBox(height: 14),
-        Row(
-          children: [
-            SizedBox(
-              width: 420,
-              child: KdInput(
-                controller: _key,
-                hint: on ? l10n.tmdbReplaceHint : l10n.subsKeyHint,
-                obscure: true,
-                mono: true,
-                prefix: LucideIcons.keyRound,
-                onSubmitted: (v) => v.trim().isEmpty ? null : _save(v.trim()),
-              ),
-            ),
-            const SizedBox(width: 8),
+        KdFieldRow(
+          field: KdInput(
+            controller: _key,
+            hint: on ? l10n.tmdbReplaceHint : l10n.subsKeyHint,
+            obscure: true,
+            mono: true,
+            prefix: LucideIcons.keyRound,
+            onSubmitted: (v) => v.trim().isEmpty ? null : _save(v.trim()),
+          ),
+          buttons: [
             KdButton(
               label: l10n.tmdbVerify,
               icon: LucideIcons.check,
               kind: KdButtonKind.primary,
               onPressed: _busy ? null : () => _key.text.trim().isEmpty ? null : _save(_key.text.trim()),
             ),
-            if (on) ...[
-              const SizedBox(width: 8),
-              KdButton(label: l10n.actionRemove, icon: LucideIcons.trash2, kind: KdButtonKind.danger, onPressed: _busy ? null : () => _save(null)),
-            ],
+            if (on)
+              KdButton(
+                label: l10n.actionRemove,
+                icon: LucideIcons.trash2,
+                kind: KdButtonKind.danger,
+                onPressed: _busy ? null : () => _save(null),
+              ),
           ],
         ),
         if (_busy) ...[const SizedBox(height: 10), const SizedBox(width: 420, child: KdIndeterminate())],
