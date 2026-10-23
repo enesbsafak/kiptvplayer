@@ -251,6 +251,7 @@ InputDecoration androidInputDecoration({String? hint, IconData? prefix, required
     isDense: false,
     hintText: hint,
     hintStyle: const TextStyle(color: KdColors.muted, fontSize: KdType.body),
+    hintMaxLines: 1,
     filled: true,
     fillColor: const Color(0x0FFFFFFF),
     prefixIcon: prefix == null ? null : Icon(prefix, size: 20, color: KdColors.muted),

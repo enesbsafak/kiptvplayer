@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/library.dart';
 import '../app/scope.dart';
+import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
@@ -98,7 +99,7 @@ class _SearchScreenState extends State<SearchScreen> {
               : empty
                   ? KdEmpty(icon: LucideIcons.search, title: l10n.searchNoResults(_q.text))
                   : ListView(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
+                      padding: clearOfBars(context, const EdgeInsets.fromLTRB(24, 0, 24, 28)),
                       children: [
                         if (_live.isNotEmpty) ...[
                           KdSectionLabel('${l10n.kindChannels} · ${_live.length}'),

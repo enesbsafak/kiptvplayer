@@ -3,6 +3,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/library.dart';
 import '../app/scope.dart';
+import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../l10n/l10n.dart';
@@ -75,7 +76,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               ? KdEmpty(icon: LucideIcons.star, title: l10n.favEmptyTitle, hint: l10n.favEmptyHint)
               : _tab == Kind.live
                   ? ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      padding: clearOfBars(context, const EdgeInsets.fromLTRB(24, 0, 24, 24)),
                       itemCount: _items.length,
                       separatorBuilder: (_, _) => const Divider(height: 1, color: KdColors.rowDivider),
                       itemBuilder: (context, i) {
@@ -104,7 +105,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       },
                     )
                   : GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                      padding: clearOfBars(context, const EdgeInsets.fromLTRB(24, 0, 24, 24)),
                       gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent: 170,
                         mainAxisSpacing: 18,

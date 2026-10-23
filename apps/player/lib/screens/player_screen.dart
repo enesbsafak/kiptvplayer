@@ -327,6 +327,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
               final now = player.now;
               // A phone's cutout, a TV's overscan: overlays keep inside it.
               final safe = MediaQuery.paddingOf(context);
+              // A phone has no room for both: an open panel puts the
+              // controls away until it closes.
+              final osd = _osd && (_panel == _Panel.none || !_TracksSheet.fits(context));
               return Stack(
                 fit: StackFit.expand,
                 children: [
@@ -365,9 +368,9 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   else if (player.error != null && !player.opening)
                     Center(child: _ErrorCard(message: player.error!, onRetry: () => _retry(player))),
                   IgnorePointer(
-                    ignoring: !_osd,
+                    ignoring: !osd,
                     child: AnimatedOpacity(
-                      opacity: _osd ? 1 : 0,
+                      opacity: osd ? 1 : 0,
                       duration: const Duration(milliseconds: 160),
                       // The shades reach the screen's edges; the controls in
                       // them keep clear of camera cutouts, rounded corners and

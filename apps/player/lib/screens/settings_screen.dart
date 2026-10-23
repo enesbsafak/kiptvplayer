@@ -141,7 +141,7 @@ class _SourcesTabState extends State<_SourcesTab> {
     return ListenableBuilder(
       listenable: app,
       builder: (context, _) => ListView(
-        padding: const EdgeInsets.all(20),
+        padding: clearOfBars(context, const EdgeInsets.all(20)),
         children: [
           Row(
             children: [
@@ -506,7 +506,7 @@ class _PreferencesTabState extends State<_PreferencesTab> {
       ..._regions.map((r) => r.region),
     ];
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: clearOfBars(context, const EdgeInsets.all(20)),
       children: [
         Text(l10n.prefLanguage, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
@@ -787,10 +787,12 @@ class _TmdbSettingsState extends State<TmdbSettings> {
         if (_error != null) ...[const SizedBox(height: 10), Text(_error!, style: const TextStyle(color: KdColors.err))],
         if (_done != null) ...[const SizedBox(height: 10), Text(_done!, style: const TextStyle(color: KdColors.ok))],
         const SizedBox(height: 10),
-        Row(
+        // Wraps on a phone: the link under the question, not off the screen.
+        Wrap(
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: 6,
           children: [
             Text(l10n.tmdbWhere, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small)),
-            const SizedBox(width: 6),
             KdButton(
               label: l10n.tmdbWhereLink,
               icon: LucideIcons.externalLink,
@@ -839,7 +841,7 @@ class _ShortcutsTab extends StatelessWidget {
       ('Esc', l10n.keyEsc),
     ];
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: clearOfBars(context, const EdgeInsets.all(20)),
       children: [
         for (final (k, d) in rows)
           Padding(
@@ -862,7 +864,7 @@ class _AboutTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: clearOfBars(context, const EdgeInsets.all(20)),
       children: [
         Row(
           children: [

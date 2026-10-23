@@ -86,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return KdEmpty(title: l10n.sourceNone, hint: l10n.sourceNoneHint);
     }
     return ListView(
-      padding: const EdgeInsets.fromLTRB(24, 18, 24, 28),
+      padding: clearOfBars(context, const EdgeInsets.fromLTRB(24, 18, 24, 28)),
       children: [
         _SourceStatus(source: source),
         if (_loaded && _continue.isEmpty && _recent.isEmpty && _favs.isEmpty)

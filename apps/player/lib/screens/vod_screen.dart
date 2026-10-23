@@ -224,7 +224,7 @@ class _VodScreenState extends State<VodScreen> {
                     return false;
                   },
                   child: GridView.builder(
-                    padding: EdgeInsets.fromLTRB(pad, 6, pad, 24),
+                    padding: clearOfBars(context, EdgeInsets.fromLTRB(pad, 6, pad, 24)),
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: picker == null ? 170 : 130,
                       mainAxisSpacing: 18,
@@ -436,7 +436,7 @@ class _DetailViewState extends State<DetailView> {
             ),
           ),
         ListView(
-          padding: compact ? const EdgeInsets.fromLTRB(14, 10, 14, 24) : const EdgeInsets.fromLTRB(28, 16, 28, 32),
+          padding: clearOfBars(context, compact ? const EdgeInsets.fromLTRB(14, 10, 14, 24) : const EdgeInsets.fromLTRB(28, 16, 28, 32)),
           children: [
             Align(
               alignment: Alignment.centerLeft,

@@ -265,6 +265,7 @@ class _KdInputState extends State<KdInput> {
               isDense: true,
               hintText: widget.hint,
               hintStyle: const TextStyle(color: KdColors.muted, fontSize: KdType.body),
+        hintMaxLines: 1,
               filled: true,
               fillColor: KdColors.bg2,
               prefixIcon: prefix == null ? null : Icon(prefix, size: 15, color: KdColors.muted),
