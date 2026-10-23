@@ -12,6 +12,7 @@ import '../design/layout.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../l10n/l10n.dart';
+import '../mobile/glass.dart';
 import '../design/widgets/kd_focus.dart';
 
 enum _Type { xtream, m3uUrl, m3uFile, stalker }
@@ -345,19 +346,24 @@ class _TypeCardState extends State<_TypeCard> {
         onTap: widget.onTap,
         // A remote needs a starting point on the first screen too.
         autofocus: isTv && sel,
+        radius: androidUi ? 18 : KdRadius.card,
         builder: (context, hover, focus) => KdFocusRing(
           focused: focus,
-          child: Container(
-            padding: const EdgeInsets.all(12),
+          radius: androidUi ? 18 : KdRadius.control,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: EdgeInsets.all(androidUi ? 14 : 12),
             decoration: BoxDecoration(
-              color: sel ? KdColors.accentAlpha(0.08) : (hover ? KdColors.buttonHoverBg : KdColors.bg2),
-              border: Border.all(color: sel ? KdColors.accentAlpha(0.45) : KdColors.line),
-              borderRadius: BorderRadius.circular(KdRadius.card),
+              color: sel
+                  ? KdColors.accentAlpha(androidUi ? 0.14 : 0.08)
+                  : (hover ? KdColors.buttonHoverBg : (androidUi ? const Color(0x0DFFFFFF) : KdColors.bg2)),
+              border: Border.all(color: sel ? KdColors.accentAlpha(0.45) : (androidUi ? const Color(0x1AFFFFFF) : KdColors.line)),
+              borderRadius: BorderRadius.circular(androidUi ? 18 : KdRadius.card),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(widget.icon, size: 18, color: sel ? KdColors.accent2 : KdColors.muted),
+                Icon(widget.icon, size: androidUi ? 22 : 18, color: sel ? KdColors.accent2 : KdColors.muted),
                 const SizedBox(height: 10),
                 Text(widget.title, style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
@@ -477,15 +483,22 @@ class OnboardingScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 22),
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: KdColors.bg,
-                  border: Border.all(color: KdColors.line),
-                  borderRadius: BorderRadius.circular(KdRadius.card),
+              if (androidUi)
+                // Android: the form on a glass card over the ambient space.
+                KdGlass(
+                  padding: const EdgeInsets.all(18),
+                  child: AddSourceForm(onDone: (s) => context.app.sourceChanged(s)),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(18),
+                  decoration: BoxDecoration(
+                    color: KdColors.bg,
+                    border: Border.all(color: KdColors.line),
+                    borderRadius: BorderRadius.circular(KdRadius.card),
+                  ),
+                  child: AddSourceForm(onDone: (s) => context.app.sourceChanged(s)),
                 ),
-                child: AddSourceForm(onDone: (s) => context.app.sourceChanged(s)),
-              ),
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
