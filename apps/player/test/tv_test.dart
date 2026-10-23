@@ -60,7 +60,7 @@ String _focusedLabel() {
 
   final focused = _focused;
   // A whole pane or screen is never what a remote highlights.
-  if (focused == null || focused.rect.height > 120) return '';
+  if (focused == null || focused.rect.height > 200) return '';
   final context = focused.context;
   if (context is Element) visit(context);
   return texts.join(' | ');
@@ -106,6 +106,10 @@ void main() {
     addTearDown(() => FlutterError.onError = previous);
     await tester.pumpWidget(tvApp(h));
     await tester.pumpAndSettle();
+    expect(_focusedLabel(), contains('Xtream Codes'), reason: 'the remote starts on the chosen source type');
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await tester.pumpAndSettle();
+    expect(_focusedLabel(), contains('M3U bağlantısı'));
     for (final type in ['M3U bağlantısı', 'Stalker portalı', 'Xtream Codes']) {
       await tester.ensureVisible(find.text(type));
       await tester.tap(find.text(type));

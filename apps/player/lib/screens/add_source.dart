@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/library.dart';
+import '../app/platform.dart';
 import '../app/scope.dart';
 import '../design/layout.dart';
 import '../design/tokens.dart';
@@ -342,6 +343,8 @@ class _TypeCardState extends State<_TypeCard> {
     return Expanded(
       child: KdTappable(
         onTap: widget.onTap,
+        // A remote needs a starting point on the first screen too.
+        autofocus: isTv && sel,
         builder: (context, hover, focus) => KdFocusRing(
           focused: focus,
           child: Container(
