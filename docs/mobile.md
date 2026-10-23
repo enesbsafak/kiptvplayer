@@ -12,7 +12,7 @@ an iPhone simulator. The screenshots and logs are kept as the
 
 | | Windows | Android / iOS |
 |---|---|---|
-| Layout | Sidebar, three panes | Below 1000 px wide (phones, tablets held upright): top bar, bottom navigation, one pane, categories in a sheet; a tap on a channel plays it full screen |
+| Layout | Sidebar, three panes | Below 1000 px wide (phones, tablets held upright): top bar, bottom navigation, one pane, categories in a sheet; a tap on a channel plays it full screen. Android: its own look, below |
 | Full screen | The window, on request | System bars hidden and landscape while the player is open |
 | Saved passwords | Windows Credential Manager | iOS: Keychain. Android: a file in the app's private folder sealed with XChaCha20-Poly1305 under a key kept by the Android Keystore (`MainActivity.kt`, `core/crates/kp-core/src/secret.rs`) |
 | TLS | Windows (schannel) | iOS: Security.framework. Android: rustls with the Mozilla root store (`core/crates/kp-core/src/net.rs`) |
@@ -21,7 +21,47 @@ an iPhone simulator. The screenshots and logs are kept as the
 
 To see the phone layout without a phone: `tools\shots.ps1 -Phone 390x844`
 captures every screen at that size, off-screen, with the mock provider.
-`tools\shots.ps1 -Tv -Scale 2` does the same for the TV layout at 1920x1080.
+`tools\shots.ps1 -Phone 390x844 -Android` captures the Android look below,
+and `tools\shots.ps1 -Tv -Scale 2` the TV layout at 1920x1080.
+
+## The Android look
+
+One codebase, a layout of its own: Android phones (not TVs) get
+`lib/mobile`, set at startup (`androidUi` in `lib/app/platform.dart`;
+`--kp-android` previews it on a desktop). The look is KaradelikDev's black and
+orange with frosted glass for everything that floats; the behaviour is
+Android's own.
+
+- **Glass** (`mobile/glass.dart`): what lies behind is blurred and a little
+  more saturated, under a dark tint and a rim lit from above. Bars, sheets,
+  the mini player, the player's controls. Low-RAM phones get the same
+  surfaces tinted instead of blurred. Behind it all, the icon's space: black
+  with a violet core and a faint orange glow.
+- **Shell** (`mobile/mobile_shell.dart`): a glass top bar (the source, tap to
+  switch; guide, search, settings), a floating glass bar for the sections
+  with a lit pill that slides to the current one, the playing stream in a
+  glass bar above it (tap or swipe up to open). Sections fade through; the
+  player rises from below; the bars step aside for the keyboard.
+- **Opening** (`mobile/intro.dart`): Android's launch screen shows the mark
+  (`res/values-v31`, `tools/make-icons.py`); the first frame draws the same
+  mark and the event horizon opens into the app in under a second. Touches
+  work from the first frame; off when animations are.
+- **Android behaviour**: the predictive back shrinks the screen with the
+  finger (`enableOnBackInvokedCallback`); back closes an open detail before
+  the section; ripples on everything tappable; haptics on navigation, chips
+  and long presses; a long press opens the actions in a bottom sheet; the
+  stretch overscroll; Android's switch; 28 dp dialogs.
+- **Controls** (`mobile/controls.dart`): the shared Kd widgets hand over to
+  Android forms: pill buttons (the CTA keeps the orange gradient), 48 dp
+  icon buttons, filter chips, 52 dp filled text fields. Text is 15 % larger
+  than on desktop, on top of the user's own font size.
+- **Player**: the controls in one glass capsule; a double tap on the left or
+  right half seeks 10 s; audio, subtitles and the adjustments in a glass
+  sheet on the right with finger-sized rows.
+
+`test/android_test.dart` lays out every section at phone sizes with
+Android's text size and drives the bars, the predictive back, the sheets,
+the mini player, the player's gestures and the opening.
 
 ## Android TV and Google TV
 
