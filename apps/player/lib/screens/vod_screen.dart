@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../app/app_state.dart';
 import '../app/library.dart';
 import '../app/paging.dart';
 import '../app/platform.dart';
@@ -102,6 +103,18 @@ class _VodScreenState extends State<VodScreen> {
     pager.loadMore();
   }
 
+  /// Back from a detail: to where it was opened from (home, search), or to
+  /// this section's list.
+  void _closeDetail() {
+    final app = context.app;
+    final from = app.detailFrom;
+    if (from != null && from != app.section && identical(_detail, widget.initialDetail)) {
+      app.go(from);
+    } else {
+      setState(() => _detail = null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_sourceId == null) {
@@ -109,7 +122,7 @@ class _VodScreenState extends State<VodScreen> {
     }
     final detail = _detail;
     if (detail != null) {
-      return DetailView(item: detail, kind: widget.kind, onBack: () => setState(() => _detail = null));
+      return _InnerBack(onBack: _closeDetail, child: DetailView(item: detail, kind: widget.kind, onBack: _closeDetail));
     }
     final total = _categories.fold<int>(0, (a, c) => a + c.count);
     final pager = _pager;
@@ -787,4 +800,37 @@ class _EpisodeRowState extends State<_EpisodeRow> {
       ),
     );
   }
+}
+
+/// Registers [onBack] with the app while this page is shown, so the system
+/// back closes it before leaving the section (AppShell's PopScope).
+class _InnerBack extends StatefulWidget {
+  const _InnerBack({required this.onBack, required this.child});
+
+  final VoidCallback onBack;
+  final Widget child;
+
+  @override
+  State<_InnerBack> createState() => _InnerBackState();
+}
+
+class _InnerBackState extends State<_InnerBack> {
+  AppState? _app;
+
+  void _back() => widget.onBack();
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _app ??= context.app..addInnerBack(_back);
+  }
+
+  @override
+  void dispose() {
+    _app?.removeInnerBack(_back);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

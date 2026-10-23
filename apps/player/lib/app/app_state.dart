@@ -177,7 +177,23 @@ class AppState extends ChangeNotifier {
     if (section == s) return;
     section = s;
     pendingDetail = null;
+    detailFrom = null;
     notifyListeners();
+  }
+
+  /// Back handlers of pages inside a section (an open detail), innermost
+  /// last: the system back closes them before it leaves the section.
+  final List<VoidCallback> _inner = [];
+
+  void addInnerBack(VoidCallback close) => _inner.add(close);
+
+  void removeInnerBack(VoidCallback close) => _inner.remove(close);
+
+  /// Closes the innermost page; false when there is none.
+  bool popInner() {
+    if (_inner.isEmpty) return false;
+    _inner.last();
+    return true;
   }
 
   /// Movie / series to show in its section's detail view, set by screens
@@ -185,9 +201,14 @@ class AppState extends ChangeNotifier {
   Item? pendingDetail;
   int detailNonce = 0;
 
+  /// The section a detail was opened from (home, search, favourites): back
+  /// from that detail returns there, not to the movie list.
+  Section? detailFrom;
+
   void openDetail(Item item, Kind kind) {
     pendingDetail = item;
     detailNonce++;
+    detailFrom = section;
     section = kind == Kind.series ? Section.series : Section.movies;
     notifyListeners();
   }

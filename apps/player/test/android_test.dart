@@ -230,4 +230,32 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle(const Duration(seconds: 6));
   });
+
+  testWidgets('back closes a detail first: to the list, or to where it was opened from', (tester) async {
+    await setAndroidPhone(tester);
+    final lib = _library();
+    final h = TestHarness(lib);
+    await h.state.load();
+    h.state.go(Section.movies);
+    await tester.pumpWidget(androidApp(h));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Film bir'));
+    await tester.pumpAndSettle();
+    expect(find.text('Oynat'), findsOneWidget, reason: 'the detail is open');
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(h.state.section, Section.movies, reason: 'back closed the detail, not the section');
+    expect(find.text('Oynat'), findsNothing);
+
+    // Opened from home: back returns home.
+    h.state.go(Section.home);
+    await tester.pumpAndSettle();
+    h.state.openDetail(lib.items[Kind.movie]![1], Kind.movie);
+    await tester.pumpAndSettle();
+    expect(h.state.section, Section.movies);
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(h.state.section, Section.home);
+  });
 }

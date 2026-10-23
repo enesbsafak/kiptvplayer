@@ -83,7 +83,8 @@ class _AppShellState extends State<AppShell> with WindowListener {
         return PopScope(
           canPop: !full && (app.section == Section.home || app.sources.isEmpty),
           onPopInvokedWithResult: (didPop, _) {
-            if (!didPop && !full) app.go(Section.home);
+            // An open detail first, then the section.
+            if (!didPop && !full && !app.popInner()) app.go(Section.home);
           },
           child: CallbackShortcuts(
             bindings: _shortcuts(app),
