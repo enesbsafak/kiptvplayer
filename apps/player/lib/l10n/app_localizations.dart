@@ -488,6 +488,24 @@ abstract class AppLocalizations {
   /// **'Kanal bulunamadı'**
   String get liveNoChannels;
 
+  /// No description provided for @liveNoMatch.
+  ///
+  /// In tr, this message translates to:
+  /// **'Bu listede “{query}” ile eşleşen kanal yok'**
+  String liveNoMatch(String query);
+
+  /// No description provided for @liveClearFilter.
+  ///
+  /// In tr, this message translates to:
+  /// **'Aramayı temizle'**
+  String get liveClearFilter;
+
+  /// No description provided for @liveLoadFailed.
+  ///
+  /// In tr, this message translates to:
+  /// **'Kanallar yüklenemedi'**
+  String get liveLoadFailed;
+
   /// No description provided for @liveNoFavoritesHint.
   ///
   /// In tr, this message translates to:

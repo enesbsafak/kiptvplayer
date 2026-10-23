@@ -277,10 +277,18 @@ class FakeLibrary implements LibraryApi {
   @override
   Future<List<Category>> categories(String sourceId, Kind kind) async => cats[kind] ?? const [];
 
+  /// Item id → category uid; items listed here belong to that category only.
+  final Map<int, int> categoryOf = {};
+
+  /// Thrown by [page] while set: a store that cannot answer.
+  Object? pageError;
+
   @override
   Future<List<Item>> page(String sourceId, Kind kind, {int? categoryUid, int? afterSort, int limit = 200}) async {
+    if (pageError case final e?) throw e;
     final all = items[kind] ?? const <Item>[];
     return all
+        .where((i) => categoryUid == null || categoryOf.isEmpty || categoryOf[i.id] == categoryUid)
         .where((i) => !hiddenIds.contains(i.id) && (afterSort == null || i.sort > afterSort))
         .map(_named)
         .take(limit)

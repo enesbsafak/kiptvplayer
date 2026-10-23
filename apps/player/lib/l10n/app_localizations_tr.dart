@@ -233,6 +233,17 @@ class AppLocalizationsTr extends AppLocalizations {
   String get liveNoChannels => 'Kanal bulunamadı';
 
   @override
+  String liveNoMatch(String query) {
+    return 'Bu listede “$query” ile eşleşen kanal yok';
+  }
+
+  @override
+  String get liveClearFilter => 'Aramayı temizle';
+
+  @override
+  String get liveLoadFailed => 'Kanallar yüklenemedi';
+
+  @override
   String get liveNoFavoritesHint => 'Bir kanalı yıldızlayarak buraya ekleyin.';
 
   @override

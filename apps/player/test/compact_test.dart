@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:karadelik_player/app/app_state.dart';
 import 'package:karadelik_player/app/library.dart';
+import 'package:karadelik_player/player/media_track.dart';
 import 'package:karadelik_player/player/player_controller.dart';
 import 'package:karadelik_player/screens/player_screen.dart';
 import 'package:karadelik_player/shell/app_shell.dart';
@@ -134,5 +135,96 @@ void main() {
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(h.state.section, Section.home);
+  });
+
+  testWidgets('live TV: a new category starts unfiltered; an empty filter result says why', (tester) async {
+    await setPhone(tester);
+    final lib = _library()..categoryOf.addAll({10: 1, 11: 1, 12: 2});
+    final h = TestHarness(lib);
+    await h.state.load();
+    h.state.go(Section.live);
+    await tester.pumpWidget(app(h, const AppShell()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'trt');
+    await tester.pumpAndSettle();
+    expect(find.text('Kanal D'), findsNothing);
+
+    // Another category: its channels show, not the old filter's leftovers.
+    await tester.tap(find.text('Tüm kanallar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('DE: Sport ve çok uzun bir kategori adı'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sport 1 HD Çok Uzun Kanal Adı'), findsOneWidget);
+    expect(tester.widget<TextField>(find.byType(TextField)).controller!.text, isEmpty);
+
+    // A filter with no match here says so and offers the way out.
+    await tester.enterText(find.byType(TextField), 'trt');
+    await tester.pumpAndSettle();
+    expect(find.textContaining('“trt” ile eşleşen kanal yok'), findsOneWidget);
+    await tester.tap(find.text('Aramayı temizle'));
+    await tester.pumpAndSettle();
+    expect(find.text('Sport 1 HD Çok Uzun Kanal Adı'), findsOneWidget);
+  });
+
+  testWidgets('live TV: a list that fails to load says so and retries', (tester) async {
+    await setPhone(tester);
+    final lib = _library()..pageError = Exception('disk I/O error');
+    final h = TestHarness(lib);
+    await h.state.load();
+    h.state.go(Section.live);
+    await tester.pumpWidget(app(h, const AppShell()));
+    await tester.pumpAndSettle();
+    expect(find.text('Kanallar yüklenemedi'), findsOneWidget, reason: 'not "no channels"');
+    expect(find.text('Kanal bulunamadı'), findsNothing);
+
+    lib.pageError = null;
+    await tester.tap(find.text('Tekrar dene'));
+    await tester.pumpAndSettle();
+    expect(find.text('TRT 1'), findsOneWidget);
+  });
+
+  testWidgets('player on a phone on its side: audio, subtitles and settings fit in a sheet', (tester) async {
+    await setPhone(tester, size: const Size(800, 360));
+    final lib = _library();
+    final h = TestHarness(lib);
+    await h.state.load();
+    h.state.go(Section.live);
+    await tester.pumpWidget(app(h, const AppShell()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kanal D'));
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(h.player.view, PlayerView.full);
+    h.engine.tracksCtl.add(MediaTrack.parseTrackList('''[
+      {"id":1,"type":"audio","lang":"tur","codec":"aac","selected":true},
+      {"id":2,"type":"audio","lang":"eng","codec":"aac"},
+      {"id":1,"type":"sub","lang":"tur","codec":"subrip"},
+      {"id":2,"type":"sub","lang":"eng","codec":"subrip","selected":true},
+      {"id":3,"type":"sub","lang":"ger","codec":"subrip"},
+      {"id":4,"type":"sub","lang":"fre","codec":"subrip"},
+      {"id":5,"type":"sub","lang":"spa","codec":"subrip"},
+      {"id":6,"type":"sub","lang":"ara","codec":"subrip"}
+    ]'''));
+    await tester.pump();
+
+    // The subtitles button on the controls (a phone has no A key).
+    await tester.tap(find.byTooltip('Ses ve altyazı (A)'));
+    await tester.pump();
+    await tester.pump();
+    final screen = Offset.zero & const Size(800, 360);
+    bool onScreen(Finder f) => screen.contains(tester.getTopLeft(f)) && screen.contains(tester.getBottomRight(f));
+    expect(onScreen(find.textContaining('İngilizce').first), isTrue, reason: 'audio tab');
+
+    await tester.tap(find.text('Altyazı').last);
+    await tester.pump();
+    expect(find.text('Kapalı'), findsOneWidget);
+    // The last subtitle is reachable by scrolling inside the sheet.
+    await tester.scrollUntilVisible(find.textContaining('Arapça'), 60, scrollable: find.byType(Scrollable).last);
+    expect(onScreen(find.textContaining('Arapça')), isTrue);
+
+    await tester.tap(find.text('Ayarlar').last);
+    await tester.pump();
+    expect(onScreen(find.text('Altyazı gecikmesi')), isTrue);
+    // An overflow anywhere would have failed the test on its own.
   });
 }

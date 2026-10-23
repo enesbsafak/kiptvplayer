@@ -183,7 +183,12 @@ impl Catalog {
                 let id_field = if list.kind == ContentKind::Series { "series_id" } else { "stream_id" };
                 let Some(ext_id) = as_i64(item.get(id_field)) else { continue };
                 let name = as_string(item.get("name")).unwrap_or_else(|| crate::lang::t("Bilinmeyen", "Unknown").to_string());
-                let cat = as_string(item.get("category_id")).and_then(|c| adult_cats.get(&c).copied());
+                // Newer panels list every category in `category_ids` and may
+                // leave `category_id` empty or unknown: the first one listed
+                // in the categories wins, otherwise the channel had no category.
+                let ids = std::iter::once(item.get("category_id"))
+                    .chain(item.get("category_ids").and_then(serde_json::Value::as_array).into_iter().flatten().map(Some));
+                let cat = ids.filter_map(as_string).find_map(|c| adult_cats.get(&c).copied());
                 let poster_key = if list.kind == ContentKind::Series { "cover" } else { "stream_icon" };
                 let archive = list.kind == ContentKind::Live && as_i64(item.get("tv_archive")) == Some(1);
                 let rating = as_f32(item.get("rating"))
@@ -421,6 +426,8 @@ mod tests {
                     json!({"stream_id": "101", "name": "TRT 1", "category_id": "1", "num": 1, "epg_channel_id": "trt1.tr", "tv_archive": 1, "tv_archive_duration": "3"}),
                     json!({"stream_id": 102, "name": "Kanal X", "category_id": "9"}),
                     json!({"name": "id yok"}),
+                    json!({"stream_id": 103, "name": "TRT Haber", "category_id": null, "category_ids": [1]}),
+                    json!({"stream_id": 104, "name": "TRT Spor", "category_id": "77", "category_ids": ["77", 1]}),
                 ],
             },
             XtreamLists {
@@ -430,12 +437,15 @@ mod tests {
             },
         ]);
         assert_eq!(c.categories.len(), 2);
-        assert_eq!(c.channels.len(), 3, "item without an id is skipped");
+        assert_eq!(c.channels.len(), 5, "item without an id is skipped");
+        let ulusal = c.categories[0].uid;
+        assert_eq!(c.channels[2].category_uid, Some(ulusal), "category_ids when category_id is empty");
+        assert_eq!(c.channels[3].category_uid, Some(ulusal), "the first known id in category_ids");
         let trt = &c.channels[0];
         assert_eq!(trt.url, "xtream:live:101");
         assert_eq!((trt.catchup.as_deref(), trt.catchup_days, trt.chno), (Some("xc"), Some(3), Some(1)));
         assert!(c.channels[1].adult, "adult via category name");
-        let film = &c.channels[2];
+        let film = &c.channels[4];
         assert_eq!((film.kind, film.rating, film.year, film.container.as_deref()), (ContentKind::Movie, Some(8.0), Some(2021), Some("mkv")));
     }
 

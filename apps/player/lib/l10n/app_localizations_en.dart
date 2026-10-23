@@ -243,6 +243,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveNoChannels => 'No channels found';
 
   @override
+  String liveNoMatch(String query) {
+    return 'No channel in this list matches “$query”';
+  }
+
+  @override
+  String get liveClearFilter => 'Clear the filter';
+
+  @override
+  String get liveLoadFailed => 'Could not load the channels';
+
+  @override
   String get liveNoFavoritesHint => 'Star a channel to add it here.';
 
   @override

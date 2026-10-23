@@ -113,9 +113,14 @@ class _LiveScreenState extends State<LiveScreen> {
     if (sid == null) return;
     _pager?.dispose();
     _pager = null;
+    // A filter typed for one list would hide the next one's channels: a new
+    // category starts unfiltered (the same one, reloaded after a sync, keeps it).
+    if (uid != _category) _filter.clear();
     setState(() {
       _category = uid;
       _selected = -1;
+      // A group's channels are fetched below; the last group's never show.
+      _groupItems = const [];
     });
     if (_groupOf(uid) case final group?) {
       context.library.groupItems(group).then((items) {
@@ -284,6 +289,39 @@ class _LiveScreenState extends State<LiveScreen> {
     );
   }
 
+  /// Why the list is empty: a failed load (with a retry), a filter that
+  /// matches nothing here (with a way out), or a list that is empty.
+  Widget _emptyList(ItemPager? pager) {
+    if (pager?.error case final e?) {
+      return KdEmpty(
+        icon: LucideIcons.triangleAlert,
+        title: l10n.liveLoadFailed,
+        hint: '$e',
+        action: KdButton(label: l10n.actionRetry, icon: LucideIcons.refreshCw, onPressed: () => _selectCategory(_category)),
+      );
+    }
+    final q = _filter.text.trim();
+    if (q.isNotEmpty) {
+      return KdEmpty(
+        icon: LucideIcons.searchX,
+        title: l10n.liveNoMatch(q),
+        action: KdButton(
+          label: l10n.liveClearFilter,
+          icon: LucideIcons.x,
+          onPressed: () => setState(() {
+            _filter.clear();
+            _selected = -1;
+          }),
+        ),
+      );
+    }
+    return KdEmpty(
+      icon: _category == _favorites ? LucideIcons.star : LucideIcons.tv,
+      title: _category == _favorites ? l10n.liveNoFavorites : l10n.liveNoChannels,
+      hint: _category == _favorites ? l10n.liveNoFavoritesHint : null,
+    );
+  }
+
   Widget _channelPane({bool compact = false}) {
     final items = _items;
     final pager = _pager;
@@ -310,11 +348,7 @@ class _LiveScreenState extends State<LiveScreen> {
             const Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: KdIndeterminate()),
           Expanded(
             child: items.isEmpty && !(pager?.loading ?? false)
-                ? KdEmpty(
-                    icon: _category == _favorites ? LucideIcons.star : LucideIcons.tv,
-                    title: _category == _favorites ? l10n.liveNoFavorites : l10n.liveNoChannels,
-                    hint: _category == _favorites ? l10n.liveNoFavoritesHint : null,
-                  )
+                ? _emptyList(pager)
                 : NotificationListener<ScrollNotification>(
                     onNotification: (n) {
                       if (n.metrics.extentAfter < 800) pager?.loadMore();

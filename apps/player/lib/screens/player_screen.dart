@@ -396,7 +396,15 @@ class _PlayerScreenState extends State<PlayerScreen> {
                   // Each panel is its own focus scope: opened, it takes the
                   // focus (the first track, the current channel) so a remote
                   // works in it at once (_togglePanel).
-                  if (_panel == _Panel.tracks)
+                  if (_panel == _Panel.tracks && _TracksSheet.fits(context))
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      right: 0,
+                      width: _TracksSheet.width(context),
+                      child: FocusScope(node: _tracksScope, child: _TracksSheet(player: player)),
+                    )
+                  else if (_panel == _Panel.tracks)
                     Positioned(right: 20 + safe.right, bottom: 110 + safe.bottom, child: FocusScope(node: _tracksScope, child: _TracksPanel(player: player))),
                   if (_panel == _Panel.channels && now != null)
                     Positioned(
@@ -972,10 +980,6 @@ class _TracksPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final audios = player.tracks.where((t) => t.kind == TrackKind.audio).toList();
-    final subs = player.tracks.where((t) => t.kind == TrackKind.subtitle).toList();
-    final audioLabels = trackLabels(audios);
-    final subLabels = trackLabels(subs);
     Widget column(String title, List<Widget> rows) => SizedBox(
       width: 240,
       child: Column(
@@ -1008,37 +1012,117 @@ class _TracksPanel extends StatelessWidget {
           spacing: 18,
           runSpacing: 18,
           children: [
-            column(l10n.tracksAudio, [
-              for (final (i, t) in audios.indexed)
-                _TrackRow(label: audioLabels[i], selected: t.selected, onTap: () => player.setAudio(t)),
-            ]),
-            column(l10n.tracksSubtitles, [
-              if (subs.isNotEmpty)
-                _TrackRow(
-                  label: TrackLabel(l10n.tracksOff, ''),
-                  selected: !subs.any((t) => t.selected),
-                  onTap: () => player.setSubtitle(null),
-                ),
-              for (final (i, t) in subs.indexed)
-                _TrackRow(label: subLabels[i], selected: t.selected, onTap: () => player.setSubtitle(t)),
-              const SizedBox(height: 8),
-              KdButton(
-                label: l10n.adjAddSubtitle,
-                icon: LucideIcons.filePlus,
-                kind: KdButtonKind.ghost,
-                onPressed: () => _pickSubtitle(player),
-              ),
-              if (!(player.now?.isLive ?? true) && !(player.now?.isCatchup ?? false))
-                KdButton(
-                  label: l10n.subsFind,
-                  icon: LucideIcons.globe,
-                  kind: KdButtonKind.ghost,
-                  onPressed: () => showSubtitleSearch(context, player),
-                ),
-            ]),
+            column(l10n.tracksAudio, _audioRows(player)),
+            column(l10n.tracksSubtitles, _subtitleRows(context, player)),
             _AdjustColumn(player: player),
           ],
         ),
+      ),
+    );
+  }
+}
+
+List<Widget> _audioRows(PlayerController player, {bool touch = false}) {
+  final audios = player.tracks.where((t) => t.kind == TrackKind.audio).toList();
+  final labels = trackLabels(audios);
+  return [
+    for (final (i, t) in audios.indexed)
+      _TrackRow(label: labels[i], selected: t.selected, touch: touch, onTap: () => player.setAudio(t)),
+  ];
+}
+
+List<Widget> _subtitleRows(BuildContext context, PlayerController player, {bool touch = false}) {
+  final subs = player.tracks.where((t) => t.kind == TrackKind.subtitle).toList();
+  final labels = trackLabels(subs);
+  return [
+    if (subs.isNotEmpty)
+      _TrackRow(
+        label: TrackLabel(l10n.tracksOff, ''),
+        selected: !subs.any((t) => t.selected),
+        touch: touch,
+        onTap: () => player.setSubtitle(null),
+      ),
+    for (final (i, t) in subs.indexed)
+      _TrackRow(label: labels[i], selected: t.selected, touch: touch, onTap: () => player.setSubtitle(t)),
+    const SizedBox(height: 8),
+    KdButton(
+      label: l10n.adjAddSubtitle,
+      icon: LucideIcons.filePlus,
+      kind: KdButtonKind.ghost,
+      onPressed: () => _pickSubtitle(player),
+    ),
+    if (!(player.now?.isLive ?? true) && !(player.now?.isCatchup ?? false))
+      KdButton(
+        label: l10n.subsFind,
+        icon: LucideIcons.globe,
+        kind: KdButtonKind.ghost,
+        onPressed: () => showSubtitleSearch(context, player),
+      ),
+  ];
+}
+
+/// Phones (and any short window): audio, subtitles and the adjustments as
+/// tabs of a full-height sheet on the right, scrolling inside, with rows big
+/// enough for a finger. The three columns of [_TracksPanel] need some
+/// 850 x 400 px, more than a phone on its side has.
+class _TracksSheet extends StatefulWidget {
+  const _TracksSheet({required this.player});
+
+  final PlayerController player;
+
+  static bool fits(BuildContext context) => !isTv && (isMobileOs || MediaQuery.sizeOf(context).height < 560);
+
+  static double width(BuildContext context) =>
+      (MediaQuery.sizeOf(context).width * 0.6).clamp(280.0, 400.0) + MediaQuery.paddingOf(context).right;
+
+  @override
+  State<_TracksSheet> createState() => _TracksSheetState();
+}
+
+class _TracksSheetState extends State<_TracksSheet> {
+  int _tab = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final player = widget.player;
+    final safe = MediaQuery.paddingOf(context);
+    final tabs = [l10n.tracksAudio, l10n.tracksSubtitles, l10n.adjTitle];
+    final rows = switch (_tab) {
+      0 => _audioRows(player, touch: true),
+      1 => _subtitleRows(context, player, touch: true),
+      _ => [_AdjustColumn(player: player, width: double.infinity)],
+    };
+    return Container(
+      padding: EdgeInsets.fromLTRB(16, 12 + safe.top, 16 + safe.right, 0),
+      decoration: BoxDecoration(
+        color: KdColors.bg2.withValues(alpha: 0.97),
+        border: const Border(left: BorderSide(color: KdColors.line)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final (i, t) in tabs.indexed) KdPill(label: t, selected: _tab == i, onTap: () => setState(() => _tab = i)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.only(bottom: 16 + safe.bottom),
+              children: [
+                if (rows.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(l10n.tracksNone, style: const TextStyle(color: KdColors.muted, fontSize: KdType.small)),
+                  ),
+                ...rows,
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1061,9 +1145,10 @@ String seconds(double v) {
 
 /// Delays, subtitle size, aspect, speed (files) and the sleep timer.
 class _AdjustColumn extends StatelessWidget {
-  const _AdjustColumn({required this.player});
+  const _AdjustColumn({required this.player, this.width = 300});
 
   final PlayerController player;
+  final double width;
 
   static const _scales = [0.8, 1.0, 1.25, 1.5];
   static const _speeds = [0.75, 1.0, 1.25, 1.5, 2.0];
@@ -1097,7 +1182,7 @@ class _AdjustColumn extends StatelessWidget {
     );
     final sleeping = player.sleepAt != null;
     return SizedBox(
-      width: 300,
+      width: width,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1145,11 +1230,14 @@ class _AdjustColumn extends StatelessWidget {
 }
 
 class _TrackRow extends StatelessWidget {
-  const _TrackRow({required this.label, required this.selected, required this.onTap});
+  const _TrackRow({required this.label, required this.selected, required this.onTap, this.touch = false});
 
   final TrackLabel label;
   final bool selected;
   final VoidCallback onTap;
+
+  /// A finger's row (48 px) instead of a mouse's.
+  final bool touch;
 
   @override
   Widget build(BuildContext context) {
@@ -1157,7 +1245,7 @@ class _TrackRow extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(KdRadius.control),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 4),
+        padding: EdgeInsets.symmetric(vertical: touch ? 14 : 5, horizontal: 4),
         child: Row(
           children: [
             SizedBox(width: 18, child: selected ? const Icon(LucideIcons.check, size: 14, color: KdColors.accent) : null),

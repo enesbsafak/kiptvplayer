@@ -145,6 +145,16 @@
   "liveFilterHint": "Bu listede ara",
   "liveNoFavorites": "Favori kanal yok",
   "liveNoChannels": "Kanal bulunamadı",
+  "liveNoMatch": "Bu listede “{query}” ile eşleşen kanal yok",
+  "@liveNoMatch": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "liveClearFilter": "Aramayı temizle",
+  "liveLoadFailed": "Kanallar yüklenemedi",
   "liveNoFavoritesHint": "Bir kanalı yıldızlayarak buraya ekleyin.",
   "liveHasArchive": "Geçmiş yayın var",
   "livePickChannel": "Önizlemek için bir kanal seçin",
