@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (_continue.isNotEmpty)
           _Shelf(
             title: l10n.homeContinue,
-            height: 236,
+            height: withText(context, 236, 44),
             onClear: () => _clear(progress: true),
             children: [
               for (final c in _continue)
@@ -109,27 +109,27 @@ class _HomeScreenState extends State<HomeScreen> {
         if (_recent.isNotEmpty)
           _Shelf(
             title: l10n.homeRecentChannels,
-            height: 92,
+            height: withText(context, 92, 34),
             onClear: () => _clear(recent: true),
             children: [for (final c in _recent) _ChannelTile(item: c, queue: _recent)],
           ),
         if (_favs.isNotEmpty)
           _Shelf(
             title: l10n.homeFavoriteChannels,
-            height: 92,
+            height: withText(context, 92, 34),
             children: [for (final c in _favs) _ChannelTile(item: c, queue: _favs)],
           ),
         if (_newMovies.isNotEmpty)
           _Shelf(
             title: l10n.homeNewMovies,
-            height: 236,
+            height: withText(context, 236, 44),
             onMore: () => context.app.go(Section.movies),
             children: [for (final m in _newMovies) PosterCard(width: 128, item: m, onTap: () => widget.onOpen(m, Kind.movie))],
           ),
         if (_newSeries.isNotEmpty)
           _Shelf(
             title: l10n.homeNewSeries,
-            height: 236,
+            height: withText(context, 236, 44),
             onMore: () => context.app.go(Section.series),
             children: [for (final s in _newSeries) PosterCard(width: 128, item: s, onTap: () => widget.onOpen(s, Kind.series))],
           ),

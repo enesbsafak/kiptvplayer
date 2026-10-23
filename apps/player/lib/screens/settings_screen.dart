@@ -15,6 +15,7 @@ import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_widgets.dart';
 import '../l10n/l10n.dart';
+import '../mobile/glass.dart';
 import 'add_source.dart';
 import 'parental.dart';
 import 'edits.dart';
@@ -46,25 +47,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  List<(_Tab, String)> get _tabs => [
+    (_Tab.sources, l10n.setSources),
+    (_Tab.preferences, l10n.setPreferences),
+    (_Tab.shortcuts, l10n.setShortcuts),
+    (_Tab.about, l10n.setAbout),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          color: KdColors.bg2,
-          child: SingleChildScrollView(
+        if (androidUi)
+          // Android: the tabs as chips over the glass, no keyboard shortcuts.
+          SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Row(
               children: [
-                for (final (t, label) in [(_Tab.sources, l10n.setSources), (_Tab.preferences, l10n.setPreferences), (_Tab.shortcuts, l10n.setShortcuts), (_Tab.about, l10n.setAbout)])
-                  _TabButton(label: label, active: _tab == t, onTap: () => setState(() => _tab = t)),
+                for (final (t, label) in _tabs)
+                  if (t != _Tab.shortcuts)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: KdPill(label: label, selected: _tab == t, onTap: () => setState(() => _tab = t)),
+                    ),
               ],
             ),
+          )
+        else ...[
+          Container(
+            color: KdColors.bg2,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  for (final (t, label) in _tabs) _TabButton(label: label, active: _tab == t, onTap: () => setState(() => _tab = t)),
+                ],
+              ),
+            ),
           ),
-        ),
-        const Divider(height: 1, color: KdColors.line),
+          const Divider(height: 1, color: KdColors.line),
+        ],
         Expanded(
           child: switch (_tab) {
             _Tab.sources => const _SourcesTab(),
@@ -120,8 +145,7 @@ class _SourcesTabState extends State<_SourcesTab> {
         children: [
           Row(
             children: [
-              Text(l10n.setSources, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
-              const Spacer(),
+              Expanded(child: Text(l10n.setSources, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600))),
               if (!_adding)
                 KdButton(label: l10n.sourceAdd, icon: LucideIcons.plus, kind: KdButtonKind.primary, onPressed: () => setState(() => _adding = true)),
             ],
@@ -234,12 +258,14 @@ class _SourceRowState extends State<_SourceRow> {
     final compact = isCompact(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: KdColors.bg2,
-        border: Border.all(color: widget.active ? KdColors.accentAlpha(0.45) : KdColors.line),
-        borderRadius: BorderRadius.circular(KdRadius.card),
-      ),
+      padding: EdgeInsets.all(androidUi ? 16 : 12),
+      decoration: androidUi
+          ? androidCard(active: widget.active)
+          : BoxDecoration(
+              color: KdColors.bg2,
+              border: Border.all(color: widget.active ? KdColors.accentAlpha(0.45) : KdColors.line),
+              borderRadius: BorderRadius.circular(KdRadius.card),
+            ),
       child: Row(
         children: [
           KdStatusDot(running: s.lastError == null),

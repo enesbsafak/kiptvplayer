@@ -1,5 +1,6 @@
 package dev.karadelik.player
 
+import android.app.ActivityManager
 import android.app.UiModeManager
 import android.content.Context
 import android.content.pm.PackageManager
@@ -35,6 +36,8 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "karadelik/device").setMethodCallHandler { call, result ->
             when (call.method) {
                 "isTv" -> result.success(isTv())
+                // Low-RAM phones skip the glass blur (lib/mobile/glass.dart).
+                "isLowRam" -> result.success((getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager)?.isLowRamDevice ?: false)
                 else -> result.notImplemented()
             }
         }

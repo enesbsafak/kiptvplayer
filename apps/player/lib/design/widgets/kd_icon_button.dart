@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../app/platform.dart';
+import '../../mobile/controls.dart';
 import '../tokens.dart';
 import 'kd_focus.dart';
 
@@ -31,6 +33,7 @@ class KdIconButton extends StatefulWidget {
 class _KdIconButtonState extends State<KdIconButton> {
   @override
   Widget build(BuildContext context) {
+    if (androidUi) return AndroidIconButton(icon: widget.icon, onPressed: widget.onPressed, tooltip: widget.tooltip, color: widget.color);
     final enabled = widget.onPressed != null;
     Widget button = KdTappable(
       onTap: widget.onPressed,

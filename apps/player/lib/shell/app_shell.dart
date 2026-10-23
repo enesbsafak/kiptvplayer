@@ -14,6 +14,7 @@ import '../design/widgets/kd_controls.dart';
 import '../design/widgets/kd_icon_button.dart';
 import '../design/widgets/kd_titlebar.dart';
 import '../l10n/l10n.dart';
+import '../mobile/mobile_shell.dart';
 import '../player/player_controller.dart';
 import '../screens/add_source.dart';
 import '../screens/favorites_screen.dart';
@@ -93,7 +94,9 @@ class _AppShellState extends State<AppShell> with WindowListener {
               skipTraversal: true,
               // A TV keeps the sidebar: a remote moves along a left rail far
               // better than along a bottom bar.
-              child: isCompact(context) && !isTv ? _compact(app, player) : _wide(app, player),
+              child: isCompact(context) && !isTv
+                  ? (androidUi ? MobileShell(content: _content) : _compact(app, player))
+                  : _wide(app, player),
             ),
           ),
         );

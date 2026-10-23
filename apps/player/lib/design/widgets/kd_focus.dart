@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../app/platform.dart';
+import '../../mobile/glass.dart';
 import '../tokens.dart';
 
 /// Opens an item's context menu from the keyboard (the Menu key, Shift+F10)
@@ -27,6 +29,7 @@ class KdTappable extends StatefulWidget {
     this.autofocus = false,
     this.focusNode,
     this.cursor = SystemMouseCursors.click,
+    this.radius = 12,
   });
 
   final VoidCallback? onTap;
@@ -39,6 +42,9 @@ class KdTappable extends StatefulWidget {
   final FocusNode? focusNode;
   final MouseCursor cursor;
   final Widget Function(BuildContext context, bool hover, bool focus) builder;
+
+  /// Android: the corner radius the touch ripple is clipped to.
+  final double radius;
 
   @override
   State<KdTappable> createState() => _KdTappableState();
@@ -81,8 +87,15 @@ class _KdTappableState extends State<KdTappable> {
         onDoubleTap: widget.onDoubleTap,
         onSecondaryTapUp: onContext == null ? null : (d) => onContext(d.globalPosition),
         // Touch has no right button: a long press opens the same menu.
-        onLongPressStart: onContext == null ? null : (d) => onContext(d.globalPosition),
-        child: widget.builder(context, _hover, _focus && enabled),
+        onLongPressStart: onContext == null
+            ? null
+            : (d) {
+                if (androidUi) Feedback.forLongPress(context);
+                onContext(d.globalPosition);
+              },
+        child: androidUi && enabled
+            ? KdRipple(borderRadius: BorderRadius.circular(widget.radius), child: widget.builder(context, _hover, _focus))
+            : widget.builder(context, _hover, _focus && enabled),
       ),
     );
   }

@@ -76,6 +76,8 @@ Future<void> main(List<String> args) async {
 
   final dataDir = _arg(args, 'kp-data-dir') ?? (await getApplicationSupportDirectory()).path;
   isTv = args.contains('--kp-tv') || await detectTv();
+  androidUi = !isTv && (Platform.isAndroid || args.contains('--kp-android'));
+  glassBlur = !await detectLowRam();
   final library = RustLibrary();
   final state = AppState(library);
   state.reminders.onDue = (_) => flashTaskbar();
@@ -181,13 +183,17 @@ class _KaradelikPlayerAppState extends State<KaradelikPlayerApp> {
         navigatorKey: rootNavigator,
         title: 'Karadelik IPTV Player',
         debugShowCheckedModeBanner: false,
-        theme: buildKdTheme(),
+        theme: buildKdTheme(android: androidUi),
         locale: Locale(language),
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         // Around the navigator, so captures include dialogs and menus.
         builder: (context, child) {
-          final app = isTv ? TvFrame(child: child!) : child;
+          final app = isTv
+              ? TvFrame(child: child!)
+              : androidUi
+                  ? _AndroidText(child: child!)
+                  : child;
           final phone = widget.phone;
           if (phone == null) return RepaintBoundary(key: widget.boundaryKey, child: app);
           // A status bar and a home indicator, as on a real phone.
@@ -209,6 +215,27 @@ class _KaradelikPlayerAppState extends State<KaradelikPlayerApp> {
         },
         home: const Scaffold(body: AppShell()),
       ),
+    );
+  }
+}
+
+/// Android: the desktop type scale (13 px body) read at arm's length is
+/// small; every size grows by the same step so the hierarchy holds (body
+/// 15, captions 12.6), on top of the user's own font size setting.
+class _AndroidText extends StatelessWidget {
+  const _AndroidText({required this.child});
+
+  final Widget child;
+
+  static const step = 1.15;
+
+  @override
+  Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final user = mq.textScaler.scale(100) / 100;
+    return MediaQuery(
+      data: mq.copyWith(textScaler: TextScaler.linear(user * step)),
+      child: child,
     );
   }
 }

@@ -1,8 +1,13 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 
 import 'tokens.dart';
 
-ThemeData buildKdTheme() {
+/// [android]: the phone layout's behaviour (lib/mobile): Android scrolling
+/// (the stretch overscroll), ripples on Material widgets, the predictive
+/// back page transition, rounded sheets and dialogs, Android's switch.
+ThemeData buildKdTheme({bool android = false}) {
   final base = TextStyle(
     fontFamily: KdType.family,
     fontFamilyFallback: KdType.fallback,
@@ -52,9 +57,36 @@ ThemeData buildKdTheme() {
       radius: const Radius.circular(4),
       thickness: WidgetStateProperty.all(8),
     ),
-    splashFactory: NoSplash.splashFactory,
+    splashFactory: android ? (Platform.isAndroid ? InkSparkle.splashFactory : InkRipple.splashFactory) : NoSplash.splashFactory,
     highlightColor: Colors.transparent,
     hoverColor: KdColors.bg2,
-    visualDensity: VisualDensity.compact,
+    visualDensity: android ? VisualDensity.standard : VisualDensity.compact,
+    platform: android ? TargetPlatform.android : null,
+    pageTransitionsTheme: android
+        ? const PageTransitionsTheme(
+            builders: {
+              TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+              TargetPlatform.windows: PredictiveBackPageTransitionsBuilder(),
+            },
+          )
+        : null,
+    bottomSheetTheme: android ? const BottomSheetThemeData(backgroundColor: Colors.transparent, elevation: 0) : null,
+    dialogTheme: android
+        ? DialogThemeData(
+            backgroundColor: KdColors.bg2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28), side: const BorderSide(color: Color(0x1FFFFFFF))),
+          )
+        : null,
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? KdColors.accentInk : KdColors.muted),
+      trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? KdColors.accent : const Color(0x14FFFFFF)),
+      trackOutlineColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? KdColors.accent : const Color(0x33FFFFFF)),
+    ),
+    tooltipTheme: android
+        ? TooltipThemeData(
+            decoration: BoxDecoration(color: KdColors.bg3, borderRadius: BorderRadius.circular(8)),
+            textStyle: const TextStyle(color: KdColors.text, fontSize: KdType.small),
+          )
+        : null,
   );
 }

@@ -16,7 +16,9 @@ param(
   [double]$Scale = 1,
   # The Android TV layout on a 1080p TV (960x540 dp); -Scale 2 gives the
   # 1920x1080 captures Google Play asks for.
-  [switch]$Tv
+  [switch]$Tv,
+  # The Android look (lib/mobile): glass bars, Android controls. With -Phone.
+  [switch]$Android
 )
 $ErrorActionPreference = 'Stop'
 Add-Type @'
@@ -40,7 +42,7 @@ $env:KP_OPENSUBS_BASE = "$Mock/os/api/v1"
 
 $p = Start-Process (Join-Path $exeDir 'karadelik_player.exe') -WorkingDirectory $exeDir -WindowStyle Hidden -PassThru `
   -ArgumentList (@('--kp-offscreen', "--kp-data-dir=$data", "--kp-add-mock=$Mock", "--kp-shot=$Out", '--kp-tmdb-key=kp-mock-tmdb-key', "--kp-language=$Language") +
-    $(if ($Phone) { @("--kp-phone=$Phone") } else { @() }) + $(if ($Tv) { @('--kp-tv') } else { @() }) + @("--kp-shot-scale=$Scale"))
+    $(if ($Phone) { @("--kp-phone=$Phone") } else { @() }) + $(if ($Tv) { @('--kp-tv') } else { @() }) + $(if ($Android) { @('--kp-android') } else { @() }) + @("--kp-shot-scale=$Scale"))
 $stoleFocus = $false
 $sw = [Diagnostics.Stopwatch]::StartNew()
 while (-not $p.HasExited -and $sw.Elapsed.TotalSeconds -lt 180) {

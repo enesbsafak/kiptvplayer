@@ -16,11 +16,28 @@ final bool isMobileOs = Platform.isAndroid || Platform.isIOS;
 /// desktop); the shell then lays the app out for a TV (shell/tv.dart).
 bool isTv = false;
 
-Future<bool> detectTv() async {
+Future<bool> detectTv() => _device('isTv');
+
+/// Android phones and tablets (not TVs): Android's own behaviour (ripples,
+/// the predictive back, bottom sheets, haptics, the stretch overscroll) in
+/// the Karadelik glass look, laid out by lib/mobile. Set once at startup;
+/// `--kp-android` previews it on a desktop.
+bool androidUi = false;
+
+/// Frosted glass blurs what lies behind the bars and sheets. Low-RAM phones
+/// get the same surfaces tinted instead: a blur costs every frame that
+/// scrolls under it.
+bool glassBlur = true;
+
+Future<bool> detectLowRam() => _device('isLowRam');
+
+Future<bool> _device(String method) async {
   if (!Platform.isAndroid) return false;
   try {
-    return await const MethodChannel('karadelik/device').invokeMethod<bool>('isTv') ?? false;
+    return await const MethodChannel('karadelik/device').invokeMethod<bool>(method) ?? false;
   } on PlatformException {
+    return false;
+  } on MissingPluginException {
     return false;
   }
 }

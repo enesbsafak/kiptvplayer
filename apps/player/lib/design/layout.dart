@@ -6,3 +6,7 @@ import 'package:flutter/widgets.dart';
 const compactWidth = 1000.0;
 
 bool isCompact(BuildContext context) => MediaQuery.sizeOf(context).width < compactWidth;
+
+/// A fixed [height] holding [text] px of text, grown by what the text gains
+/// at the user's (and Android's) text size, so shelves never clip a title.
+double withText(BuildContext context, double height, double text) => height + MediaQuery.textScalerOf(context).scale(text) - text;

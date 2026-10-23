@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../app/platform.dart';
 import '../../l10n/l10n.dart';
+import '../../mobile/controls.dart';
 import '../tokens.dart';
 import 'kd_focus.dart';
 import 'kd_widgets.dart' show kdUpper;
@@ -42,6 +43,16 @@ class _KdButtonState extends State<KdButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (androidUi) {
+      return AndroidButton(
+        label: widget.label,
+        onPressed: widget.onPressed,
+        kind: widget.kind,
+        icon: widget.icon,
+        large: widget.large,
+        autofocus: widget.autofocus,
+      );
+    }
     final enabled = widget.onPressed != null;
     final kind = widget.kind;
 
@@ -62,9 +73,7 @@ class _KdButtonState extends State<KdButton> {
         gradient = LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: _hover
-              ? const [KdColors.accent2, KdColors.accent]
-              : const [KdColors.accent, KdColors.primaryGradientEnd],
+          colors: _hover ? const [KdColors.accent2, KdColors.accent] : const [KdColors.accent, KdColors.primaryGradientEnd],
         );
         border = Colors.transparent;
         fg = KdColors.accentInk;
@@ -83,10 +92,7 @@ class _KdButtonState extends State<KdButton> {
     final content = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.icon != null) ...[
-          Icon(widget.icon, size: widget.large ? 16 : 14, color: fg),
-          const SizedBox(width: 6),
-        ],
+        if (widget.icon != null) ...[Icon(widget.icon, size: widget.large ? 16 : 14, color: fg), const SizedBox(width: 6)],
         Flexible(
           child: Text(
             widget.label,
@@ -108,11 +114,7 @@ class _KdButtonState extends State<KdButton> {
       mouseCursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
       onShowHoverHighlight: (v) => setState(() => _hover = v),
       onShowFocusHighlight: (v) => setState(() => _focus = v),
-      actions: {
-        ActivateIntent: CallbackAction<ActivateIntent>(
-          onInvoke: (_) => widget.onPressed?.call(),
-        ),
-      },
+      actions: {ActivateIntent: CallbackAction<ActivateIntent>(onInvoke: (_) => widget.onPressed?.call())},
       child: GestureDetector(
         onTap: widget.onPressed,
         onTapDown: (_) => setState(() => _down = true),
@@ -250,39 +252,35 @@ class _KdInputState extends State<KdInput> {
       onEditingComplete: _frame == null ? null : () => _frame!.requestFocus(),
       onChanged: widget.onChanged,
       cursorColor: KdColors.accent,
-      cursorWidth: 1.5,
+      cursorWidth: androidUi ? 2 : 1.5,
       style: TextStyle(
         fontSize: KdType.body,
         color: KdColors.text,
         fontFamily: mono ? KdType.mono : null,
         fontFamilyFallback: mono ? KdType.monoFallback : null,
       ),
-      decoration: InputDecoration(
-        isDense: true,
-        hintText: widget.hint,
-        hintStyle: const TextStyle(color: KdColors.muted, fontSize: KdType.body),
-        filled: true,
-        fillColor: KdColors.bg2,
-        prefixIcon: prefix == null ? null : Icon(prefix, size: 15, color: KdColors.muted),
-        prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 30),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
-        border: border(KdColors.line),
-        enabledBorder: border(KdColors.line),
-        focusedBorder: border(KdColors.accent),
-      ),
+      decoration: androidUi
+          ? androidInputDecoration(hint: widget.hint, prefix: prefix, mono: mono)
+          : InputDecoration(
+              isDense: true,
+              hintText: widget.hint,
+              hintStyle: const TextStyle(color: KdColors.muted, fontSize: KdType.body),
+              filled: true,
+              fillColor: KdColors.bg2,
+              prefixIcon: prefix == null ? null : Icon(prefix, size: 15, color: KdColors.muted),
+              prefixIconConstraints: const BoxConstraints(minWidth: 32, minHeight: 30),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+              border: border(KdColors.line),
+              enabledBorder: border(KdColors.line),
+              focusedBorder: border(KdColors.accent),
+            ),
     );
   }
 }
 
 /// `.chip` / project pill: 999 radius, selectable.
 class KdPill extends StatefulWidget {
-  const KdPill({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.trailing,
-  });
+  const KdPill({super.key, required this.label, required this.selected, required this.onTap, this.trailing});
 
   final String label;
   final bool selected;
@@ -297,6 +295,7 @@ class _KdPillState extends State<KdPill> {
   @override
   Widget build(BuildContext context) {
     final sel = widget.selected;
+    if (androidUi) return AndroidChip(label: widget.label, selected: sel, onTap: widget.onTap, trailing: widget.trailing);
     return KdTappable(
       onTap: widget.onTap,
       builder: (context, hover, focus) => KdFocusRing(
@@ -308,8 +307,8 @@ class _KdPillState extends State<KdPill> {
             color: sel
                 ? KdColors.accentAlpha(0.12)
                 : hover
-                    ? KdColors.bg3
-                    : KdColors.bg2,
+                ? KdColors.bg3
+                : KdColors.bg2,
             border: Border.all(color: sel ? KdColors.accentAlpha(0.45) : KdColors.line),
             borderRadius: BorderRadius.circular(KdRadius.pill),
           ),
@@ -328,11 +327,7 @@ class _KdPillState extends State<KdPill> {
                 const SizedBox(width: 6),
                 Text(
                   widget.trailing!,
-                  style: const TextStyle(
-                    fontSize: KdType.chip,
-                    color: KdColors.muted,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
+                  style: const TextStyle(fontSize: KdType.chip, color: KdColors.muted, fontFeatures: [FontFeature.tabularFigures()]),
                 ),
               ],
             ],
@@ -354,6 +349,7 @@ class KdCheck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (androidUi) return AndroidSwitchRow(value: value, onChanged: onChanged, label: label, hint: hint);
     return KdTappable(
       onTap: () => onChanged(!value),
       builder: (context, hover, focus) => KdFocusRing(
@@ -380,7 +376,10 @@ class KdCheck extends StatelessWidget {
             if (hint != null)
               Padding(
                 padding: const EdgeInsets.only(left: 23, top: 2),
-                child: Text(hint!, style: const TextStyle(fontSize: KdType.hint, color: KdColors.muted)),
+                child: Text(
+                  hint!,
+                  style: const TextStyle(fontSize: KdType.hint, color: KdColors.muted),
+                ),
               ),
           ],
         ),
@@ -431,8 +430,7 @@ class KdIndeterminate extends StatefulWidget {
 }
 
 class _KdIndeterminateState extends State<KdIndeterminate> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: KdMotion.indeterminate)
-    ..repeat();
+  late final AnimationController _c = AnimationController(vsync: this, duration: KdMotion.indeterminate)..repeat();
 
   @override
   void dispose() {
@@ -515,8 +513,7 @@ class KdArt extends StatelessWidget {
                 filterQuality: FilterQuality.medium,
                 gaplessPlayback: true,
                 errorBuilder: (context, error, stack) => fallback,
-                frameBuilder: (context, child, frame, sync) =>
-                    frame == null && !sync ? fallback : child,
+                frameBuilder: (context, child, frame, sync) => frame == null && !sync ? fallback : child,
               ),
       ),
     );
@@ -536,11 +533,7 @@ class _Initials extends StatelessWidget {
     return Center(
       child: Text(
         text,
-        style: TextStyle(
-          color: KdColors.muted,
-          fontWeight: FontWeight.w600,
-          fontSize: (size * 0.32).clamp(9, 28),
-        ),
+        style: TextStyle(color: KdColors.muted, fontWeight: FontWeight.w600, fontSize: (size * 0.32).clamp(9, 28)),
       ),
     );
   }
@@ -563,15 +556,19 @@ class KdEmpty extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null)
-              Icon(icon, size: 40, color: KdColors.muted)
-            else
-              Image.asset('assets/brand/logo.png', width: 56, height: 56),
+            if (icon != null) Icon(icon, size: 40, color: KdColors.muted) else Image.asset('assets/brand/logo.png', width: 56, height: 56),
             const SizedBox(height: 14),
-            Text(title, style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600)),
+            Text(
+              title,
+              style: const TextStyle(fontSize: KdType.heading, fontWeight: FontWeight.w600),
+            ),
             if (hint != null) ...[
               const SizedBox(height: 6),
-              Text(hint!, textAlign: TextAlign.center, style: const TextStyle(color: KdColors.muted)),
+              Text(
+                hint!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: KdColors.muted),
+              ),
             ],
             if (action != null) ...[const SizedBox(height: 16), action!],
           ],
@@ -598,7 +595,12 @@ class KdKbd extends StatelessWidget {
       ),
       child: Text(
         keys,
-        style: const TextStyle(fontSize: KdType.tag, color: KdColors.muted, fontFamily: KdType.mono, fontFamilyFallback: KdType.monoFallback),
+        style: const TextStyle(
+          fontSize: KdType.tag,
+          color: KdColors.muted,
+          fontFamily: KdType.mono,
+          fontFamilyFallback: KdType.monoFallback,
+        ),
       ),
     );
   }

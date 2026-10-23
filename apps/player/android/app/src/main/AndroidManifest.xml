@@ -16,6 +16,8 @@
       allowBackup off: saved passwords are sealed with a key that stays in this
       device's Keystore, so a cloud restore could not open them anyway; the
       app's own encrypted backup moves a library between devices.
+      enableOnBackInvokedCallback: Android 13+'s predictive back; the app
+      animates it (lib/mobile/mobile_shell.dart).
     -->
     <application
         android:label="Karadelik"
@@ -25,7 +27,8 @@
         android:usesCleartextTraffic="true"
         android:allowBackup="false"
         android:fullBackupContent="false"
-        android:dataExtractionRules="@xml/data_extraction_rules">
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../app/library.dart';
+import '../app/platform.dart';
+import '../mobile/sheet.dart';
 import '../app/scope.dart';
 import '../design/tokens.dart';
 import '../design/widgets/kd_controls.dart';
@@ -14,6 +16,12 @@ import 'epg_settings.dart';
 
 /// A right-click menu at [at] (global position); runs the picked action.
 Future<void> _menu(BuildContext context, Offset at, List<(IconData, String, Future<void> Function())?> entries) async {
+  if (androidUi) {
+    // A long press on Android: the actions in a bottom sheet.
+    final picked = await showKdActionSheet(context, entries: [for (final e in entries) e == null ? null : (e.$1, e.$2)]);
+    if (picked != null) await entries[picked]!.$3();
+    return;
+  }
   final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
   final local = overlay.globalToLocal(at);
   final picked = await showMenu<int>(
